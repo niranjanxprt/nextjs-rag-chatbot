@@ -1,219 +1,119 @@
 /**
  * Health Check API Route
  * 
- * Provides system health status for monitoring and deployment verification
+ * Provides system health status and diagnostics
  */
 
-import { NextRequest } from 'next/server'
-import { createSuccessResponse, createErrorResponse } from '@/lib/utils/error-handler'
-
-// =============================================================================
-// GET - Health Check
-// =============================================================================
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
 
 export async function GET(request: NextRequest) {
+  const startTime = Date.now()
+  
   try {
-    const startTime = Date.now()
-    
-    // Basic health checks
-    const checks = {
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      memory: process.memoryUsage(),
-      environment: process.env.NODE_ENV,
-      version: process.env.npm_package_version || '1.0.0',
-      region: process.env.VERCEL_REGION || 'local',
-      deployment: process.env.VERCEL_GIT_COMMIT_SHA || 'local'
-    }
-    
-    // Check environment variables
-    const requiredEnvVars = [
-      'NEXT_PUBLIC_SUPABASE_URL',
-      'NEXT_PUBLIC_SUPABASE_ANON_KEY',
-      'SUPABASE_SERVICE_ROLE_KEY',
-      'OPENAI_API_KEY',
-      'QDRANT_URL',
-      'QDRANT_API_KEY',
-      'UPSTASH_REDIS_REST_URL',
-      'UPSTASH_REDIS_REST_TOKEN'
-    ]
-    
-    const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar])
-    
-    // External service checks (basic connectivity)
-    const serviceChecks = await Promise.allSettled([
-      checkSupabase(),
-      checkOpenAI(),
-      checkQdrant(),
-      checkRedis()
+    const checks = await Promise.allSettled([
+      checkDatabase(),
+      checkEnvironment(),
+      checkMemory()
     ])
     
-    const services = {
-      supabase: serviceChecks[0].status === 'fulfilled' ? serviceChecks[0].value : { status: 'error', error: (serviceChecks[0] as PromiseRejectedResult).reason },
-      openai: serviceChecks[1].status === 'fulfilled' ? serviceChecks[1].value : { status: 'error', error: (serviceChecks[1] as PromiseRejectedResult).reason },
-      qdrant: serviceChecks[2].status === 'fulfilled' ? serviceChecks[2].value : { status: 'error', error: (serviceChecks[2] as PromiseRejectedResult).reason },
-      redis: serviceChecks[3].status === 'fulfilled' ? serviceChecks[3].value : { status: 'error', error: (serviceChecks[3] as PromiseRejectedResult).reason }
-    }
+    const results = checks.map((check, index) => {
+      const services = ['database', 'environment', 'memory']
+      return {
+        service: services[index],
+        status: check.status === 'fulfilled' ? 'healthy' : 'unhealthy',
+        details: check.status === 'fulfilled' ? check.value : check.reason?.message || 'Unknown error',
+        timestamp: new Date().toISOString()
+      }
+    })
     
+    const allHealthy = results.every(r => r.status === 'healthy')
     const responseTime = Date.now() - startTime
     
-    // Determine overall health status
-    const hasErrors = missingEnvVars.length > 0 || 
-                     Object.values(services).some(service => service.status === 'error')
-    
-    const healthStatus = {
-      status: hasErrors ? 'degraded' : 'healthy',
-      checks,
-      services,
-      environment: {
-        missingEnvVars: missingEnvVars.length > 0 ? missingEnvVars : undefined,
-        nodeVersion: process.version,
-        platform: process.platform,
-        arch: process.arch
-      },
-      performance: {
-        responseTime: `${responseTime}ms`,
-        memoryUsage: {
-          rss: `${Math.round(checks.memory.rss / 1024 / 1024)}MB`,
-          heapUsed: `${Math.round(checks.memory.heapUsed / 1024 / 1024)}MB`,
-          heapTotal: `${Math.round(checks.memory.heapTotal / 1024 / 1024)}MB`
-        }
-      }
-    }
-    
-    // Return appropriate status code
-    const statusCode = hasErrors ? 503 : 200
-    
-    return createSuccessResponse(healthStatus, statusCode)
-    
-  } catch (error) {
-    console.error('Health check error:', error)
-    return createErrorResponse(error instanceof Error ? error : new Error(String(error)))
-  }
-}
-
-// =============================================================================
-// Service Health Checks
-// =============================================================================
-
-async function checkSupabase(): Promise<{ status: string; responseTime?: number }> {
-  const startTime = Date.now()
-  
-  try {
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-      return { status: 'not_configured' }
-    }
-    
-    // Simple connectivity check
-    const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/`, {
-      method: 'HEAD',
+    return NextResponse.json({
+      status: allHealthy ? 'healthy' : 'unhealthy',
+      timestamp: new Date().toISOString(),
+      responseTime: `${responseTime}ms`,
+      version: process.env.npm_package_version || '1.0.0',
+      environment: process.env.NODE_ENV || 'development',
+      checks: results
+    }, { 
+      status: allHealthy ? 200 : 503,
       headers: {
-        'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}`
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'X-Health-Check': 'true'
       }
     })
     
+  } catch (error) {
     const responseTime = Date.now() - startTime
     
-    return {
-      status: response.ok ? 'healthy' : 'error',
-      responseTime
-    }
-  } catch (error) {
-    return {
-      status: 'error',
-      responseTime: Date.now() - startTime
-    }
-  }
-}
-
-async function checkOpenAI(): Promise<{ status: string; responseTime?: number }> {
-  const startTime = Date.now()
-  
-  try {
-    if (!process.env.OPENAI_API_KEY) {
-      return { status: 'not_configured' }
-    }
-    
-    // Simple API key validation
-    const response = await fetch('https://api.openai.com/v1/models', {
-      method: 'GET',
+    return NextResponse.json({
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      responseTime: `${responseTime}ms`,
+      error: error instanceof Error ? error.message : 'Health check failed',
+      checks: []
+    }, { 
+      status: 503,
       headers: {
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-        'Content-Type': 'application/json'
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'X-Health-Check': 'true'
       }
     })
-    
-    const responseTime = Date.now() - startTime
-    
-    return {
-      status: response.ok ? 'healthy' : 'error',
-      responseTime
-    }
-  } catch (error) {
-    return {
-      status: 'error',
-      responseTime: Date.now() - startTime
-    }
   }
 }
 
-async function checkQdrant(): Promise<{ status: string; responseTime?: number }> {
-  const startTime = Date.now()
-  
+async function checkDatabase(): Promise<string> {
   try {
-    if (!process.env.QDRANT_URL) {
-      return { status: 'not_configured' }
+    const supabase = await createClient()
+    
+    // Simple query to test database connectivity
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('count')
+      .limit(1)
+    
+    if (error) {
+      throw new Error(`Database error: ${error.message}`)
     }
     
-    // Simple connectivity check
-    const response = await fetch(`${process.env.QDRANT_URL}/health`, {
-      method: 'GET',
-      headers: process.env.QDRANT_API_KEY ? {
-        'api-key': process.env.QDRANT_API_KEY
-      } : {}
-    })
-    
-    const responseTime = Date.now() - startTime
-    
-    return {
-      status: response.ok ? 'healthy' : 'error',
-      responseTime
-    }
+    return 'Database connection successful'
   } catch (error) {
-    return {
-      status: 'error',
-      responseTime: Date.now() - startTime
-    }
+    throw new Error(`Database check failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
   }
 }
 
-async function checkRedis(): Promise<{ status: string; responseTime?: number }> {
-  const startTime = Date.now()
+async function checkEnvironment(): Promise<string> {
+  const requiredEnvVars = [
+    'NEXT_PUBLIC_SUPABASE_URL',
+    'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+    'SUPABASE_SERVICE_ROLE_KEY',
+    'OPENAI_API_KEY'
+  ]
   
-  try {
-    if (!process.env.UPSTASH_REDIS_REST_URL) {
-      return { status: 'not_configured' }
-    }
-    
-    // Simple connectivity check using Upstash REST API
-    const response = await fetch(`${process.env.UPSTASH_REDIS_REST_URL}/ping`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${process.env.UPSTASH_REDIS_REST_TOKEN}`
-      }
-    })
-    
-    const responseTime = Date.now() - startTime
-    
-    return {
-      status: response.ok ? 'healthy' : 'error',
-      responseTime
-    }
-  } catch (error) {
-    return {
-      status: 'error',
-      responseTime: Date.now() - startTime
-    }
+  const missing = requiredEnvVars.filter(envVar => !process.env[envVar])
+  
+  if (missing.length > 0) {
+    throw new Error(`Missing environment variables: ${missing.join(', ')}`)
   }
+  
+  return 'All required environment variables are set'
+}
+
+async function checkMemory(): Promise<string> {
+  const memUsage = process.memoryUsage()
+  const memUsageMB = {
+    rss: Math.round(memUsage.rss / 1024 / 1024),
+    heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024),
+    heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024),
+    external: Math.round(memUsage.external / 1024 / 1024)
+  }
+  
+  // Check if memory usage is concerning (>500MB heap)
+  if (memUsageMB.heapUsed > 500) {
+    throw new Error(`High memory usage: ${memUsageMB.heapUsed}MB heap used`)
+  }
+  
+  return `Memory usage normal: ${memUsageMB.heapUsed}MB heap used`
 }

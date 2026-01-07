@@ -71,6 +71,61 @@ const CACHE_CONFIG = {
 }
 
 // =============================================================================
+// LRU Cache Implementation
+// =============================================================================
+
+class LRUCache<T> {
+  private cache = new Map<string, CacheEntry<T>>()
+  private maxSize: number
+  
+  constructor(maxSize: number = CACHE_CONFIG.maxMemoryEntries) {
+    this.maxSize = maxSize
+  }
+  
+  get(key: string): CacheEntry<T> | undefined {
+    const entry = this.cache.get(key)
+    if (entry) {
+      // Move to end (most recently used)
+      this.cache.delete(key)
+      this.cache.set(key, entry)
+      return entry
+    }
+    return undefined
+  }
+  
+  set(key: string, value: CacheEntry<T>): void {
+    // Remove if exists to update position
+    if (this.cache.has(key)) {
+      this.cache.delete(key)
+    } else if (this.cache.size >= this.maxSize) {
+      // Remove least recently used (first item)
+      const firstKey = this.cache.keys().next().value
+      if (firstKey) {
+        this.cache.delete(firstKey)
+      }
+    }
+    
+    this.cache.set(key, value)
+  }
+  
+  delete(key: string): boolean {
+    return this.cache.delete(key)
+  }
+  
+  clear(): void {
+    this.cache.clear()
+  }
+  
+  size(): number {
+    return this.cache.size
+  }
+  
+  entries(): IterableIterator<[string, CacheEntry<T>]> {
+    return this.cache.entries()
+  }
+}
+
+// =============================================================================
 // Initialize Services
 // =============================================================================
 
@@ -79,8 +134,8 @@ const redis = new Redis({
   token: process.env.UPSTASH_REDIS_REST_TOKEN!
 })
 
-// In-memory cache
-const memoryCache = new Map<string, CacheEntry<any>>()
+// Replace Map with LRU cache
+const memoryCache = new LRUCache<any>(CACHE_CONFIG.maxMemoryEntries)
 let cacheStats: CacheStats = {
   hits: 0,
   misses: 0,
@@ -143,18 +198,6 @@ function cleanupMemoryCache(): void {
   for (const [key, entry] of memoryCache.entries()) {
     if (isExpired(entry)) {
       memoryCache.delete(key)
-      cleanedCount++
-    }
-  }
-  
-  // If still too many entries, remove oldest ones
-  if (memoryCache.size > CACHE_CONFIG.maxMemoryEntries) {
-    const entries = Array.from(memoryCache.entries())
-    entries.sort((a, b) => a[1].timestamp - b[1].timestamp)
-    
-    const toRemove = memoryCache.size - CACHE_CONFIG.maxMemoryEntries
-    for (let i = 0; i < toRemove; i++) {
-      memoryCache.delete(entries[i][0])
       cleanedCount++
     }
   }
@@ -504,14 +547,14 @@ export async function getStats(): Promise<CacheStats & {
     
     return {
       ...cacheStats,
-      memorySize: memoryCache.size,
+      memorySize: memoryCache.size(),
       redisInfo
     }
   } catch (error) {
     console.error('Error getting cache stats:', error)
     return {
       ...cacheStats,
-      memorySize: memoryCache.size
+      memorySize: memoryCache.size()
     }
   }
 }

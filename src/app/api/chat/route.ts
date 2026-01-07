@@ -267,14 +267,32 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       async start(controller) {
         try {
           let fullResponse = ''
+          let iterationCount = 0
+          const MAX_ITERATIONS = 1000
+          const STREAM_TIMEOUT = 30000
           
-          for await (const chunk of stream) {
-            const content = chunk.choices[0]?.delta?.content || ''
-            if (content) {
-              fullResponse += content
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content })}\n\n`))
+          // Create timeout promise
+          const timeoutPromise = new Promise<never>((_, reject) => 
+            setTimeout(() => reject(new Error('Stream timeout after 30 seconds')), STREAM_TIMEOUT)
+          )
+          
+          // Create stream processing promise
+          const streamPromise = (async () => {
+            for await (const chunk of stream) {
+              if (++iterationCount > MAX_ITERATIONS) {
+                throw new Error('Max iterations exceeded (1000)')
+              }
+              
+              const content = chunk.choices[0]?.delta?.content || ''
+              if (content) {
+                fullResponse += content
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content })}\n\n`))
+              }
             }
-          }
+          })()
+          
+          // Race between stream processing and timeout
+          await Promise.race([streamPromise, timeoutPromise])
           
           // Save assistant response to database and conversation state
           try {
