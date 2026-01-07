@@ -1,136 +1,141 @@
-/**
- * Property Tests for Document Processing Pipeline
- * 
- * Tests universal properties of the document processing system
- * using property-based testing with fast-check
- */
-
 import fc from 'fast-check'
-import type { Document } from '@/lib/types/database'
 
-// Simple mock processor for testing
-const mockProcessor = {
-  processDocument: async (doc: Document, options: any = {}) => {
-    // Simulate processing time
-    const startTime = Date.now()
+interface MockDocument {
+  id: string
+  content: string
+  chunks: string[]
+  metadata?: Record<string, any>
+}
+
+class MockDocumentProcessor {
+  private documents = new Map<string, MockDocument>()
+
+  async processDocument(content: string, chunkSize: number = 500): Promise<MockDocument> {
+    if (!content || content.trim().length === 0) {
+      throw new Error('Document content cannot be empty')
+    }
+
+    if (chunkSize <= 0) {
+      throw new Error('Chunk size must be positive')
+    }
+
+    const id = `doc-${Date.now()}-${Math.random()}`
+    const chunks = this.chunkText(content, chunkSize)
     
-    // Basic validation
-    if (!doc.id || !doc.filename) {
-      throw new Error('Invalid document')
+    const document: MockDocument = {
+      id,
+      content,
+      chunks
+    }
+
+    this.documents.set(id, document)
+    return document
+  }
+
+  private chunkText(text: string, chunkSize: number): string[] {
+    const chunks: string[] = []
+    
+    for (let i = 0; i < text.length; i += chunkSize) {
+      chunks.push(text.slice(i, i + chunkSize))
     }
     
-    // Simulate text extraction and chunking
-    const textLength = Math.max(100, doc.file_size / 100)
-    const chunkSize = options.chunkSize || 500
-    const chunkCount = Math.ceil(textLength / chunkSize)
-    
-    const chunks = Array.from({ length: chunkCount }, (_, i) => ({
-      content: `Chunk ${i + 1} content`,
-      tokenCount: Math.ceil(chunkSize / 4),
-      qdrantPointId: `point-${doc.id}-${i}`
-    }))
-    
-    return {
-      chunks,
-      processingTime: Date.now() - startTime
-    }
+    return chunks.filter(chunk => chunk.trim().length > 0)
+  }
+
+  async getDocument(id: string): Promise<MockDocument | null> {
+    return this.documents.get(id) || null
+  }
+
+  clear(): void {
+    this.documents.clear()
   }
 }
 
-describe('Document Processing Pipeline Properties', () => {
-  describe('Property 1: Document Processing Pipeline', () => {
-    it('should process any valid document successfully', () => {
-      fc.assert(fc.asyncProperty(
-        fc.record({
-          id: fc.uuid(),
-          user_id: fc.uuid(),
-          filename: fc.string({ minLength: 1, maxLength: 50 }),
-          file_size: fc.integer({ min: 100, max: 1000000 }),
-          mime_type: fc.constantFrom('application/pdf', 'text/plain', 'text/markdown'),
-          storage_path: fc.string({ minLength: 1, maxLength: 100 }),
-          processing_status: fc.constant('pending'),
-          chunk_count: fc.constant(0),
-          error_message: fc.constant(null),
-          created_at: fc.date().map(d => d.toISOString()),
-          updated_at: fc.date().map(d => d.toISOString())
-        }),
-        async (documentData) => {
-          const document = documentData as Document
-          const result = await mockProcessor.processDocument(document)
+describe('Document Processing Property Tests', () => {
+  let processor: MockDocumentProcessor
 
-          // Verify processing completed successfully
-          expect(result.chunks.length).toBeGreaterThan(0)
-          expect(result.processingTime).toBeGreaterThanOrEqual(0)
+  beforeEach(() => {
+    processor = new MockDocumentProcessor()
+  })
+
+  describe('document processing', () => {
+    test('processes valid documents', async () => {
+      await fc.assert(fc.asyncProperty(
+        fc.string({ minLength: 1, maxLength: 5000 }),
+        fc.integer({ min: 50, max: 1000 }),
+        async (content, chunkSize) => {
+          const document = await processor.processDocument(content, chunkSize)
           
-          // Verify all chunks have proper structure
-          result.chunks.forEach(chunk => {
-            expect(chunk.content).toBeTruthy()
-            expect(chunk.tokenCount).toBeGreaterThan(0)
-            expect(chunk.qdrantPointId).toBeTruthy()
+          expect(document.id).toBeDefined()
+          expect(document.content).toBe(content)
+          expect(Array.isArray(document.chunks)).toBe(true)
+          expect(document.chunks.length).toBeGreaterThan(0)
+          
+          // Verify chunks don't exceed chunk size
+          document.chunks.forEach(chunk => {
+            expect(chunk.length).toBeLessThanOrEqual(chunkSize)
           })
-          
-          return true
         }
-      ), { numRuns: 10 })
+      ), { numRuns: 5 })
     })
 
-    it('should handle different chunk sizes consistently', () => {
-      fc.assert(fc.asyncProperty(
-        fc.record({
-          id: fc.uuid(),
-          user_id: fc.uuid(),
-          filename: fc.constant('test.txt'),
-          file_size: fc.integer({ min: 1000, max: 10000 }),
-          mime_type: fc.constant('text/plain'),
-          storage_path: fc.constant('test/path'),
-          processing_status: fc.constant('pending'),
-          chunk_count: fc.constant(0),
-          error_message: fc.constant(null),
-          created_at: fc.constant(new Date().toISOString()),
-          updated_at: fc.constant(new Date().toISOString())
-        }),
-        fc.integer({ min: 200, max: 1000 }),
-        async (documentData, chunkSize) => {
-          const document = documentData as Document
-          const result = await mockProcessor.processDocument(document, { chunkSize })
+    test('rejects empty content', async () => {
+      await fc.assert(fc.asyncProperty(
+        fc.integer({ min: 1, max: 1000 }),
+        async (chunkSize) => {
+          await expect(processor.processDocument('', chunkSize))
+            .rejects.toThrow('Document content cannot be empty')
+        }
+      ), { numRuns: 5 })
+    })
 
-          // Verify chunking is consistent
-          expect(result.chunks.length).toBeGreaterThan(0)
-          
-          // Each chunk should have reasonable token count
-          result.chunks.forEach(chunk => {
-            expect(chunk.tokenCount).toBeGreaterThan(0)
-            expect(chunk.tokenCount).toBeLessThanOrEqual(Math.ceil(chunkSize / 2))
-          })
-          
-          return true
+    test('rejects invalid chunk sizes', async () => {
+      await fc.assert(fc.asyncProperty(
+        fc.string({ minLength: 1 }),
+        fc.integer({ max: 0 }),
+        async (content, chunkSize) => {
+          await expect(processor.processDocument(content, chunkSize))
+            .rejects.toThrow('Chunk size must be positive')
         }
       ), { numRuns: 5 })
     })
   })
 
-  describe('Property 2: Document Management Operations', () => {
-    it('should handle document reprocessing correctly', () => {
-      fc.assert(fc.asyncProperty(
-        fc.uuid(),
-        async (documentId) => {
-          // Mock reprocess operation
-          const reprocessDocument = async (docId: string) => {
-            // Simulate deletion and reprocessing
-            return {
-              deleted: true,
-              processed: true,
-              documentId: docId
-            }
-          }
+  describe('chunk properties', () => {
+    test('chunks preserve content', async () => {
+      await fc.assert(fc.asyncProperty(
+        fc.string({ minLength: 1, maxLength: 1000 }),
+        async (content) => {
+          const document = await processor.processDocument(content, 100)
+          const reconstructed = document.chunks.join('')
+          
+          // Content should be preserved (allowing for whitespace normalization)
+          expect(reconstructed.replace(/\s+/g, ' ').trim())
+            .toBe(content.replace(/\s+/g, ' ').trim())
+        }
+      ), { numRuns: 5 })
+    })
+  })
 
-          const result = await reprocessDocument(documentId)
+  describe('document retrieval', () => {
+    test('retrieves processed documents', async () => {
+      await fc.assert(fc.asyncProperty(
+        fc.string({ minLength: 1, maxLength: 500 }),
+        async (content) => {
+          const document = await processor.processDocument(content)
+          const retrieved = await processor.getDocument(document.id)
           
-          expect(result.deleted).toBe(true)
-          expect(result.processed).toBe(true)
-          expect(result.documentId).toBe(documentId)
-          
-          return true
+          expect(retrieved).toEqual(document)
+        }
+      ), { numRuns: 5 })
+    })
+
+    test('returns null for non-existent documents', async () => {
+      await fc.assert(fc.asyncProperty(
+        fc.string({ minLength: 1 }),
+        async (id) => {
+          const retrieved = await processor.getDocument(id)
+          expect(retrieved).toBeNull()
         }
       ), { numRuns: 5 })
     })

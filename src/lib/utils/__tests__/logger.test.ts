@@ -21,7 +21,7 @@ describe('Logger', () => {
     global.console = mockConsole as any
     
     // Set test environment
-    process.env.NODE_ENV = 'test'
+    ;(process.env as any).NODE_ENV = 'test'
     process.env.ENABLE_TEST_LOGGING = 'true'
   })
 
@@ -229,7 +229,7 @@ describe('withLogging Utility', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     global.console = mockConsole as any
-    process.env.NODE_ENV = 'test'
+    ;(process.env as any).NODE_ENV = 'test'
     process.env.ENABLE_TEST_LOGGING = 'true'
   })
 

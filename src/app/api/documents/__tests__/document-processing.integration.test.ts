@@ -8,6 +8,7 @@
 import { NextRequest } from 'next/server'
 import { POST as uploadHandler } from '../upload/route'
 import { POST as processHandler, GET as statusHandler } from '../[id]/process/route'
+import { DocumentProcessingStatus } from '@/lib/types/database'
 import { createClient } from '@/lib/supabase/server'
 import { getDocument, updateDocument, createDocumentChunks } from '@/lib/database/queries'
 import { processDocument } from '@/lib/services/document-processor'
@@ -85,7 +86,7 @@ describe('Document Processing Integration Tests', () => {
         file_size: 1024,
         mime_type: 'application/pdf',
         storage_path: '550e8400-e29b-41d4-a716-446655440000/1234567890-uuid.pdf',
-        processing_status: 'pending',
+        processing_status: 'pending' as DocumentProcessingStatus,
         chunk_count: 0,
         error_message: null,
         created_at: '2023-01-01T00:00:00Z',
@@ -112,8 +113,8 @@ describe('Document Processing Integration Tests', () => {
       // Mock document creation and updates
       mockGetDocument.mockResolvedValueOnce(null) // Document doesn't exist yet
       mockGetDocument.mockResolvedValueOnce(testDocument) // After creation
-      mockUpdateDocument.mockResolvedValueOnce({ ...testDocument, processing_status: 'processing' })
-      mockUpdateDocument.mockResolvedValueOnce({ ...testDocument, processing_status: 'completed', chunk_count: 3 })
+      mockUpdateDocument.mockResolvedValueOnce({ ...testDocument, processing_status: 'processing' as DocumentProcessingStatus as DocumentProcessingStatus })
+      mockUpdateDocument.mockResolvedValueOnce({ ...testDocument, processing_status: 'completed' as DocumentProcessingStatus as DocumentProcessingStatus, chunk_count: 3 })
 
       // Mock processing result
       mockProcessDocument.mockResolvedValue({
@@ -126,9 +127,9 @@ describe('Document Processing Integration Tests', () => {
       })
 
       mockCreateDocumentChunks.mockResolvedValue([
-        { id: 'chunk-1-id', document_id: testDocument.id, chunk_index: 0, content: 'chunk 1', token_count: 10, qdrant_point_id: 'qdrant-1' },
-        { id: 'chunk-2-id', document_id: testDocument.id, chunk_index: 1, content: 'chunk 2', token_count: 15, qdrant_point_id: 'qdrant-2' },
-        { id: 'chunk-3-id', document_id: testDocument.id, chunk_index: 2, content: 'chunk 3', token_count: 12, qdrant_point_id: 'qdrant-3' }
+        { id: 'chunk-1-id', document_id: testDocument.id, chunk_index: 0, content: 'chunk 1', token_count: 10, qdrant_point_id: 'qdrant-1', created_at: new Date().toISOString() },
+        { id: 'chunk-2-id', document_id: testDocument.id, chunk_index: 1, content: 'chunk 2', token_count: 15, qdrant_point_id: 'qdrant-2', created_at: new Date().toISOString() },
+        { id: 'chunk-3-id', document_id: testDocument.id, chunk_index: 2, content: 'chunk 3', token_count: 12, qdrant_point_id: 'qdrant-3', created_at: new Date().toISOString() }
       ])
 
       // Step 1: Upload document
@@ -191,7 +192,7 @@ describe('Document Processing Integration Tests', () => {
         file_size: 1024,
         mime_type: 'application/pdf',
         storage_path: '550e8400-e29b-41d4-a716-446655440000/1234567890-uuid.pdf',
-        processing_status: 'pending',
+        processing_status: 'pending' as DocumentProcessingStatus,
         chunk_count: 0,
         error_message: null,
         created_at: '2023-01-01T00:00:00Z',
@@ -200,8 +201,8 @@ describe('Document Processing Integration Tests', () => {
 
       // Mock processing error
       mockProcessDocument.mockRejectedValue(new Error('Processing failed: invalid file format'))
-      mockUpdateDocument.mockResolvedValueOnce({ ...testDocument, processing_status: 'processing' })
-      mockUpdateDocument.mockResolvedValueOnce({ ...testDocument, processing_status: 'failed', error_message: 'Processing failed: invalid file format' })
+      mockUpdateDocument.mockResolvedValueOnce({ ...testDocument, processing_status: 'processing' as DocumentProcessingStatus as DocumentProcessingStatus })
+      mockUpdateDocument.mockResolvedValueOnce({ ...testDocument, processing_status: 'failed' as DocumentProcessingStatus, error_message: 'Processing failed: invalid file format' })
 
       // Mock requests
       const processRequest = createMockRequest('POST', { chunkSize: 500, chunkOverlap: 50 })
@@ -238,7 +239,7 @@ describe('Document Processing Integration Tests', () => {
         file_size: 1024,
         mime_type: 'application/pdf',
         storage_path: '550e8400-e29b-41d4-a716-446655440000/1234567890-uuid.pdf',
-        processing_status: 'processing',
+        processing_status: 'processing' as DocumentProcessingStatus as DocumentProcessingStatus,
         chunk_count: 0,
         error_message: null,
         created_at: '2023-01-01T00:00:00Z',
@@ -269,7 +270,7 @@ describe('Document Processing Integration Tests', () => {
         file_size: 1024,
         mime_type: 'application/pdf',
         storage_path: '550e8400-e29b-41d4-a716-446655440000/1234567890-uuid.pdf',
-        processing_status: 'completed',
+        processing_status: 'completed' as DocumentProcessingStatus as DocumentProcessingStatus,
         chunk_count: 5,
         error_message: null,
         created_at: '2023-01-01T00:00:00Z',
@@ -382,7 +383,7 @@ describe('Document Processing Integration Tests', () => {
         file_size: 1024,
         mime_type: 'application/pdf',
         storage_path: '550e8400-e29b-41d4-a716-446655440000/1234567890-uuid.pdf',
-        processing_status: 'pending',
+        processing_status: 'pending' as DocumentProcessingStatus,
         chunk_count: 0,
         error_message: null,
         created_at: '2023-01-01T00:00:00Z',
@@ -432,7 +433,7 @@ describe('Document Processing Integration Tests', () => {
         file_size: 9 * 1024 * 1024, // 9MB
         mime_type: 'application/pdf',
         storage_path: '550e8400-e29b-41d4-a716-446655440000/1234567890-uuid.pdf',
-        processing_status: 'pending',
+        processing_status: 'pending' as DocumentProcessingStatus,
         chunk_count: 0,
         error_message: null,
         created_at: '2023-01-01T00:00:00Z',
@@ -451,8 +452,8 @@ describe('Document Processing Integration Tests', () => {
         processingTime: 5000 // 5 seconds
       })
 
-      mockUpdateDocument.mockResolvedValueOnce({ ...testDocument, processing_status: 'processing' })
-      mockUpdateDocument.mockResolvedValueOnce({ ...testDocument, processing_status: 'completed', chunk_count: 50 })
+      mockUpdateDocument.mockResolvedValueOnce({ ...testDocument, processing_status: 'processing' as DocumentProcessingStatus })
+      mockUpdateDocument.mockResolvedValueOnce({ ...testDocument, processing_status: 'completed' as DocumentProcessingStatus as DocumentProcessingStatus, chunk_count: 50 })
 
       const processRequest = createMockRequest('POST', { chunkSize: 200, chunkOverlap: 20 })
 
@@ -476,7 +477,7 @@ describe('Document Processing Integration Tests', () => {
         file_size: 100,
         mime_type: 'text/plain',
         storage_path: '550e8400-e29b-41d4-a716-446655440000/1234567890-uuid.txt',
-        processing_status: 'pending',
+        processing_status: 'pending' as DocumentProcessingStatus,
         chunk_count: 0,
         error_message: null,
         created_at: '2023-01-01T00:00:00Z',
@@ -491,8 +492,8 @@ describe('Document Processing Integration Tests', () => {
         processingTime: 100
       })
 
-      mockUpdateDocument.mockResolvedValueOnce({ ...testDocument, processing_status: 'processing' })
-      mockUpdateDocument.mockResolvedValueOnce({ ...testDocument, processing_status: 'completed', chunk_count: 1 })
+      mockUpdateDocument.mockResolvedValueOnce({ ...testDocument, processing_status: 'processing' as DocumentProcessingStatus })
+      mockUpdateDocument.mockResolvedValueOnce({ ...testDocument, processing_status: 'completed' as DocumentProcessingStatus as DocumentProcessingStatus, chunk_count: 1 })
 
       const processRequest = createMockRequest('POST', { chunkSize: 500, chunkOverlap: 50 })
 
@@ -522,7 +523,7 @@ describe('Document Processing Integration Tests', () => {
           file_size: 1024,
           mime_type: fileType.type,
           storage_path: `550e8400-e29b-41d4-a716-446655440000/1234567890-uuid.${fileType.extension}`,
-          processing_status: 'pending',
+          processing_status: 'pending' as DocumentProcessingStatus,
           chunk_count: 0,
           error_message: null,
           created_at: '2023-01-01T00:00:00Z',
@@ -536,8 +537,8 @@ describe('Document Processing Integration Tests', () => {
           processingTime: 100
         })
 
-        mockUpdateDocument.mockResolvedValueOnce({ ...testDocument, processing_status: 'processing' })
-        mockUpdateDocument.mockResolvedValueOnce({ ...testDocument, processing_status: 'completed', chunk_count: 1 })
+        mockUpdateDocument.mockResolvedValueOnce({ ...testDocument, processing_status: 'processing' as DocumentProcessingStatus })
+        mockUpdateDocument.mockResolvedValueOnce({ ...testDocument, processing_status: 'completed' as DocumentProcessingStatus as DocumentProcessingStatus, chunk_count: 1 })
 
         const processRequest = createMockRequest('POST', { chunkSize: 500, chunkOverlap: 50 })
 
@@ -568,7 +569,7 @@ describe('Document Processing Integration Tests', () => {
         file_size: 1024,
         mime_type: 'application/pdf',
         storage_path: '550e8400-e29b-41d4-a716-446655440000/1234567890-uuid.pdf',
-        processing_status: 'pending',
+        processing_status: 'pending' as DocumentProcessingStatus,
         chunk_count: 0,
         error_message: null,
         created_at: '2023-01-01T00:00:00Z',
@@ -591,8 +592,8 @@ describe('Document Processing Integration Tests', () => {
           processingTime: 100
         })
 
-        mockUpdateDocument.mockResolvedValueOnce({ ...testDocument, processing_status: 'processing' })
-        mockUpdateDocument.mockResolvedValueOnce({ ...testDocument, processing_status: 'completed', chunk_count: 2 })
+        mockUpdateDocument.mockResolvedValueOnce({ ...testDocument, processing_status: 'processing' as DocumentProcessingStatus })
+        mockUpdateDocument.mockResolvedValueOnce({ ...testDocument, processing_status: 'completed' as DocumentProcessingStatus as DocumentProcessingStatus, chunk_count: 2 })
 
         const processRequest = createMockRequest('POST', params)
 

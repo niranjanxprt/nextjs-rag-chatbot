@@ -140,7 +140,8 @@ test.describe('RAG Chatbot E2E Tests', () => {
       
       // Should show search results
       await expect(page.locator('[data-testid="search-results"]')).toBeVisible()
-      await expect(page.locator('.search-result')).toHaveCount.toBeGreaterThan(0)
+      const searchResults = page.locator('.search-result')
+      await expect(searchResults.first()).toBeVisible()
       
       // Results should have proper structure
       const firstResult = page.locator('.search-result').first()
@@ -260,7 +261,8 @@ test.describe('RAG Chatbot E2E Tests', () => {
       await page.click('text=Search')
       await page.fill('input[placeholder*="Search"]', 'machine learning')
       await page.click('button[type="submit"]')
-      await expect(page.locator('.search-result')).toHaveCount.toBeGreaterThan(0)
+      const searchResults = page.locator('.search-result')
+      await expect(searchResults.first()).toBeVisible()
 
       // 4. Chat with context
       await page.click('text=Chat')

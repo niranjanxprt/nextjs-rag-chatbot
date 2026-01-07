@@ -4,12 +4,12 @@
 
 ### Frontend Framework
 - **Next.js 15**: App Router with React 19, server-first architecture
-- **TypeScript**: Strict mode enabled for type safety
+- **TypeScript 5.3+**: Strict mode enabled throughout entire codebase
 - **Tailwind CSS**: Utility-first styling with custom design system
 - **Shadcn UI**: High-quality, accessible component library
 
 ### Backend & API
-- **Next.js API Routes**: Serverless functions for all backend logic
+- **Next.js API Routes**: TypeScript serverless functions for all backend logic
 - **Supabase**: PostgreSQL database with Row Level Security (RLS)
 - **OpenAI API**: GPT-4-turbo for chat, text-embedding-3-small for embeddings
 - **Qdrant Cloud**: Vector database for semantic search (1536-dimensional vectors)
@@ -21,13 +21,20 @@
 - **GitHub Actions**: CI/CD pipeline for testing and deployment
 
 ### Development Tools
-- **Jest**: Unit and integration testing
-- **Playwright**: End-to-end testing
+- **TypeScript**: Strict mode with comprehensive type coverage
+- **Jest**: Unit and integration testing with TypeScript support
+- **Playwright**: End-to-end testing with TypeScript
 - **ESLint**: Code linting with TypeScript rules
 - **Prettier**: Code formatting
-- **Zod**: Runtime type validation
+- **Zod**: Runtime type validation and schema definition
 
 ## Architecture Patterns
+
+### TypeScript-First Development
+- **Strict Mode**: All code written in TypeScript with strict compiler settings
+- **Type Safety**: Comprehensive type definitions for all APIs, components, and utilities
+- **Runtime Validation**: Zod schemas for all external data validation
+- **Interface-Driven**: Clear interfaces for all complex objects and API responses
 
 ### Server-First Design
 - **Server Components**: Default to server-side rendering for better performance

@@ -103,7 +103,7 @@ describe('UI Responsiveness - Simplified Property Tests', () => {
             fc.integer({ min: 320, max: 1920 }),
             fc.integer({ min: 240, max: 1080 })
           ), { minLength: 2, maxLength: 5 }),
-          fc.array(fc.constantFrom('button', 'input', 'card'), { minLength: 1, maxLength: 5 }),
+          fc.array(fc.constantFrom('button' as const, 'input' as const, 'card' as const), { minLength: 1, maxLength: 5 }),
           (viewports, componentTypes) => {
             const testSystem = new SimpleResponsiveSystem()
             
@@ -190,7 +190,7 @@ describe('UI Responsiveness - Simplified Property Tests', () => {
     it('should maintain component properties across breakpoints', () => {
       fc.assert(
         fc.property(
-          fc.array(fc.constantFrom('button', 'input'), { minLength: 2, maxLength: 6 }),
+          fc.array(fc.constantFrom('button' as const, 'input' as const), { minLength: 2, maxLength: 6 }),
           (componentTypes) => {
             const testSystem = new SimpleResponsiveSystem()
             

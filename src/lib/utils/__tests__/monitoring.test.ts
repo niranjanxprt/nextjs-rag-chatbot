@@ -337,7 +337,7 @@ describe('MemoryMonitor', () => {
       heapTotal: 1200000,
       external: 100000,
       arrayBuffers: 50000
-    }))
+    })) as any
 
     memoryMonitor.recordMemoryUsage()
     

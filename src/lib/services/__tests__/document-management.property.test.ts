@@ -7,6 +7,7 @@
 
 import { describe, it, expect } from '@jest/globals'
 import fc from 'fast-check'
+import { DocumentProcessingStatus } from '@/lib/types/database'
 
 // Mock document management operations
 interface MockDocument {
@@ -281,7 +282,7 @@ describe('Document Management Operations - Property Tests', () => {
             
             // Apply status changes
             for (const status of statusSequence) {
-              const updatedDoc = await manager.updateDocumentStatus(doc.id, status, userId)
+              const updatedDoc = await manager.updateDocumentStatus(doc.id, status as DocumentProcessingStatus, userId)
               expect(updatedDoc).not.toBeNull()
               
               if (updatedDoc) {

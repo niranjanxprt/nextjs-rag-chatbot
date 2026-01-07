@@ -166,7 +166,7 @@ export function DocumentUploader({
       onUploadError?.(errorMessage)
       toast.error('Upload failed', errorMessage)
     }
-  }, [onUploadComplete, onUploadError])
+  }, [onUploadComplete, onUploadError, toast])
 
   // =============================================================================
   // Event Handlers

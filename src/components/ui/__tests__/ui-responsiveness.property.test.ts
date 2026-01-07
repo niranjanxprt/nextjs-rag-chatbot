@@ -316,7 +316,7 @@ describe('UI Responsiveness - Property Tests', () => {
             fc.float({ min: Math.fround(1.0), max: Math.fround(3.0) }) // device pixel ratio
           ), { minLength: 3, maxLength: 8 }),
           fc.array(fc.record({
-            type: fc.constantFrom('button', 'input', 'card', 'navigation'),
+            type: fc.constantFrom('button' as const, 'input' as const, 'card' as const, 'navigation' as const),
             visible: fc.boolean(),
             interactive: fc.boolean(),
             dimensions: fc.record({
@@ -392,7 +392,7 @@ describe('UI Responsiveness - Property Tests', () => {
             fc.integer({ min: 240, max: 1080 })
           ), { minLength: 4, maxLength: 6 }),
           fc.array(fc.record({
-            type: fc.constantFrom('button', 'input', 'card', 'navigation', 'modal'),
+            type: fc.constantFrom('button' as const, 'input' as const, 'card' as const, 'navigation' as const, 'modal' as const),
             visible: fc.constant(true),
             interactive: fc.boolean(),
             dimensions: fc.record({
@@ -469,7 +469,7 @@ describe('UI Responsiveness - Property Tests', () => {
             fc.integer({ min: 600, max: 1080 })
           ),
           fc.array(fc.record({
-            type: fc.constantFrom('button', 'input', 'card'),
+            type: fc.constantFrom('button' as const, 'input' as const, 'card' as const),
             visible: fc.constant(true),
             interactive: fc.constant(true),
             dimensions: fc.record({
@@ -680,7 +680,7 @@ describe('UI Responsiveness - Property Tests', () => {
             deviceType: fc.constantFrom('mobile', 'tablet', 'desktop', 'wide')
           }), { minLength: 3, maxLength: 6 }),
           fc.array(fc.record({
-            type: fc.constantFrom('button', 'input', 'navigation'),
+            type: fc.constantFrom('button' as const, 'input' as const, 'navigation' as const),
             interactive: fc.constant(true),
             dimensions: fc.record({
               width: fc.integer({ min: 60, max: 250 }),

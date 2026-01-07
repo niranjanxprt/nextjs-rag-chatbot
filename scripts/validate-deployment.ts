@@ -469,4 +469,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   main()
 }
 
-export { PreDeploymentValidator, ValidationReport, TestResult }
+export type { PreDeploymentValidator, ValidationReport, TestResult }

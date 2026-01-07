@@ -42,7 +42,7 @@ describe('Environment Configuration', () => {
 
   it('should fail validation with missing required variables', () => {
     const invalidEnv = { ...validEnv }
-    delete invalidEnv.OPENAI_API_KEY
+    delete (invalidEnv as any).OPENAI_API_KEY
     
     const result = envSchema.safeParse(invalidEnv)
     expect(result.success).toBe(false)
