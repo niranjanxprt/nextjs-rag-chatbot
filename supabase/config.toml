@@ -1,0 +1,196 @@
+# Supabase Project Configuration
+#
+# This file configures Supabase CLI for local development.
+# Update project_id with your actual Supabase project reference ID.
+#
+# For local development, the Supabase emulator provides:
+# - Local PostgreSQL database on port 54322
+# - Local API on port 54321
+# - Auth emulator with magic links
+# - Storage emulator
+# - Realtime emulator
+#
+# Setup: npx supabase start
+# Link: npx supabase link --project-ref YOUR_PROJECT_REF
+# Push: npx supabase db push
+
+# A string used to distinguish different Supabase projects on the same host
+project_id = "your-project-ref"
+
+[api]
+# Enable the REST API server
+enabled = true
+
+# Port for the REST API
+port = 54321
+
+# Schemas to expose in the REST API
+schemas = ["public", "graphql_public"]
+
+# Extra search path for extensions
+extra_search_path = ["public", "extensions"]
+
+# Maximum rows to return from REST API
+max_rows = 1000
+
+[db]
+# Port for the local PostgreSQL database
+port = 54322
+
+# Port for the PostgreSQL shadow database (for migrations)
+shadow_port = 54320
+
+# PostgreSQL major version
+major_version = 15
+
+[db.pooler]
+# Enable pooler for connection pooling (optional)
+enabled = false
+
+# Port for the connection pooler
+port = 54329
+
+# Pool mode: transaction | session
+pool_mode = "transaction"
+
+# Default pool size
+default_pool_size = 20
+
+# Maximum client connections
+max_client_conn = 100
+
+[realtime]
+# Enable Realtime for real-time updates
+enabled = true
+
+# IP version: ipv4 | ipv6
+ip_version = "ipv4"
+
+[studio]
+# Enable Supabase Studio (web UI)
+enabled = true
+
+# Port for Studio
+port = 54323
+
+# API URL for Studio
+api_url = "http://localhost"
+
+# Additional configuration for Studio
+[studio.tokens]
+# JWT secret for local Studio (auto-generated, don't change)
+
+[inbucket]
+# Enable Inbucket email testing service
+enabled = true
+
+# Port for Inbucket SMTP server
+port = 54324
+
+# Port for Inbucket SMTP (alternative)
+smtp_port = 54325
+
+# Port for Inbucket POP3
+pop3_port = 54326
+
+[storage]
+# Enable file storage (S3-compatible)
+enabled = true
+
+# Maximum file size for uploads
+file_size_limit = "50MiB"
+
+[auth]
+# Enable authentication
+enabled = true
+
+# Site URL for redirects (must match NEXT_PUBLIC_SITE_URL in .env.local)
+site_url = "http://localhost:3000"
+
+# Additional URLs allowed for OAuth redirects
+additional_redirect_urls = [
+  "https://localhost:3000",
+  "http://127.0.0.1:3000"
+]
+
+# JWT token expiry in seconds
+jwt_expiry = 3600
+
+# Minute interval for API rate limit
+rate_limit_interval = 60
+
+# Number of requests allowed per interval
+rate_limit = 100
+
+# Allow new user signups
+enable_signup = true
+
+# Require email confirmation (set to false for magic link only)
+enable_confirmations = false
+
+# Allow email link reuse
+mailer_autoconfirm = false
+
+# OTP expiry in seconds
+otp_exp = 3600
+
+# SMS OTP expiry in seconds
+sms_otp_exp = 600
+
+[auth.email]
+# Enable email authentication
+enable_signup = true
+
+# Require double confirmation for email changes
+double_confirm_changes = true
+
+# Automatically confirm emails (no confirmation link needed)
+enable_confirmations = false
+
+[auth.external.google]
+# Optional: Configure Google OAuth
+# enabled = true
+# client_id = "YOUR_GOOGLE_CLIENT_ID"
+# secret = "YOUR_GOOGLE_SECRET"
+
+[auth.external.github]
+# Optional: Configure GitHub OAuth
+# enabled = true
+# client_id = "YOUR_GITHUB_CLIENT_ID"
+# secret = "YOUR_GITHUB_SECRET"
+
+[analytics]
+# Enable analytics
+enabled = true
+
+# Port for analytics
+port = 54327
+
+# =============================================================================
+# Development Tips
+# =============================================================================
+#
+# 1. Start local Supabase:
+#    npx supabase start
+#
+# 2. Link to your remote project:
+#    npx supabase link --project-ref YOUR_PROJECT_REF
+#
+# 3. Pull remote schema:
+#    npx supabase db pull
+#
+# 4. Push local migrations:
+#    npx supabase db push
+#
+# 5. Reset local database:
+#    npx supabase db reset
+#
+# 6. Access Supabase Studio locally:
+#    http://localhost:54323
+#
+# 7. Test email without SMTP:
+#    Email sent to: http://localhost:54324
+#
+# 8. Stop Supabase:
+#    npx supabase stop
+#
