@@ -100,3 +100,5 @@ supabase/.temp
 
 # Local validation reports
 validation-report.json
+.kiro/
+.kiroignore
