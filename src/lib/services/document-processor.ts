@@ -1,6 +1,6 @@
 /**
  * Document Processing Service
- * 
+ *
  * Handles text extraction, chunking, and embedding generation
  * for uploaded documents
  */
@@ -76,25 +76,22 @@ async function extractTextFromMarkdown(buffer: ArrayBuffer): Promise<string> {
   }
 }
 
-async function extractTextFromDocument(
-  buffer: ArrayBuffer, 
-  mimeType: string
-): Promise<string> {
+async function extractTextFromDocument(buffer: ArrayBuffer, mimeType: string): Promise<string> {
   switch (mimeType) {
     case 'application/pdf':
       return extractTextFromPDF(buffer)
-    
+
     case 'text/plain':
       return extractTextFromPlainText(buffer)
-    
+
     case 'text/markdown':
       return extractTextFromMarkdown(buffer)
-    
+
     case 'application/msword':
     case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
       // For now, treat as plain text - in production, use proper Word parser
       return extractTextFromPlainText(buffer)
-    
+
     default:
       throw new Error(`Unsupported file type: ${mimeType}`)
   }
@@ -104,21 +101,18 @@ async function extractTextFromDocument(
 // Text Chunking Functions
 // =============================================================================
 
-async function chunkText(
-  text: string, 
-  options: ProcessingOptions = {}
-): Promise<string[]> {
+async function chunkText(text: string, options: ProcessingOptions = {}): Promise<string[]> {
   const chunkSize = options.chunkSize || DEFAULT_CHUNK_SIZE
   const chunkOverlap = options.chunkOverlap || DEFAULT_CHUNK_OVERLAP
-  
+
   const splitter = new RecursiveCharacterTextSplitter({
     chunkSize,
     chunkOverlap,
-    separators: ['\n\n', '\n', '. ', ' ', '']
+    separators: ['\n\n', '\n', '. ', ' ', ''],
   })
-  
+
   const chunks = await splitter.splitText(text)
-  
+
   // Filter out very small chunks
   return chunks.filter(chunk => chunk.trim().length > 10)
 }
@@ -137,20 +131,17 @@ function estimateTokenCount(text: string): number {
 // Embedding and Vector Storage Functions
 // =============================================================================
 
-async function generateAndStoreVectors(
-  chunks: string[],
-  document: Document
-): Promise<string[]> {
+async function generateAndStoreVectors(chunks: string[], document: Document): Promise<string[]> {
   try {
     console.log('Generating embeddings for chunks...')
-    
+
     // Generate embeddings for all chunks
     const embeddingResult = await generateEmbeddings(chunks, {
-      useCache: true
+      useCache: true,
     })
-    
+
     console.log(`Generated ${embeddingResult.embeddings.length} embeddings`)
-    
+
     // Prepare vector points for Qdrant
     const vectorPoints: VectorPoint[] = chunks.map((chunk, index) => ({
       id: uuidv4(),
@@ -161,16 +152,15 @@ async function generateAndStoreVectors(
         chunk_index: index,
         content: chunk,
         filename: document.filename,
-        created_at: new Date().toISOString()
-      }
+        created_at: new Date().toISOString(),
+      },
     }))
-    
+
     // Store vectors in Qdrant
     console.log('Storing vectors in Qdrant...')
     await upsertVectors(vectorPoints)
-    
+
     return vectorPoints.map(point => point.id)
-    
   } catch (error) {
     console.error('Error generating and storing vectors:', error)
     throw new Error('Failed to generate embeddings and store vectors')
@@ -184,16 +174,14 @@ async function generateAndStoreVectors(
 async function downloadDocumentFromStorage(document: Document): Promise<ArrayBuffer> {
   try {
     const supabase = await createClient()
-    
-    const { data, error } = await supabase.storage
-      .from('documents')
-      .download(document.storage_path)
-    
+
+    const { data, error } = await supabase.storage.from('documents').download(document.storage_path)
+
     if (error) {
       console.error('Storage download error:', error)
       throw new Error('Failed to download document from storage')
     }
-    
+
     return await data.arrayBuffer()
   } catch (error) {
     console.error('Document download error:', error)
@@ -210,54 +198,53 @@ export async function processDocument(
   options: ProcessingOptions = {}
 ): Promise<ProcessingResult> {
   const startTime = Date.now()
-  
+
   try {
     console.log(`Starting processing for document: ${document.id}`)
-    
+
     // Step 1: Download document from storage
     console.log('Downloading document from storage...')
     const buffer = await downloadDocumentFromStorage(document)
-    
+
     // Step 2: Extract text content
     console.log('Extracting text content...')
     const text = await extractTextFromDocument(buffer, document.mime_type)
-    
+
     if (!text || text.trim().length === 0) {
       throw new Error('No text content found in document')
     }
-    
+
     console.log(`Extracted ${text.length} characters of text`)
-    
+
     // Step 3: Chunk the text
     console.log('Chunking text...')
     const chunks = await chunkText(text, options)
-    
+
     if (chunks.length === 0) {
       throw new Error('No chunks generated from document')
     }
-    
+
     console.log(`Generated ${chunks.length} chunks`)
-    
+
     // Step 4: Generate embeddings and store vectors
     console.log('Generating embeddings and storing vectors...')
     const qdrantPointIds = await generateAndStoreVectors(chunks, document)
-    
+
     // Step 5: Prepare result
     const processedChunks: ProcessedChunk[] = chunks.map((chunk, index) => ({
       content: chunk,
       tokenCount: estimateTokenCount(chunk),
-      qdrantPointId: qdrantPointIds[index]
+      qdrantPointId: qdrantPointIds[index],
     }))
-    
+
     const processingTime = Date.now() - startTime
-    
+
     console.log(`Document processing completed in ${processingTime}ms`)
-    
+
     return {
       chunks: processedChunks,
-      processingTime
+      processingTime,
     }
-    
   } catch (error) {
     console.error('Document processing failed:', error)
     throw error
@@ -275,14 +262,13 @@ export async function reprocessDocument(
   try {
     // Delete existing vectors from Qdrant
     const { deleteVectorsByFilter } = await import('./qdrant')
-    
+
     await deleteVectorsByFilter({
-      document_id: document.id
+      document_id: document.id,
     })
-    
+
     // Process document again
     return await processDocument(document, options)
-    
   } catch (error) {
     console.error('Document reprocessing failed:', error)
     throw error
@@ -292,13 +278,12 @@ export async function reprocessDocument(
 export async function deleteDocumentVectors(documentId: string): Promise<void> {
   try {
     const { deleteVectorsByFilter } = await import('./qdrant')
-    
+
     await deleteVectorsByFilter({
-      document_id: documentId
+      document_id: documentId,
     })
-    
+
     console.log(`Deleted vectors for document: ${documentId}`)
-    
   } catch (error) {
     console.error('Vector deletion failed:', error)
     throw error

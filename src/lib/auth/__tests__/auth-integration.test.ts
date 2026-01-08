@@ -1,9 +1,9 @@
 /**
  * Integration Tests for Authentication System
- * 
+ *
  * These tests use real Supabase connections and test the complete authentication flow
  * including middleware route protection and UI component interactions.
- * 
+ *
  * **Property 4: Session Management**
  * **Validates: Requirements 2.1, 2.4, 2.5, 9.5**
  */

@@ -47,29 +47,31 @@ Response Storage & User Display
 
 ## Tech Stack
 
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| **Frontend** | Next.js 15, React 19, TypeScript | Server-first UI with streaming |
-| **Styling** | Tailwind CSS, Shadcn UI | Beautiful, responsive components |
-| **Authentication** | Supabase Auth | Passwordless magic link login |
-| **Database** | Supabase PostgreSQL | Metadata, conversations, documents |
-| **Vector DB** | Qdrant | Semantic search with embeddings |
-| **Embeddings** | OpenAI text-embedding-3-small | 1536-dimensional vectors |
-| **Chat** | OpenAI GPT-4-turbo | High-quality responses |
-| **Caching** | Upstash Redis | Embedding cache, conversation state |
-| **Deployment** | Vercel | Serverless hosting |
-| **Testing** | Jest, Playwright | Unit, integration, E2E tests |
+| Layer              | Technology                       | Purpose                             |
+| ------------------ | -------------------------------- | ----------------------------------- |
+| **Frontend**       | Next.js 15, React 19, TypeScript | Server-first UI with streaming      |
+| **Styling**        | Tailwind CSS, Shadcn UI          | Beautiful, responsive components    |
+| **Authentication** | Supabase Auth                    | Passwordless magic link login       |
+| **Database**       | Supabase PostgreSQL              | Metadata, conversations, documents  |
+| **Vector DB**      | Qdrant                           | Semantic search with embeddings     |
+| **Embeddings**     | OpenAI text-embedding-3-small    | 1536-dimensional vectors            |
+| **Chat**           | OpenAI GPT-4-turbo               | High-quality responses              |
+| **Caching**        | Upstash Redis                    | Embedding cache, conversation state |
+| **Deployment**     | Vercel                           | Serverless hosting                  |
+| **Testing**        | Jest, Playwright                 | Unit, integration, E2E tests        |
 
 ## 🤖 Kiro CLI Integration
 
 This project showcases advanced Kiro CLI usage for enhanced development productivity:
 
 ### Steering Documents
+
 - **product.md**: Comprehensive product overview and user needs analysis
-- **tech.md**: Technical architecture standards and implementation patterns  
+- **tech.md**: Technical architecture standards and implementation patterns
 - **structure.md**: Project organization and file structure conventions
 
 ### Custom Development Prompts
+
 - **@prime**: Load comprehensive project context for any session
 - **@plan-feature**: Create detailed implementation plans with task breakdown
 - **@execute**: Systematic feature implementation with quality checks
@@ -78,16 +80,19 @@ This project showcases advanced Kiro CLI usage for enhanced development producti
 - **@quickstart**: Interactive project setup wizard
 
 ### Development Workflow Innovation
+
 **Traditional**: Idea → Code → Debug → Refactor → Test  
 **Kiro-Enhanced**: Idea → @plan-feature → @execute → @code-review → Deploy
 
 **Measured Impact**: 35% reduction in development time through:
+
 - Consistent project context across all sessions
-- Systematic planning and execution workflows  
+- Systematic planning and execution workflows
 - Automated quality assurance and standards checking
 - Reduced context switching and decision fatigue
 
 ### Kiro CLI Usage Statistics
+
 - **73 total prompts** used throughout development
 - **5 custom prompts** created for project-specific workflows
 - **20+ hours saved** through automation and consistency
@@ -122,6 +127,7 @@ cp .env.example .env.local
 ```
 
 Then edit `.env.local` and add:
+
 - Supabase project URL and keys
 - OpenAI API key
 - Qdrant URL and API key
@@ -139,6 +145,7 @@ npx supabase db pull  # Pull latest schema
 ```
 
 The initial schema is in `/supabase/migrations/001_initial_schema.sql` with:
+
 - Users table (extended Supabase auth)
 - Documents table (file metadata, status)
 - Document chunks (chunked text content)
@@ -166,6 +173,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 > **Demo Video**: [Coming Soon] - Complete walkthrough of the RAG chatbot functionality
 
 ### Key Features Demonstrated:
+
 - **Document Upload & Processing**: PDF parsing and chunking
 - **Semantic Search**: Vector similarity search with relevance ranking
 - **RAG Chat**: AI responses using document context
@@ -174,12 +182,12 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ### Screenshots
 
-| Feature | Screenshot |
-|---------|------------|
-| **Chat Interface** | *Add screenshot of chat interface* |
-| **Document Upload** | *Add screenshot of document management* |
-| **Search Results** | *Add screenshot of search functionality* |
-| **Dashboard** | *Add screenshot of main dashboard* |
+| Feature             | Screenshot                               |
+| ------------------- | ---------------------------------------- |
+| **Chat Interface**  | _Add screenshot of chat interface_       |
+| **Document Upload** | _Add screenshot of document management_  |
+| **Search Results**  | _Add screenshot of search functionality_ |
+| **Dashboard**       | _Add screenshot of main dashboard_       |
 
 ## Available Scripts
 
@@ -284,6 +292,7 @@ npx supabase db reset    # Reset database (dev only!)
 ### Deployment Steps
 
 1. **Connect to Vercel**:
+
    ```bash
    npx vercel link
    ```
@@ -300,6 +309,7 @@ npx supabase db reset    # Reset database (dev only!)
    - `UPSTASH_REDIS_REST_TOKEN`
 
 3. **Deploy**:
+
    ```bash
    # Preview deployment
    vercel
@@ -383,11 +393,11 @@ All tables have automatic timestamps (`created_at`, `updated_at`) and `user_id` 
 
 ### Caching Strategy
 
-| Target | TTL | Key Pattern | Purpose |
-|--------|-----|-------------|---------|
-| Embeddings | 1 hour | `embedding:{hash}` | Reduce API cost |
-| Search Results | 5 min | `search:{hash}` | Fresher results |
-| Conversation | 7 days | `conversation:{id}` | Reduce DB queries |
+| Target         | TTL    | Key Pattern         | Purpose           |
+| -------------- | ------ | ------------------- | ----------------- |
+| Embeddings     | 1 hour | `embedding:{hash}`  | Reduce API cost   |
+| Search Results | 5 min  | `search:{hash}`     | Fresher results   |
+| Conversation   | 7 days | `conversation:{id}` | Reduce DB queries |
 
 ### Database Optimization
 
@@ -421,6 +431,7 @@ npm run test:e2e
 ```
 
 Tests cover:
+
 - Authentication flow
 - Document upload & processing
 - Semantic search
@@ -434,6 +445,7 @@ npm run test:vercel
 ```
 
 Validates:
+
 - Vercel CLI installation
 - Build success
 - Environment variables
@@ -448,6 +460,7 @@ Monitor errors, performance, and usage in [Vercel Dashboard](https://vercel.com/
 ### Structured Logging
 
 All errors logged with context:
+
 ```
 {
   "error": "Error message",
@@ -462,12 +475,12 @@ All errors logged with context:
 
 ### Common Issues
 
-| Problem | Solution |
-|---------|----------|
-| Search returns nothing | Lower threshold from 0.7 to 0.5 |
-| Slow responses | Check Redis cache connection |
-| Auth failing | Verify Supabase credentials in .env.local |
-| Build errors | Run `npm run type-check` to identify issues |
+| Problem                | Solution                                    |
+| ---------------------- | ------------------------------------------- |
+| Search returns nothing | Lower threshold from 0.7 to 0.5             |
+| Slow responses         | Check Redis cache connection                |
+| Auth failing           | Verify Supabase credentials in .env.local   |
+| Build errors           | Run `npm run type-check` to identify issues |
 
 ## Development Guidelines
 
@@ -489,6 +502,7 @@ All errors logged with context:
 ### For detailed development patterns, see [CLAUDE.md](./CLAUDE.md)
 
 This file contains comprehensive guidelines for:
+
 - RAG pipeline architecture
 - Supabase SSR patterns
 - Caching strategies
@@ -507,27 +521,34 @@ This file contains comprehensive guidelines for:
 ## Troubleshooting
 
 ### "Module not found" Error
+
 Check import paths use `@/` alias. Example: `import { createClient } from '@/lib/supabase/server'`
 
 ### Build Fails
+
 Run type-check to identify TypeScript errors:
+
 ```bash
 npm run type-check
 ```
 
 ### Slow Document Processing
+
 Documents are processed asynchronously. Check status:
+
 ```bash
 curl "http://localhost:3000/api/documents/[id]" \
   -H "Authorization: Bearer [token]"
 ```
 
 ### Search Results Empty
+
 1. Verify documents processed (status = 'completed')
 2. Lower similarity threshold: `threshold: 0.5`
 3. Check Qdrant collection exists
 
 ### Redis Connection Failed
+
 Verify `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` are correct
 
 ## License
@@ -537,6 +558,7 @@ MIT
 ## Support
 
 For issues and questions:
+
 - Check [CLAUDE.md](./CLAUDE.md) for development patterns
 - Review error logs in Vercel Analytics
 - Check Qdrant Dashboard for vector search status

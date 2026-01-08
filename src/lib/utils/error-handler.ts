@@ -1,6 +1,6 @@
 /**
  * Error Handler Utilities
- * 
+ *
  * Centralized error handling for API routes and client-side errors
  */
 
@@ -16,34 +16,34 @@ export enum ErrorCode {
   UNAUTHORIZED = 'UNAUTHORIZED',
   FORBIDDEN = 'FORBIDDEN',
   INVALID_TOKEN = 'INVALID_TOKEN',
-  
+
   // Validation errors
   VALIDATION_ERROR = 'VALIDATION_ERROR',
   INVALID_INPUT = 'INVALID_INPUT',
   MISSING_REQUIRED_FIELD = 'MISSING_REQUIRED_FIELD',
-  
+
   // Resource errors
   NOT_FOUND = 'NOT_FOUND',
   ALREADY_EXISTS = 'ALREADY_EXISTS',
   RESOURCE_LIMIT_EXCEEDED = 'RESOURCE_LIMIT_EXCEEDED',
-  
+
   // External service errors
   EXTERNAL_SERVICE_ERROR = 'EXTERNAL_SERVICE_ERROR',
   OPENAI_ERROR = 'OPENAI_ERROR',
   SUPABASE_ERROR = 'SUPABASE_ERROR',
   QDRANT_ERROR = 'QDRANT_ERROR',
   REDIS_ERROR = 'REDIS_ERROR',
-  
+
   // Processing errors
   DOCUMENT_PROCESSING_ERROR = 'DOCUMENT_PROCESSING_ERROR',
   EMBEDDING_GENERATION_ERROR = 'EMBEDDING_GENERATION_ERROR',
   VECTOR_SEARCH_ERROR = 'VECTOR_SEARCH_ERROR',
-  
+
   // System errors
   INTERNAL_SERVER_ERROR = 'INTERNAL_SERVER_ERROR',
   RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED',
   TIMEOUT_ERROR = 'TIMEOUT_ERROR',
-  MEMORY_LIMIT_EXCEEDED = 'MEMORY_LIMIT_EXCEEDED'
+  MEMORY_LIMIT_EXCEEDED = 'MEMORY_LIMIT_EXCEEDED',
 }
 
 export interface AppError {
@@ -109,7 +109,7 @@ export class AppErrorClass extends Error {
       statusCode: this.statusCode,
       timestamp: this.timestamp,
       requestId: this.requestId,
-      userId: this.userId
+      userId: this.userId,
     }
   }
 }
@@ -158,7 +158,7 @@ export const createError = {
     new AppErrorClass(ErrorCode.EMBEDDING_GENERATION_ERROR, message, 422, details),
 
   vectorSearch: (message = 'Vector search failed', details?: any) =>
-    new AppErrorClass(ErrorCode.VECTOR_SEARCH_ERROR, message, 422, details)
+    new AppErrorClass(ErrorCode.VECTOR_SEARCH_ERROR, message, 422, details),
 }
 
 // =============================================================================
@@ -169,7 +169,7 @@ export function handleZodError(error: ZodError): AppErrorClass {
   const details = error.errors.map(err => ({
     field: err.path.join('.'),
     message: err.message,
-    code: err.code
+    code: err.code,
   }))
 
   return createError.validation('Invalid request data', details)
@@ -194,7 +194,7 @@ export function handleSupabaseError(error: any): AppErrorClass {
   return createError.externalService('Supabase', error.message, {
     code: error.code,
     details: error.details,
-    hint: error.hint
+    hint: error.hint,
   })
 }
 
@@ -215,7 +215,7 @@ export function handleOpenAIError(error: any): AppErrorClass {
 
   return createError.externalService('OpenAI', error.message, {
     status: error.status,
-    type: error.type
+    type: error.type,
   })
 }
 
@@ -231,7 +231,7 @@ export function handleQdrantError(error: any): AppErrorClass {
   }
 
   return createError.externalService('Qdrant', error.message, {
-    status: error.status
+    status: error.status,
   })
 }
 
@@ -239,7 +239,7 @@ export function handleRedisError(error: any): AppErrorClass {
   console.error('Redis error:', error)
 
   return createError.externalService('Redis', error.message, {
-    code: error.code
+    code: error.code,
   })
 }
 
@@ -266,7 +266,7 @@ export function createErrorResponse(error: AppErrorClass | Error): NextResponse<
     statusCode: appError.statusCode,
     details: appError.details,
     stack: appError.stack,
-    timestamp: appError.timestamp
+    timestamp: appError.timestamp,
   })
 
   const response: ErrorResponse = {
@@ -274,8 +274,8 @@ export function createErrorResponse(error: AppErrorClass | Error): NextResponse<
       code: appError.code,
       message: appError.message,
       timestamp: appError.timestamp,
-      requestId: appError.requestId
-    }
+      requestId: appError.requestId,
+    },
   }
 
   // Include details in development
@@ -307,14 +307,14 @@ export function parseApiError(response: any): ClientError {
       code: response.error.code || 'UNKNOWN_ERROR',
       message: response.error.message || 'An unknown error occurred',
       details: response.error.details,
-      timestamp: response.error.timestamp || new Date().toISOString()
+      timestamp: response.error.timestamp || new Date().toISOString(),
     }
   }
 
   return {
     code: 'UNKNOWN_ERROR',
     message: 'An unknown error occurred',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   }
 }
 
@@ -340,7 +340,7 @@ export function isRetryableError(error: any): boolean {
       ErrorCode.TIMEOUT_ERROR,
       ErrorCode.RATE_LIMIT_EXCEEDED,
       ErrorCode.EXTERNAL_SERVICE_ERROR,
-      ErrorCode.INTERNAL_SERVER_ERROR
+      ErrorCode.INTERNAL_SERVER_ERROR,
     ].includes(error.code)
   }
 
@@ -362,8 +362,8 @@ export function logError(error: Error | AppErrorClass, context?: any) {
       statusCode: error.statusCode,
       details: error.details,
       requestId: error.requestId,
-      userId: error.userId
-    })
+      userId: error.userId,
+    }),
   }
 
   console.error('Error Log:', errorLog)
@@ -379,9 +379,7 @@ export function logError(error: Error | AppErrorClass, context?: any) {
 // Async Error Handler Wrapper
 // =============================================================================
 
-export function withErrorHandling<T extends any[], R>(
-  fn: (...args: T) => Promise<R>
-) {
+export function withErrorHandling<T extends any[], R>(fn: (...args: T) => Promise<R>) {
   return async (...args: T): Promise<R> => {
     try {
       return await fn(...args)

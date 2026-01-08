@@ -1,6 +1,6 @@
 /**
  * Error Reporting API Route
- * 
+ *
  * Handles client-side error reporting for monitoring and debugging
  */
 
@@ -23,7 +23,7 @@ const errorReportSchema = z.object({
   timestamp: z.string().datetime().optional(),
   level: z.enum(['error', 'warning', 'info']).default('error'),
   context: z.record(z.any()).optional(),
-  userId: z.string().optional()
+  userId: z.string().optional(),
 })
 
 type ErrorReport = z.infer<typeof errorReportSchema>
@@ -48,7 +48,9 @@ export async function POST(request: NextRequest) {
     let userId: string | undefined
     try {
       const supabase = await createClient()
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
       userId = user?.id
     } catch (error) {
       // Ignore auth errors for error reporting
@@ -56,7 +58,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Enhance error report with server-side info
-    const enhancedReport: ErrorReport & { 
+    const enhancedReport: ErrorReport & {
       serverTimestamp: string
       ip?: string
       reportId: string
@@ -65,7 +67,7 @@ export async function POST(request: NextRequest) {
       userId: userId || errorReport.userId,
       serverTimestamp: new Date().toISOString(),
       ip: getClientIP(request),
-      reportId: `error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      reportId: `error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     }
 
     // Log error for monitoring
@@ -83,9 +85,8 @@ export async function POST(request: NextRequest) {
 
     return createSuccessResponse({
       message: 'Error report received',
-      reportId: enhancedReport.reportId
+      reportId: enhancedReport.reportId,
     })
-
   } catch (error) {
     console.error('Error reporting API error:', error)
     return createErrorResponse(error instanceof Error ? error : new Error(String(error)))
@@ -120,7 +121,7 @@ async function sendToMonitoringService(errorReport: any): Promise<void> {
   try {
     // This is where you would integrate with your monitoring service
     // Examples: Sentry, DataDog, LogRocket, Bugsnag, etc.
-    
+
     // Example for Sentry:
     // Sentry.captureException(new Error(errorReport.message), {
     //   tags: {
@@ -133,7 +134,6 @@ async function sendToMonitoringService(errorReport: any): Promise<void> {
 
     // For now, just log it
     console.log('Would send to monitoring service:', errorReport)
-    
   } catch (error) {
     console.error('Failed to send error to monitoring service:', error)
   }
@@ -143,7 +143,7 @@ async function storeErrorReport(errorReport: any): Promise<void> {
   try {
     // This is where you would store the error report in your database
     // You might want to create an 'error_reports' table for this
-    
+
     // Example implementation:
     // const supabase = createClient()
     // await supabase.from('error_reports').insert({
@@ -162,7 +162,6 @@ async function storeErrorReport(errorReport: any): Promise<void> {
     // })
 
     console.log('Would store error report in database:', errorReport.reportId)
-    
   } catch (error) {
     console.error('Failed to store error report:', error)
   }
@@ -175,6 +174,6 @@ async function storeErrorReport(errorReport: any): Promise<void> {
 export async function GET() {
   return createSuccessResponse({
     message: 'Error reporting endpoint is healthy',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   })
 }

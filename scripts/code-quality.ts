@@ -13,7 +13,7 @@ const colors = {
   yellow: '\x1b[33m',
   blue: '\x1b[34m',
   reset: '\x1b[0m',
-  bold: '\x1b[1m'
+  bold: '\x1b[1m',
 } as const
 
 function log(message: string, color: keyof typeof colors = 'reset'): void {
@@ -48,12 +48,20 @@ async function main(): Promise<void> {
   results.push(runCommand('npm run build', 'Next.js Build Check'))
 
   // 4. Basic test run (unit tests only)
-  results.push(runCommand('npm test -- --testPathPattern="unit|property" --passWithNoTests', 'Unit & Property Tests'))
+  results.push(
+    runCommand(
+      'npm test -- --testPathPattern="unit|property" --passWithNoTests',
+      'Unit & Property Tests'
+    )
+  )
 
   const passed = results.filter(Boolean).length
   const total = results.length
 
-  log(`\n📊 Quality Report: ${passed}/${total} checks passed`, passed === total ? 'green' : 'yellow')
+  log(
+    `\n📊 Quality Report: ${passed}/${total} checks passed`,
+    passed === total ? 'green' : 'yellow'
+  )
 
   if (passed === total) {
     log('🎉 All quality checks passed! Code is ready for deployment.', 'green')

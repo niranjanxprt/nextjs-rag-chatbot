@@ -2,7 +2,7 @@
 
 /**
  * Vercel CLI Integration Test Script
- * 
+ *
  * This script tests the complete deployment flow using Vercel CLI
  * and verifies authentication works in the deployed environment.
  */
@@ -28,10 +28,10 @@ console.log('🚀 Starting Vercel CLI Integration Tests...\n')
 function runCommand(command: string, options: Record<string, any> = {}): string {
   try {
     console.log(`📋 Running: ${command}`)
-    const result = execSync(command, { 
-      encoding: 'utf8', 
+    const result = execSync(command, {
+      encoding: 'utf8',
       stdio: 'pipe',
-      ...options 
+      ...options,
     })
     console.log(`✅ Success: ${command}`)
     return result
@@ -47,7 +47,7 @@ function runCommand(command: string, options: Record<string, any> = {}): string 
 function waitForServer(url: string, timeout: number = TIMEOUT): Promise<void> {
   return new Promise((resolve, reject) => {
     const startTime = Date.now()
-    
+
     function check(): void {
       const elapsed = Date.now() - startTime
       if (elapsed > timeout) {
@@ -62,7 +62,7 @@ function waitForServer(url: string, timeout: number = TIMEOUT): Promise<void> {
         setTimeout(check, 1000)
       }
     }
-    
+
     check()
   })
 }
@@ -70,7 +70,7 @@ function waitForServer(url: string, timeout: number = TIMEOUT): Promise<void> {
 // Test functions
 async function testVercelCLIInstallation(): Promise<void> {
   console.log('\n📦 Testing Vercel CLI Installation...')
-  
+
   try {
     const version = runCommand('vercel --version')
     console.log(`✅ Vercel CLI version: ${version.trim()}`)
@@ -84,11 +84,11 @@ async function testVercelCLIInstallation(): Promise<void> {
 
 async function testLocalBuild(): Promise<void> {
   console.log('\n🔨 Testing Local Build...')
-  
+
   // Test Next.js build
   runCommand('npm run build')
   console.log('✅ Next.js build successful')
-  
+
   // Verify build output
   const buildDir = path.join(process.cwd(), '.next')
   if (!fs.existsSync(buildDir)) {
@@ -99,13 +99,17 @@ async function testLocalBuild(): Promise<void> {
 
 async function testVercelDevServer(): Promise<void> {
   console.log('\n🌐 Testing Vercel Dev Server...')
-  
+
   return new Promise((resolve, reject) => {
     // Start Vercel dev server
-    const vercelProcess: ChildProcess = spawn('vercel', ['dev', '--listen', LOCAL_PORT.toString()], {
-      stdio: 'pipe',
-      env: { ...process.env, NODE_ENV: 'development' }
-    })
+    const vercelProcess: ChildProcess = spawn(
+      'vercel',
+      ['dev', '--listen', LOCAL_PORT.toString()],
+      {
+        stdio: 'pipe',
+        env: { ...process.env, NODE_ENV: 'development' },
+      }
+    )
 
     let serverReady = false
     let output = ''
@@ -114,7 +118,7 @@ async function testVercelDevServer(): Promise<void> {
       const text = data.toString()
       output += text
       console.log(`📡 Vercel Dev: ${text.trim()}`)
-      
+
       if (text.includes('Ready!') || text.includes(`localhost:${LOCAL_PORT}`)) {
         serverReady = true
       }
@@ -139,7 +143,7 @@ async function testVercelDevServer(): Promise<void> {
 
         // Test authentication pages
         await testAuthenticationEndpoints()
-        
+
         vercelProcess.kill()
         resolve()
       } catch (error) {
@@ -152,9 +156,9 @@ async function testVercelDevServer(): Promise<void> {
 
 async function testAuthenticationEndpoints(): Promise<void> {
   console.log('\n🔐 Testing Authentication Endpoints...')
-  
+
   const baseUrl = `http://localhost:${LOCAL_PORT}`
-  
+
   // Test login page
   try {
     runCommand(`curl -f ${baseUrl}/auth/login > /dev/null`)
@@ -186,7 +190,7 @@ async function testAuthenticationEndpoints(): Promise<void> {
 
 async function testEnvironmentVariables(): Promise<void> {
   console.log('\n🔧 Testing Environment Variables...')
-  
+
   // Check required environment variables
   const requiredVars = [
     'NEXT_PUBLIC_SUPABASE_URL',
@@ -196,7 +200,7 @@ async function testEnvironmentVariables(): Promise<void> {
     'QDRANT_URL',
     'QDRANT_API_KEY',
     'UPSTASH_REDIS_REST_URL',
-    'UPSTASH_REDIS_REST_TOKEN'
+    'UPSTASH_REDIS_REST_TOKEN',
   ]
 
   const envFile = path.join(process.cwd(), '.env.local')
@@ -205,7 +209,7 @@ async function testEnvironmentVariables(): Promise<void> {
   }
 
   const envContent = fs.readFileSync(envFile, 'utf8')
-  
+
   for (const varName of requiredVars) {
     if (envContent.includes(`${varName}=`) && !envContent.includes(`${varName}=\n`)) {
       console.log(`✅ ${varName} is configured`)
@@ -217,24 +221,24 @@ async function testEnvironmentVariables(): Promise<void> {
 
 async function testSupabaseConnection(): Promise<void> {
   console.log('\n🗄️  Testing Supabase Connection...')
-  
+
   // Read environment variables from .env.local
   const envFile = path.join(process.cwd(), '.env.local')
   if (fs.existsSync(envFile)) {
     const envContent = fs.readFileSync(envFile, 'utf8')
     const envVars: Record<string, string> = {}
-    
+
     envContent.split('\n').forEach(line => {
       const [key, ...valueParts] = line.split('=')
       if (key && valueParts.length > 0) {
         envVars[key.trim()] = valueParts.join('=').trim()
       }
     })
-    
+
     // Set environment variables
     Object.assign(process.env, envVars)
   }
-  
+
   // Create a simple test to verify Supabase connection
   const testScript = `
     const { createClient } = require('@supabase/supabase-js');
@@ -264,15 +268,15 @@ async function testSupabaseConnection(): Promise<void> {
         process.exit(1);
       });
   `
-  
+
   fs.writeFileSync('/tmp/test-supabase.js', testScript)
-  
+
   try {
-    runCommand('node /tmp/test-supabase.js', { 
-      env: { 
+    runCommand('node /tmp/test-supabase.js', {
+      env: {
         ...process.env,
-        NODE_PATH: path.join(process.cwd(), 'node_modules')
-      }
+        NODE_PATH: path.join(process.cwd(), 'node_modules'),
+      },
     })
     console.log('✅ Supabase connection verified')
   } catch (error) {
@@ -285,19 +289,14 @@ async function testSupabaseConnection(): Promise<void> {
 
 async function testProductionDeployment(): Promise<void> {
   console.log('\n🚀 Testing Production Deployment Readiness...')
-  
+
   // Test build for production
   runCommand('npm run build')
   console.log('✅ Production build successful')
-  
+
   // Test that all required files exist
-  const requiredFiles = [
-    '.next/static',
-    '.next/server',
-    'package.json',
-    'next.config.ts'
-  ]
-  
+  const requiredFiles = ['.next/static', '.next/server', 'package.json', 'next.config.ts']
+
   for (const file of requiredFiles) {
     const filePath = path.join(process.cwd(), file)
     if (fs.existsSync(filePath)) {
@@ -306,7 +305,7 @@ async function testProductionDeployment(): Promise<void> {
       throw new Error(`Required file missing: ${file}`)
     }
   }
-  
+
   console.log('✅ All deployment files ready')
 }
 
@@ -319,7 +318,7 @@ async function runTests(): Promise<void> {
     await testLocalBuild()
     await testVercelDevServer()
     await testProductionDeployment()
-    
+
     console.log('\n🎉 All Vercel CLI Integration Tests Passed!')
     console.log('\n📋 Summary:')
     console.log('✅ Vercel CLI installed and working')
@@ -329,9 +328,8 @@ async function runTests(): Promise<void> {
     console.log('✅ Vercel dev server working')
     console.log('✅ Authentication endpoints accessible')
     console.log('✅ Production deployment ready')
-    
+
     console.log('\n🚀 Ready for deployment with: vercel --prod')
-    
   } catch (error) {
     console.error('\n❌ Integration Tests Failed!')
     const errorMessage = error instanceof Error ? error.message : String(error)
@@ -353,5 +351,5 @@ export {
   testAuthenticationEndpoints,
   testEnvironmentVariables,
   testSupabaseConnection,
-  testProductionDeployment
+  testProductionDeployment,
 }

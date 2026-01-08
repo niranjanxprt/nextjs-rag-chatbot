@@ -1,6 +1,6 @@
 /**
  * Structured Logging Utility
- * 
+ *
  * Centralized logging system with different log levels,
  * structured output, and performance monitoring
  */
@@ -37,8 +37,10 @@ class Logger {
       const timestamp = new Date(entry.timestamp).toLocaleTimeString()
       const level = entry.level.toUpperCase().padEnd(5)
       const context = entry.context ? ` [${JSON.stringify(entry.context)}]` : ''
-      const error = entry.error ? `\n  Error: ${entry.error.message}\n  Stack: ${entry.error.stack}` : ''
-      
+      const error = entry.error
+        ? `\n  Error: ${entry.error.message}\n  Stack: ${entry.error.stack}`
+        : ''
+
       return `${timestamp} ${level} ${entry.message}${context}${error}`
     } else {
       // JSON format for production
@@ -56,14 +58,14 @@ class Logger {
       timestamp: new Date().toISOString(),
       level,
       message,
-      context
+      context,
     }
 
     if (error) {
       entry.error = {
         name: error.name,
         message: error.message,
-        stack: error.stack
+        stack: error.stack,
       }
     }
 
@@ -104,13 +106,13 @@ class Logger {
   // Performance monitoring helpers
   startTimer(operation: string, context?: Omit<LogContext, 'duration'>): () => void {
     const startTime = Date.now()
-    
+
     return () => {
       const duration = Date.now() - startTime
       this.info(`Operation completed: ${operation}`, {
         ...context,
         operation,
-        duration
+        duration,
       })
     }
   }
@@ -119,16 +121,22 @@ class Logger {
   logRequest(method: string, path: string, context?: LogContext): void {
     this.info(`${method} ${path}`, {
       ...context,
-      operation: 'api_request'
+      operation: 'api_request',
     })
   }
 
-  logResponse(method: string, path: string, status: number, duration: number, context?: LogContext): void {
+  logResponse(
+    method: string,
+    path: string,
+    status: number,
+    duration: number,
+    context?: LogContext
+  ): void {
     const level = status >= 400 ? 'warn' : 'info'
     this.log(level, `${method} ${path} - ${status}`, {
       ...context,
       operation: 'api_response',
-      duration
+      duration,
     })
   }
 
@@ -136,7 +144,7 @@ class Logger {
   logDatabaseOperation(operation: string, table: string, context?: LogContext): void {
     this.debug(`Database ${operation}: ${table}`, {
       ...context,
-      operation: 'database'
+      operation: 'database',
     })
   }
 
@@ -144,7 +152,7 @@ class Logger {
   logAuth(event: string, context?: LogContext): void {
     this.info(`Auth event: ${event}`, {
       ...context,
-      operation: 'auth'
+      operation: 'auth',
     })
   }
 
@@ -153,7 +161,7 @@ class Logger {
     this.info(`Document processing: ${event}`, {
       ...context,
       operation: 'document_processing',
-      metadata: { documentId }
+      metadata: { documentId },
     })
   }
 
@@ -163,10 +171,10 @@ class Logger {
       ...context,
       operation: 'vector_search',
       duration,
-      metadata: { 
+      metadata: {
         queryLength: query.length,
-        resultsCount: results
-      }
+        resultsCount: results,
+      },
     })
   }
 
@@ -176,7 +184,7 @@ class Logger {
       ...context,
       operation: 'chat',
       duration: responseTime,
-      metadata: { messageCount }
+      metadata: { messageCount },
     })
   }
 }
@@ -192,24 +200,24 @@ export const withLogging = <T extends (...args: any[]) => any>(
 ): T => {
   return ((...args: Parameters<T>) => {
     const endTimer = logger.startTimer(operation, context)
-    
+
     try {
       const result = fn(...args)
-      
+
       // Handle async functions
       if (result instanceof Promise) {
         return result
-          .then((value) => {
+          .then(value => {
             endTimer()
             return value
           })
-          .catch((error) => {
+          .catch(error => {
             logger.error(`Operation failed: ${operation}`, context, error)
             endTimer()
             throw error
           })
       }
-      
+
       endTimer()
       return result
     } catch (error) {
@@ -233,5 +241,5 @@ export const createLogContext = (
 ): LogContext => ({
   userId,
   requestId,
-  metadata
+  metadata,
 })

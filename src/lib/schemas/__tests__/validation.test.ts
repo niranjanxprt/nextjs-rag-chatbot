@@ -1,6 +1,6 @@
 /**
  * Validation Schema Tests
- * 
+ *
  * Unit tests for Zod validation schemas
  */
 
@@ -11,7 +11,7 @@ import {
   chatRequestSchema,
   vectorSearchSchema,
   conversationInsertSchema,
-  messageInsertSchema
+  messageInsertSchema,
 } from '../validation'
 
 describe('Validation Schemas', () => {
@@ -20,7 +20,7 @@ describe('Validation Schemas', () => {
       const validData = {
         filename: 'test.pdf',
         fileSize: 1024000,
-        mimeType: 'application/pdf'
+        mimeType: 'application/pdf',
       }
 
       const result = documentUploadFormSchema.safeParse(validData)
@@ -34,7 +34,7 @@ describe('Validation Schemas', () => {
       const invalidData = {
         filename: 'test.exe',
         fileSize: 1024000,
-        mimeType: 'application/x-executable'
+        mimeType: 'application/x-executable',
       }
 
       const result = documentUploadFormSchema.safeParse(invalidData)
@@ -45,7 +45,7 @@ describe('Validation Schemas', () => {
       const invalidData = {
         filename: 'test.pdf',
         fileSize: 100 * 1024 * 1024, // 100MB
-        mimeType: 'application/pdf'
+        mimeType: 'application/pdf',
       }
 
       const result = documentUploadFormSchema.safeParse(invalidData)
@@ -56,7 +56,7 @@ describe('Validation Schemas', () => {
       const invalidData = {
         filename: '',
         fileSize: 1024000,
-        mimeType: 'application/pdf'
+        mimeType: 'application/pdf',
       }
 
       const result = documentUploadFormSchema.safeParse(invalidData)
@@ -67,7 +67,7 @@ describe('Validation Schemas', () => {
       const invalidData = {
         filename: 'test.pdf',
         fileSize: -1,
-        mimeType: 'application/pdf'
+        mimeType: 'application/pdf',
       }
 
       const result = documentUploadFormSchema.safeParse(invalidData)
@@ -80,7 +80,7 @@ describe('Validation Schemas', () => {
       const validData = {
         documentId: '123e4567-e89b-12d3-a456-426614174000',
         chunkSize: 1000,
-        chunkOverlap: 200
+        chunkOverlap: 200,
       }
 
       const result = documentProcessingRequestSchema.safeParse(validData)
@@ -92,7 +92,7 @@ describe('Validation Schemas', () => {
 
     it('should use default values when optional fields are missing', () => {
       const minimalData = {
-        documentId: '123e4567-e89b-12d3-a456-426614174000'
+        documentId: '123e4567-e89b-12d3-a456-426614174000',
       }
 
       const result = documentProcessingRequestSchema.safeParse(minimalData)
@@ -107,7 +107,7 @@ describe('Validation Schemas', () => {
       const invalidData = {
         documentId: '123e4567-e89b-12d3-a456-426614174000',
         chunkSize: -1, // Negative
-        chunkOverlap: 200
+        chunkOverlap: 200,
       }
 
       const result = documentProcessingRequestSchema.safeParse(invalidData)
@@ -118,7 +118,7 @@ describe('Validation Schemas', () => {
       const invalidData = {
         documentId: '123e4567-e89b-12d3-a456-426614174000',
         chunkSize: 3000, // Too large
-        chunkOverlap: 50
+        chunkOverlap: 50,
       }
 
       const result = documentProcessingRequestSchema.safeParse(invalidData)
@@ -129,12 +129,10 @@ describe('Validation Schemas', () => {
   describe('chatRequestSchema', () => {
     it('should validate valid chat request', () => {
       const validData = {
-        messages: [
-          { role: 'user', content: 'Hello, how are you?' }
-        ],
+        messages: [{ role: 'user', content: 'Hello, how are you?' }],
         conversationId: '123e4567-e89b-12d3-a456-426614174000',
         temperature: 0.7,
-        maxTokens: 1000
+        maxTokens: 1000,
       }
 
       const result = chatRequestSchema.safeParse(validData)
@@ -146,9 +144,7 @@ describe('Validation Schemas', () => {
 
     it('should validate minimal chat request', () => {
       const minimalData = {
-        messages: [
-          { role: 'user', content: 'Hello' }
-        ]
+        messages: [{ role: 'user', content: 'Hello' }],
       }
 
       const result = chatRequestSchema.safeParse(minimalData)
@@ -157,7 +153,7 @@ describe('Validation Schemas', () => {
 
     it('should reject empty messages array', () => {
       const invalidData = {
-        messages: []
+        messages: [],
       }
 
       const result = chatRequestSchema.safeParse(invalidData)
@@ -166,9 +162,7 @@ describe('Validation Schemas', () => {
 
     it('should reject invalid message role', () => {
       const invalidData = {
-        messages: [
-          { role: 'invalid', content: 'Hello' }
-        ]
+        messages: [{ role: 'invalid', content: 'Hello' }],
       }
 
       const result = chatRequestSchema.safeParse(invalidData)
@@ -177,9 +171,7 @@ describe('Validation Schemas', () => {
 
     it('should reject empty message content', () => {
       const invalidData = {
-        messages: [
-          { role: 'user', content: '' }
-        ]
+        messages: [{ role: 'user', content: '' }],
       }
 
       const result = chatRequestSchema.safeParse(invalidData)
@@ -188,10 +180,8 @@ describe('Validation Schemas', () => {
 
     it('should reject invalid temperature range', () => {
       const invalidData = {
-        messages: [
-          { role: 'user', content: 'Hello' }
-        ],
-        temperature: 2.5 // Too high
+        messages: [{ role: 'user', content: 'Hello' }],
+        temperature: 2.5, // Too high
       }
 
       const result = chatRequestSchema.safeParse(invalidData)
@@ -200,10 +190,8 @@ describe('Validation Schemas', () => {
 
     it('should reject invalid maxTokens', () => {
       const invalidData = {
-        messages: [
-          { role: 'user', content: 'Hello' }
-        ],
-        maxTokens: -1 // Negative
+        messages: [{ role: 'user', content: 'Hello' }],
+        maxTokens: -1, // Negative
       }
 
       const result = chatRequestSchema.safeParse(invalidData)
@@ -217,7 +205,7 @@ describe('Validation Schemas', () => {
         query: 'machine learning',
         userId: '123e4567-e89b-12d3-a456-426614174000',
         topK: 5,
-        threshold: 0.7
+        threshold: 0.7,
       }
 
       const result = vectorSearchSchema.safeParse(validData)
@@ -225,7 +213,7 @@ describe('Validation Schemas', () => {
       if (result.success) {
         expect(result.data).toEqual({
           ...validData,
-          includeMetadata: true // default value
+          includeMetadata: true, // default value
         })
       }
     })
@@ -233,7 +221,7 @@ describe('Validation Schemas', () => {
     it('should validate minimal search request', () => {
       const minimalData = {
         query: 'test query',
-        userId: '123e4567-e89b-12d3-a456-426614174000'
+        userId: '123e4567-e89b-12d3-a456-426614174000',
       }
 
       const result = vectorSearchSchema.safeParse(minimalData)
@@ -243,7 +231,7 @@ describe('Validation Schemas', () => {
     it('should reject empty query', () => {
       const invalidData = {
         query: '',
-        userId: '123e4567-e89b-12d3-a456-426614174000'
+        userId: '123e4567-e89b-12d3-a456-426614174000',
       }
 
       const result = vectorSearchSchema.safeParse(invalidData)
@@ -253,7 +241,7 @@ describe('Validation Schemas', () => {
     it('should reject query that is too long', () => {
       const invalidData = {
         query: 'a'.repeat(1001), // Too long
-        userId: '123e4567-e89b-12d3-a456-426614174000'
+        userId: '123e4567-e89b-12d3-a456-426614174000',
       }
 
       const result = vectorSearchSchema.safeParse(invalidData)
@@ -264,7 +252,7 @@ describe('Validation Schemas', () => {
       const invalidData = {
         query: 'test',
         userId: '123e4567-e89b-12d3-a456-426614174000',
-        topK: 0 // Too small
+        topK: 0, // Too small
       }
 
       const result = vectorSearchSchema.safeParse(invalidData)
@@ -275,7 +263,7 @@ describe('Validation Schemas', () => {
       const invalidData = {
         query: 'test',
         userId: '123e4567-e89b-12d3-a456-426614174000',
-        threshold: 1.5 // Too high
+        threshold: 1.5, // Too high
       }
 
       const result = vectorSearchSchema.safeParse(invalidData)
@@ -287,7 +275,7 @@ describe('Validation Schemas', () => {
     it('should validate valid conversation creation', () => {
       const validData = {
         user_id: '123e4567-e89b-12d3-a456-426614174000',
-        title: 'My Conversation'
+        title: 'My Conversation',
       }
 
       const result = conversationInsertSchema.safeParse(validData)
@@ -299,7 +287,7 @@ describe('Validation Schemas', () => {
 
     it('should validate conversation without title', () => {
       const validData = {
-        user_id: '123e4567-e89b-12d3-a456-426614174000'
+        user_id: '123e4567-e89b-12d3-a456-426614174000',
       }
 
       const result = conversationInsertSchema.safeParse(validData)
@@ -309,7 +297,7 @@ describe('Validation Schemas', () => {
     it('should reject title that is too long', () => {
       const invalidData = {
         user_id: '123e4567-e89b-12d3-a456-426614174000',
-        title: 'a'.repeat(201) // Too long
+        title: 'a'.repeat(201), // Too long
       }
 
       const result = conversationInsertSchema.safeParse(invalidData)
@@ -323,7 +311,7 @@ describe('Validation Schemas', () => {
         conversation_id: '123e4567-e89b-12d3-a456-426614174000',
         role: 'user' as const,
         content: 'Hello, world!',
-        metadata: { source: 'web' }
+        metadata: { source: 'web' },
       }
 
       const result = messageInsertSchema.safeParse(validData)
@@ -337,7 +325,7 @@ describe('Validation Schemas', () => {
       const validData = {
         conversation_id: '123e4567-e89b-12d3-a456-426614174000',
         role: 'user' as const,
-        content: 'Hello, world!'
+        content: 'Hello, world!',
       }
 
       const result = messageInsertSchema.safeParse(validData)
@@ -348,7 +336,7 @@ describe('Validation Schemas', () => {
       const invalidData = {
         conversation_id: '',
         role: 'user' as const,
-        content: 'Hello'
+        content: 'Hello',
       }
 
       const result = messageInsertSchema.safeParse(invalidData)
@@ -359,7 +347,7 @@ describe('Validation Schemas', () => {
       const invalidData = {
         conversation_id: '123e4567-e89b-12d3-a456-426614174000',
         role: 'invalid',
-        content: 'Hello'
+        content: 'Hello',
       }
 
       const result = messageInsertSchema.safeParse(invalidData)
@@ -370,7 +358,7 @@ describe('Validation Schemas', () => {
       const invalidData = {
         conversation_id: '123e4567-e89b-12d3-a456-426614174000',
         role: 'user' as const,
-        content: ''
+        content: '',
       }
 
       const result = messageInsertSchema.safeParse(invalidData)
@@ -381,7 +369,7 @@ describe('Validation Schemas', () => {
       const invalidData = {
         conversation_id: '123e4567-e89b-12d3-a456-426614174000',
         role: 'user' as const,
-        content: 'a'.repeat(50001) // Too long
+        content: 'a'.repeat(50001), // Too long
       }
 
       const result = messageInsertSchema.safeParse(invalidData)
@@ -404,7 +392,7 @@ describe('Validation Schemas', () => {
       const maliciousData = {
         conversation_id: '123e4567-e89b-12d3-a456-426614174000',
         role: 'user' as const,
-        content: '<script>alert("xss")</script>'
+        content: '<script>alert("xss")</script>',
       }
 
       const result = messageInsertSchema.safeParse(maliciousData)
@@ -417,7 +405,7 @@ describe('Validation Schemas', () => {
       const invalidData = {
         filename: 'test.pdf',
         fileSize: Number.MAX_SAFE_INTEGER + 1,
-        mimeType: 'application/pdf'
+        mimeType: 'application/pdf',
       }
 
       const result = documentUploadFormSchema.safeParse(invalidData)
@@ -428,7 +416,7 @@ describe('Validation Schemas', () => {
       const validData = {
         filename: 'test-file_123.pdf',
         fileSize: 1024000,
-        mimeType: 'application/pdf'
+        mimeType: 'application/pdf',
       }
 
       const result = documentUploadFormSchema.safeParse(validData)
@@ -439,7 +427,7 @@ describe('Validation Schemas', () => {
       const invalidData = {
         filename: '../../../etc/passwd',
         fileSize: 1024000,
-        mimeType: 'application/pdf'
+        mimeType: 'application/pdf',
       }
 
       const result = documentUploadFormSchema.safeParse(invalidData)

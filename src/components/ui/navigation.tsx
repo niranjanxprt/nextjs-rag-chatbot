@@ -1,6 +1,6 @@
 /**
  * Navigation Component
- * 
+ *
  * Main navigation with user menu and responsive design
  */
 
@@ -10,25 +10,25 @@ import React, { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { useAuth } from '@/lib/auth/context'
-import { 
-  Home, 
-  FileText, 
-  MessageCircle, 
-  Search, 
-  Menu, 
-  X, 
-  LogOut, 
+import {
+  Home,
+  FileText,
+  MessageCircle,
+  Search,
+  Menu,
+  X,
+  LogOut,
   User,
-  Settings
+  Settings,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -36,23 +36,23 @@ const navigationItems = [
   {
     name: 'Dashboard',
     href: '/dashboard',
-    icon: Home
+    icon: Home,
   },
   {
     name: 'Documents',
     href: '/documents',
-    icon: FileText
+    icon: FileText,
   },
   {
     name: 'Chat',
     href: '/chat',
-    icon: MessageCircle
+    icon: MessageCircle,
   },
   {
     name: 'Search',
     href: '/search',
-    icon: Search
-  }
+    icon: Search,
+  },
 ]
 
 export function Navigation() {
@@ -90,13 +90,13 @@ export function Navigation() {
                 RAG Chatbot
               </Link>
             </div>
-            
+
             {/* Desktop Navigation */}
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-              {navigationItems.map((item) => {
+              {navigationItems.map(item => {
                 const Icon = item.icon
                 const isActive = pathname === item.href
-                
+
                 return (
                   <Link
                     key={item.name}
@@ -107,7 +107,7 @@ export function Navigation() {
                         ? 'border-blue-500 text-gray-900'
                         : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
                     )}
-                    onKeyDown={(e) => handleKeyDown(e, item.href)}
+                    onKeyDown={e => handleKeyDown(e, item.href)}
                   >
                     <Icon className="w-4 h-4 mr-2" />
                     {item.name}
@@ -124,9 +124,7 @@ export function Navigation() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-8 w-8">
-                      <AvatarFallback>
-                        {getUserInitials(user.email || 'U')}
-                      </AvatarFallback>
+                      <AvatarFallback>{getUserInitials(user.email || 'U')}</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
@@ -170,11 +168,7 @@ export function Navigation() {
               size="sm"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             >
-              {isMobileMenuOpen ? (
-                <X className="h-6 w-6" />
-              ) : (
-                <Menu className="h-6 w-6" />
-              )}
+              {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </Button>
           </div>
         </div>
@@ -184,10 +178,10 @@ export function Navigation() {
       {isMobileMenuOpen && (
         <div className="sm:hidden">
           <div className="pt-2 pb-3 space-y-1">
-            {navigationItems.map((item) => {
+            {navigationItems.map(item => {
               const Icon = item.icon
               const isActive = pathname === item.href
-              
+
               return (
                 <Link
                   key={item.name}
@@ -208,16 +202,14 @@ export function Navigation() {
               )
             })}
           </div>
-          
+
           {/* Mobile User Menu */}
           {user && (
             <div className="pt-4 pb-3 border-t border-gray-200">
               <div className="flex items-center px-4">
                 <div className="flex-shrink-0">
                   <Avatar className="h-10 w-10">
-                    <AvatarFallback>
-                      {getUserInitials(user.email || 'U')}
-                    </AvatarFallback>
+                    <AvatarFallback>{getUserInitials(user.email || 'U')}</AvatarFallback>
                   </Avatar>
                 </div>
                 <div className="ml-3">

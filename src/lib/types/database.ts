@@ -1,6 +1,6 @@
 /**
  * Database Types for Next.js RAG Chatbot
- * 
+ *
  * TypeScript type definitions for all database entities
  * Generated from Supabase schema with additional utility types
  */
@@ -47,6 +47,7 @@ export type DocumentProcessingStatus = 'pending' | 'processing' | 'completed' | 
 export interface Document {
   id: UUID
   user_id: UUID
+  project_id: UUID | null
   filename: string
   file_size: number
   mime_type: string
@@ -60,6 +61,7 @@ export interface Document {
 
 export interface DocumentInsert {
   user_id: UUID
+  project_id?: UUID | null
   filename: string
   file_size: number
   mime_type: string
@@ -105,24 +107,69 @@ export interface DocumentChunkUpdate {
 }
 
 // =============================================================================
+// Project Types
+// =============================================================================
+
+export interface Project {
+  id: UUID
+  user_id: UUID
+  name: string
+  description: string | null
+  color: string
+  icon: string
+  is_default: boolean
+  created_at: Timestamp
+  updated_at: Timestamp
+}
+
+export interface ProjectInsert {
+  user_id: UUID
+  name: string
+  description?: string | null
+  color?: string
+  icon?: string
+  is_default?: boolean
+}
+
+export interface ProjectUpdate {
+  name?: string
+  description?: string | null
+  color?: string
+  icon?: string
+  is_default?: boolean
+}
+
+// =============================================================================
 // Conversation Types
 // =============================================================================
 
 export interface Conversation {
   id: UUID
   user_id: UUID
+  project_id: UUID | null
   title: string | null
+  is_pinned: boolean
+  message_count: number
+  last_message_at: Timestamp | null
   created_at: Timestamp
   updated_at: Timestamp
 }
 
 export interface ConversationInsert {
   user_id: UUID
+  project_id?: UUID | null
   title?: string | null
+  is_pinned?: boolean
+  message_count?: number
+  last_message_at?: Timestamp | null
 }
 
 export interface ConversationUpdate {
+  project_id?: UUID | null
   title?: string | null
+  is_pinned?: boolean
+  message_count?: number
+  last_message_at?: Timestamp | null
 }
 
 // =============================================================================
@@ -150,6 +197,83 @@ export interface MessageInsert {
 export interface MessageUpdate {
   content?: string
   metadata?: Record<string, any>
+}
+
+// =============================================================================
+// Prompt Types
+// =============================================================================
+
+export interface Prompt {
+  id: UUID
+  user_id: UUID
+  name: string
+  content: string
+  description: string | null
+  variables: string[] // Array of variable names like ['topic', 'style']
+  category: string | null
+  is_favorite: boolean
+  usage_count: number
+  created_at: Timestamp
+  updated_at: Timestamp
+}
+
+export interface PromptInsert {
+  user_id: UUID
+  name: string
+  content: string
+  description?: string | null
+  variables?: string[]
+  category?: string | null
+  is_favorite?: boolean
+}
+
+export interface PromptUpdate {
+  name?: string
+  content?: string
+  description?: string | null
+  variables?: string[]
+  category?: string | null
+  is_favorite?: boolean
+  usage_count?: number
+}
+
+// =============================================================================
+// User Preferences Types
+// =============================================================================
+
+export interface ChatSettings {
+  temperature: number
+  maxTokens: number
+}
+
+export interface UISettings {
+  sidebarCollapsed: boolean
+  useKnowledgeBase: boolean
+}
+
+export interface UserPreferences {
+  user_id: UUID
+  theme: 'light' | 'dark' | 'system'
+  default_project_id: UUID | null
+  chat_settings: ChatSettings
+  ui_settings: UISettings
+  created_at: Timestamp
+  updated_at: Timestamp
+}
+
+export interface UserPreferencesInsert {
+  user_id: UUID
+  theme?: 'light' | 'dark' | 'system'
+  default_project_id?: UUID | null
+  chat_settings?: ChatSettings
+  ui_settings?: UISettings
+}
+
+export interface UserPreferencesUpdate {
+  theme?: 'light' | 'dark' | 'system'
+  default_project_id?: UUID | null
+  chat_settings?: ChatSettings
+  ui_settings?: UISettings
 }
 
 // =============================================================================
@@ -218,6 +342,11 @@ export interface Database {
         Insert: ProfileInsert
         Update: ProfileUpdate
       }
+      projects: {
+        Row: Project
+        Insert: ProjectInsert
+        Update: ProjectUpdate
+      }
       documents: {
         Row: Document
         Insert: DocumentInsert
@@ -238,6 +367,16 @@ export interface Database {
         Insert: MessageInsert
         Update: MessageUpdate
       }
+      prompts: {
+        Row: Prompt
+        Insert: PromptInsert
+        Update: PromptUpdate
+      }
+      user_preferences: {
+        Row: UserPreferences
+        Insert: UserPreferencesInsert
+        Update: UserPreferencesUpdate
+      }
     }
     Views: {
       [_ in never]: never
@@ -256,9 +395,12 @@ export interface Database {
 // Utility Types
 // =============================================================================
 
-export type Tables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Row']
-export type Inserts<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Insert']
-export type Updates<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Update']
+export type Tables<T extends keyof Database['public']['Tables']> =
+  Database['public']['Tables'][T]['Row']
+export type Inserts<T extends keyof Database['public']['Tables']> =
+  Database['public']['Tables'][T]['Insert']
+export type Updates<T extends keyof Database['public']['Tables']> =
+  Database['public']['Tables'][T]['Update']
 
 // =============================================================================
 // Error Types

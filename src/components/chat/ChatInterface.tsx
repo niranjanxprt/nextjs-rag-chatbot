@@ -1,20 +1,23 @@
 /**
- * Chat Interface Component
- * 
- * Main chat interface with message display, input, and streaming support
+ * Enhanced Chat Interface Component
+ *
+ * Uses Vercel AI SDK useChat hook for streaming with RAG context
  */
 
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
+import { useChat } from 'ai/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Switch } from '@/components/ui/switch'
 import { MessageList } from './MessageList'
 import { TypingIndicator } from './TypingIndicator'
-import { Send, RefreshCw, Trash2, AlertCircle } from 'lucide-react'
-import { Message } from '@/lib/types/database'
+import { Send, RefreshCw, Trash2, AlertCircle, BookOpen } from 'lucide-react'
+import { useProjects } from '@/lib/contexts/projects-context'
+import { useConversations } from '@/lib/contexts/conversations-context'
 import { cn } from '@/lib/utils'
 
 // =============================================================================
@@ -31,17 +34,38 @@ interface ChatInterfaceProps {
 // Component
 // =============================================================================
 
-export function ChatInterface({ 
-  conversationId, 
-  onConversationChange, 
-  className 
+export function ChatInterface({
+  conversationId,
+  onConversationChange,
+  className,
 }: ChatInterfaceProps) {
-  const [messages, setMessages] = useState<Message[]>([])
-  const [input, setInput] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const { currentProject } = useProjects()
+  const { currentConversation } = useConversations()
+
+  // Knowledge base toggle state
+  const [useKnowledgeBase, setUseKnowledgeBase] = useState(true)
+
+  // Auto-scroll ref
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  
+
+  // Use chat hook with AI SDK
+  const { messages, input, handleInputChange, handleSubmit, isLoading, error, stop } = useChat({
+    api: '/api/chat',
+    id: conversationId,
+    body: {
+      conversationId,
+      projectId: currentProject?.id,
+      useKnowledgeBase,
+    },
+    onResponse: response => {
+      // Extract conversation ID from response headers if it's new
+      const newConversationId = response.headers.get('X-Conversation-Id')
+      if (newConversationId && newConversationId !== conversationId) {
+        onConversationChange?.(newConversationId)
+      }
+    },
+  })
+
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -51,123 +75,28 @@ export function ChatInterface({
   // Event Handlers
   // =============================================================================
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    if (!input.trim() || isLoading) return
-
-    const userMessage: Message = {
-      id: crypto.randomUUID(),
-      conversation_id: conversationId || '',
-      role: 'user',
-      content: input.trim(),
-      metadata: {},
-      created_at: new Date().toISOString()
+    if (input.trim() && !isLoading) {
+      handleSubmit(e)
     }
-
-    setMessages(prev => [...prev, userMessage])
-    setInput('')
-    setIsLoading(true)
-    setError(null)
-
-    try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: [...messages, userMessage].map(m => ({
-            role: m.role,
-            content: m.content
-          })),
-          conversationId
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      // Extract conversation ID from response headers
-      const newConversationId = response.headers.get('X-Conversation-Id')
-      if (newConversationId && newConversationId !== conversationId) {
-        onConversationChange?.(newConversationId)
-      }
-
-      // Handle streaming response
-      const reader = response.body?.getReader()
-      if (!reader) throw new Error('No response body')
-
-      const assistantMessage: Message = {
-        id: crypto.randomUUID(),
-        conversation_id: newConversationId || conversationId || '',
-        role: 'assistant',
-        content: '',
-        metadata: {},
-        created_at: new Date().toISOString()
-      }
-
-      setMessages(prev => [...prev, assistantMessage])
-
-      const decoder = new TextDecoder()
-      let buffer = ''
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-
-        buffer += decoder.decode(value, { stream: true })
-        const lines = buffer.split('\n')
-        buffer = lines.pop() || ''
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(6))
-              if (data.content) {
-                setMessages(prev => prev.map(m => 
-                  m.id === assistantMessage.id 
-                    ? { ...m, content: m.content + data.content }
-                    : m
-                ))
-              }
-            } catch (e) {
-              // Ignore parsing errors
-            }
-          }
-        }
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInput(e.target.value)
   }
 
   const handleClearChat = () => {
     if (confirm('Are you sure you want to clear this conversation?')) {
-      setMessages([])
-      setError(null)
+      // In a real app, you might want to clear the conversation
+      // For now, just clear the message display
+      window.location.reload()
     }
   }
 
-  const handleFormSubmit = (e: React.FormEvent) => {
-    handleSubmit(e)
-  }
-
-  const handleRetry = () => {
-    // For now, just clear the error
-    setError(null)
-  }
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      handleFormSubmit(e as any)
+      const form = e.currentTarget.form
+      if (form) {
+        handleFormSubmit({ preventDefault: () => {} } as React.FormEvent<HTMLFormElement>)
+      }
     }
   }
 
@@ -184,34 +113,66 @@ export function ChatInterface({
 
   return (
     <div className={cn('flex flex-col h-full', className)}>
-      {/* Header */}
+      {/* Header with KB Toggle */}
       <Card className="border-b rounded-none">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">RAG Chatbot</CardTitle>
-            <div className="flex gap-2">
-              {error && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRetry}
-                  disabled={isLoading}
-                >
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Retry
-                </Button>
+            <div className="flex-1">
+              <CardTitle className="text-lg">RAG Chatbot</CardTitle>
+              {currentProject && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Project: {currentProject.name}
+                </p>
               )}
-              {hasMessages && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleClearChat}
+            </div>
+
+            {/* Knowledge Base Toggle */}
+            <div className="flex items-center gap-3 pr-2">
+              <div className="flex items-center gap-2">
+                <BookOpen className={cn('w-4 h-4', useKnowledgeBase ? 'text-primary' : 'text-muted')} />
+                <Switch
+                  checked={useKnowledgeBase}
+                  onCheckedChange={setUseKnowledgeBase}
                   disabled={isLoading}
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Clear
-                </Button>
-              )}
+                  aria-label="Toggle Knowledge Base"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2">
+                {error && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.location.reload()}
+                    disabled={isLoading}
+                    title="Reload conversation"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                  </Button>
+                )}
+                {hasMessages && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleClearChat}
+                    disabled={isLoading}
+                    title="Clear conversation"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                )}
+                {isLoading && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={stop}
+                    title="Stop generation"
+                  >
+                    <span className="w-4 h-4">⏹</span>
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -222,7 +183,7 @@ export function ChatInterface({
         <Alert variant="destructive" className="m-4">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            {error || 'An error occurred while processing your message.'}
+            {error instanceof Error ? error.message : 'An error occurred while processing your message.'}
           </AlertDescription>
         </Alert>
       )}
@@ -242,11 +203,10 @@ export function ChatInterface({
                 <div className="w-16 h-16 mx-auto mb-4 bg-primary/10 rounded-full flex items-center justify-center">
                   <Send className="w-8 h-8 text-primary" />
                 </div>
-                <h3 className="text-lg font-semibold mb-2">
-                  Welcome to RAG Chatbot
-                </h3>
+                <h3 className="text-lg font-semibold mb-2">Welcome to RAG Chatbot</h3>
                 <p className="text-muted-foreground mb-4">
-                  Ask questions about your uploaded documents. I'll search through your knowledge base to provide accurate answers.
+                  Ask questions about your uploaded documents. I'll search through your knowledge
+                  base to provide accurate answers.
                 </p>
                 <div className="text-sm text-muted-foreground">
                   <p className="mb-1">Try asking:</p>
@@ -272,12 +232,11 @@ export function ChatInterface({
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
                 placeholder={
-                  isLoading 
-                    ? "AI is thinking..." 
-                    : "Ask a question about your documents..."
+                  isLoading ? 'AI is thinking...' : 'Ask a question about your documents...'
                 }
                 disabled={isLoading}
                 className="min-h-[44px]"
+                aria-label="Chat message input"
               />
             </div>
             <Button
@@ -285,6 +244,7 @@ export function ChatInterface({
               disabled={!canSend}
               size="lg"
               className="px-6"
+              title={canSend ? 'Send message' : 'Enter a message to send'}
             >
               {isLoading ? (
                 <RefreshCw className="w-4 h-4 animate-spin" />
@@ -293,15 +253,12 @@ export function ChatInterface({
               )}
             </Button>
           </form>
-          
+
           {/* Status Info */}
           <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
-            <span>
-              {messages.length > 0 && `${messages.length} messages`}
-            </span>
-            <span>
-              Press Enter to send, Shift+Enter for new line
-            </span>
+            <span>{messages.length > 0 && `${messages.length} messages`}</span>
+            <span>{useKnowledgeBase ? 'Using Knowledge Base' : 'Free mode'}</span>
+            <span>Enter to send, Shift+Enter for new line</span>
           </div>
         </CardContent>
       </Card>

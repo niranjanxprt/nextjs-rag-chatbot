@@ -1,6 +1,6 @@
 /**
  * Chat Page
- * 
+ *
  * Main chat interface page with conversation management
  */
 

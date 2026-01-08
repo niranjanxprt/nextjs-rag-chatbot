@@ -8,7 +8,10 @@ const clientEnvSchema = z.object({
 })
 
 // Server-side environment variables (only available on server)
-const serverEnvSchema = clientEnvSchema.extend({
+const serverEnvSchema = z.object({
+  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  NEXT_PUBLIC_SUPABASE_URL: z.string().url('Invalid Supabase URL'),
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1, 'Supabase anon key is required'),
   OPENAI_API_KEY: z.string().min(1, 'OpenAI API key is required'),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'Supabase service role key is required'),
   QDRANT_URL: z.string().url('Invalid Qdrant URL'),
@@ -33,7 +36,9 @@ function validateClientEnv(): ClientEnv {
     })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const missingVars = error.errors.map(err => `${err.path.join('.')}: ${err.message}`).join('\n')
+      const missingVars = error.errors
+        .map(err => `${err.path.join('.')}: ${err.message}`)
+        .join('\n')
       throw new Error(`Client environment validation failed:\n${missingVars}`)
     }
     throw error
@@ -59,16 +64,52 @@ function validateServerEnv(): ServerEnv {
     })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const missingVars = error.errors.map(err => `${err.path.join('.')}: ${err.message}`).join('\n')
+      const missingVars = error.errors
+        .map(err => `${err.path.join('.')}: ${err.message}`)
+        .join('\n')
       throw new Error(`Server environment validation failed:\n${missingVars}`)
     }
     throw error
   }
 }
 
-// Export appropriate env based on runtime
-export const env = typeof window === 'undefined' ? validateServerEnv() : validateClientEnv()
+// Get client environment (safe for browser)
+export function getClientEnv(): ClientEnv {
+  // On client side, validate client env
+  if (typeof window !== 'undefined') {
+    return validateClientEnv()
+  }
+  // On server side, just return the public vars without validation
+  return {
+    NODE_ENV: (process.env.NODE_ENV as 'development' | 'production' | 'test') || 'development',
+    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+  }
+}
 
-// Helper functions for explicit validation
-export const getServerEnv = () => validateServerEnv()
-export const getClientEnv = () => validateClientEnv()
+// Get server environment (server-only, will throw if called from browser)
+export function getServerEnv(): ServerEnv {
+  if (typeof window !== 'undefined') {
+    throw new Error('Server environment cannot be accessed from the browser!')
+  }
+  return validateServerEnv()
+}
+
+// Lazy-loaded cached environments (only loaded when needed)
+let cachedClientEnv: ClientEnv | null = null
+let cachedServerEnv: ServerEnv | null = null
+
+// Getter functions for cached access
+export function getCachedClientEnv(): ClientEnv | null {
+  if (cachedClientEnv === null && typeof window !== 'undefined') {
+    cachedClientEnv = getClientEnv()
+  }
+  return cachedClientEnv
+}
+
+export function getCachedServerEnv(): ServerEnv | null {
+  if (cachedServerEnv === null && typeof window === 'undefined') {
+    cachedServerEnv = getServerEnv()
+  }
+  return cachedServerEnv
+}

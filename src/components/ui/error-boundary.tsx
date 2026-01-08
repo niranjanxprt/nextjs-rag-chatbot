@@ -2,7 +2,7 @@
 
 /**
  * Error Boundary Component
- * 
+ *
  * Catches JavaScript errors anywhere in the component tree and displays
  * a fallback UI with recovery options
  */
@@ -33,7 +33,7 @@ export class ErrorBoundary extends Component<Props, State> {
       hasError: false,
       error: null,
       errorInfo: null,
-      errorId: null
+      errorId: null,
     }
   }
 
@@ -42,17 +42,17 @@ export class ErrorBoundary extends Component<Props, State> {
     return {
       hasError: true,
       error,
-      errorId: `error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      errorId: `error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     }
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Log error details
     console.error('ErrorBoundary caught an error:', error, errorInfo)
-    
+
     this.setState({
       error,
-      errorInfo
+      errorInfo,
     })
 
     // Call custom error handler if provided
@@ -79,18 +79,18 @@ export class ErrorBoundary extends Component<Props, State> {
       level: 'error' as const,
       context: {
         component: 'ErrorBoundary',
-        props: Object.keys(this.props)
-      }
+        props: Object.keys(this.props),
+      },
     }
 
     console.error('Error Report:', errorReport)
-    
+
     // Send to error reporting API
     try {
       await fetch('/api/errors', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(errorReport)
+        body: JSON.stringify(errorReport),
       })
     } catch (reportingError) {
       console.error('Failed to report error:', reportingError)
@@ -102,7 +102,7 @@ export class ErrorBoundary extends Component<Props, State> {
       hasError: false,
       error: null,
       errorInfo: null,
-      errorId: null
+      errorId: null,
     })
   }
 
@@ -120,10 +120,11 @@ export class ErrorBoundary extends Component<Props, State> {
       message: this.state.error?.message,
       stack: this.state.error?.stack,
       componentStack: this.state.errorInfo?.componentStack,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     }
 
-    navigator.clipboard.writeText(JSON.stringify(errorDetails, null, 2))
+    navigator.clipboard
+      .writeText(JSON.stringify(errorDetails, null, 2))
       .then(() => {
         // Could show a toast notification here
         console.log('Error details copied to clipboard')
@@ -155,7 +156,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 We encountered an unexpected error. Please try one of the options below.
               </CardDescription>
             </CardHeader>
-            
+
             <CardContent className="space-y-4">
               {/* Error ID for support */}
               {this.state.errorId && (
@@ -166,30 +167,18 @@ export class ErrorBoundary extends Component<Props, State> {
 
               {/* Action buttons */}
               <div className="flex flex-col sm:flex-row gap-2">
-                <Button 
-                  onClick={this.handleRetry}
-                  className="flex-1"
-                  variant="default"
-                >
+                <Button onClick={this.handleRetry} className="flex-1" variant="default">
                   <RefreshCw className="w-4 h-4 mr-2" />
                   Try Again
                 </Button>
-                
-                <Button 
-                  onClick={this.handleReload}
-                  className="flex-1"
-                  variant="outline"
-                >
+
+                <Button onClick={this.handleReload} className="flex-1" variant="outline">
                   <RefreshCw className="w-4 h-4 mr-2" />
                   Reload Page
                 </Button>
               </div>
 
-              <Button 
-                onClick={this.handleGoHome}
-                className="w-full"
-                variant="outline"
-              >
+              <Button onClick={this.handleGoHome} className="w-full" variant="outline">
                 <Home className="w-4 h-4 mr-2" />
                 Go to Home
               </Button>
@@ -209,7 +198,7 @@ export class ErrorBoundary extends Component<Props, State> {
                           {this.state.error?.message}
                         </pre>
                       </div>
-                      
+
                       {this.state.error?.stack && (
                         <div>
                           <strong>Stack Trace:</strong>
@@ -218,7 +207,7 @@ export class ErrorBoundary extends Component<Props, State> {
                           </pre>
                         </div>
                       )}
-                      
+
                       {this.state.errorInfo?.componentStack && (
                         <div>
                           <strong>Component Stack:</strong>
@@ -228,7 +217,7 @@ export class ErrorBoundary extends Component<Props, State> {
                         </div>
                       )}
                     </div>
-                    
+
                     <Button
                       onClick={this.copyErrorDetails}
                       size="sm"
@@ -254,7 +243,7 @@ export class ErrorBoundary extends Component<Props, State> {
 export function useErrorHandler() {
   return (error: Error, errorInfo?: ErrorInfo) => {
     console.error('Error caught by useErrorHandler:', error, errorInfo)
-    
+
     // In a real app, you might want to show a toast or modal
     // For now, we'll just log it
     if (process.env.NODE_ENV === 'production') {
@@ -264,9 +253,9 @@ export function useErrorHandler() {
         stack: error.stack,
         timestamp: new Date().toISOString(),
         userAgent: navigator.userAgent,
-        url: window.location.href
+        url: window.location.href,
       }
-      
+
       console.error('Error Report:', errorReport)
     }
   }
@@ -282,8 +271,8 @@ export function withErrorBoundary<P extends object>(
       <Component {...props} />
     </ErrorBoundary>
   )
-  
+
   WrappedComponent.displayName = `withErrorBoundary(${Component.displayName || Component.name})`
-  
+
   return WrappedComponent
 }

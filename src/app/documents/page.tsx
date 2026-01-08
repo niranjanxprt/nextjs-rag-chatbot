@@ -1,6 +1,6 @@
 /**
  * Documents Page
- * 
+ *
  * Main page for document management with upload and list functionality
  */
 
@@ -33,14 +33,14 @@ export default function DocumentsPage() {
             <TabsContent value="list" className="space-y-6">
               <DocumentList />
             </TabsContent>
-            
+
             <TabsContent value="upload" className="space-y-6">
-              <DocumentUploader 
-                onUploadComplete={(documentId) => {
+              <DocumentUploader
+                onUploadComplete={documentId => {
                   console.log('Document uploaded:', documentId)
                   // Could switch to list tab or show success message
                 }}
-                onUploadError={(error) => {
+                onUploadError={error => {
                   console.error('Upload error:', error)
                   // Could show error toast
                 }}

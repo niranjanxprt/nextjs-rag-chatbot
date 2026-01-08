@@ -1,6 +1,6 @@
 /**
  * Loading Spinner Component
- * 
+ *
  * Reusable loading spinner with different sizes and variants
  */
 
@@ -16,19 +16,19 @@ interface LoadingSpinnerProps {
 const sizeClasses = {
   sm: 'h-4 w-4',
   md: 'h-6 w-6',
-  lg: 'h-8 w-8'
+  lg: 'h-8 w-8',
 }
 
 const variantClasses = {
   primary: 'border-blue-600',
   secondary: 'border-gray-600',
-  white: 'border-white'
+  white: 'border-white',
 }
 
-export function LoadingSpinner({ 
-  size = 'md', 
-  variant = 'primary', 
-  className 
+export function LoadingSpinner({
+  size = 'md',
+  variant = 'primary',
+  className,
 }: LoadingSpinnerProps) {
   return (
     <div
@@ -52,10 +52,10 @@ interface LoadingStateProps {
   className?: string
 }
 
-export function LoadingState({ 
-  message = 'Loading...', 
+export function LoadingState({
+  message = 'Loading...',
   size = 'md',
-  className 
+  className,
 }: LoadingStateProps) {
   return (
     <div className={cn('flex items-center justify-center p-4', className)}>

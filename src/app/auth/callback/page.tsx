@@ -15,7 +15,7 @@ export default async function AuthCallback({
 
   if (params.code) {
     const { error } = await supabase.auth.exchangeCodeForSession(params.code)
-    
+
     if (error) {
       redirect('/auth/login?error=' + encodeURIComponent(error.message))
     }

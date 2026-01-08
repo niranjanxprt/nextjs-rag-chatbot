@@ -1,6 +1,6 @@
 /**
  * Qdrant Vector Database Service
- * 
+ *
  * Handles vector storage, search, and management operations
  * with proper error handling and connection pooling
  */
@@ -56,7 +56,7 @@ const QDRANT_CONFIG = {
   distance: 'Cosine' as const,
   timeout: 30000, // 30 seconds
   retryAttempts: 3,
-  retryDelay: 1000 // 1 second
+  retryDelay: 1000, // 1 second
 }
 
 // =============================================================================
@@ -76,7 +76,7 @@ export class QdrantError extends Error {
 
 function handleQdrantError(error: any): never {
   console.error('Qdrant error:', error)
-  
+
   if (error.response) {
     throw new QdrantError(
       error.response.data?.message || 'Qdrant API error',
@@ -84,19 +84,16 @@ function handleQdrantError(error: any): never {
       error.response.status
     )
   }
-  
+
   if (error.code === 'ECONNREFUSED') {
     throw new QdrantError('Cannot connect to Qdrant server', 'CONNECTION_REFUSED')
   }
-  
+
   if (error.code === 'ETIMEDOUT') {
     throw new QdrantError('Qdrant request timeout', 'TIMEOUT')
   }
-  
-  throw new QdrantError(
-    error.message || 'Unknown Qdrant error',
-    error.code
-  )
+
+  throw new QdrantError(error.message || 'Unknown Qdrant error', error.code)
 }
 
 // =============================================================================
@@ -111,7 +108,7 @@ class QdrantService {
     this.client = new QdrantClient({
       url: QDRANT_CONFIG.url,
       apiKey: QDRANT_CONFIG.apiKey,
-      timeout: QDRANT_CONFIG.timeout
+      timeout: QDRANT_CONFIG.timeout,
     })
   }
 
@@ -124,16 +121,15 @@ class QdrantService {
 
     try {
       console.log('Initializing Qdrant connection...')
-      
+
       // Test connection
       await this.client.getCollections()
-      
+
       // Ensure collection exists
       await this.ensureCollection()
-      
+
       this.isInitialized = true
       console.log('Qdrant connection initialized successfully')
-      
     } catch (error) {
       console.error('Failed to initialize Qdrant:', error)
       handleQdrantError(error)
@@ -149,11 +145,11 @@ class QdrantService {
 
       if (!collectionExists) {
         console.log(`Creating collection: ${QDRANT_CONFIG.collectionName}`)
-        
+
         await this.client.createCollection(QDRANT_CONFIG.collectionName, {
           vectors: {
             size: QDRANT_CONFIG.vectorSize,
-            distance: QDRANT_CONFIG.distance
+            distance: QDRANT_CONFIG.distance,
           },
           optimizers_config: {
             default_segment_number: 2,
@@ -161,12 +157,12 @@ class QdrantService {
             memmap_threshold: 20000,
             indexing_threshold: 20000,
             flush_interval_sec: 5,
-            max_optimization_threads: 1
+            max_optimization_threads: 1,
           },
           replication_factor: 1,
-          write_consistency_factor: 1
+          write_consistency_factor: 1,
         })
-        
+
         console.log('Collection created successfully')
       } else {
         console.log('Collection already exists')
@@ -188,27 +184,23 @@ class QdrantService {
       const qdrantPoints: any[] = points.map(point => ({
         id: point.id,
         vector: point.vector,
-        payload: point.payload
+        payload: point.payload,
       }))
 
       const operation: any = {
-        points: qdrantPoints
+        points: qdrantPoints,
       }
 
       await this.client.upsert(QDRANT_CONFIG.collectionName, operation)
-      
+
       console.log(`Upserted ${points.length} points to Qdrant`)
-      
     } catch (error) {
       console.error('Error upserting points:', error)
       handleQdrantError(error)
     }
   }
 
-  async searchSimilar(
-    queryVector: number[],
-    options: SearchOptions
-  ): Promise<SearchResult[]> {
+  async searchSimilar(queryVector: number[], options: SearchOptions): Promise<SearchResult[]> {
     await this.initialize()
 
     try {
@@ -219,13 +211,13 @@ class QdrantService {
         must: [
           {
             key: 'user_id',
-            match: { value: userId }
+            match: { value: userId },
           },
           ...Object.entries(filter).map(([key, value]) => ({
             key,
-            match: { value }
-          }))
-        ]
+            match: { value },
+          })),
+        ],
       }
 
       const searchParams: any = {
@@ -234,20 +226,16 @@ class QdrantService {
         score_threshold: threshold,
         filter: searchFilter,
         with_payload: true,
-        with_vector: false
+        with_vector: false,
       }
 
-      const results = await this.client.search(
-        QDRANT_CONFIG.collectionName,
-        searchParams
-      )
+      const results = await this.client.search(QDRANT_CONFIG.collectionName, searchParams)
 
       return results.map(result => ({
         id: result.id as string,
         score: result.score,
-        payload: result.payload as VectorPoint['payload']
+        payload: result.payload as VectorPoint['payload'],
       }))
-      
     } catch (error) {
       console.error('Error searching vectors:', error)
       handleQdrantError(error)
@@ -259,11 +247,10 @@ class QdrantService {
 
     try {
       await this.client.delete(QDRANT_CONFIG.collectionName, {
-        points: pointIds
+        points: pointIds,
       })
-      
+
       console.log(`Deleted ${pointIds.length} points from Qdrant`)
-      
     } catch (error) {
       console.error('Error deleting points:', error)
       handleQdrantError(error)
@@ -277,16 +264,15 @@ class QdrantService {
       const deleteFilter: any = {
         must: Object.entries(filter).map(([key, value]) => ({
           key,
-          match: { value }
-        }))
+          match: { value },
+        })),
       }
 
       await this.client.delete(QDRANT_CONFIG.collectionName, {
-        filter: deleteFilter
+        filter: deleteFilter,
       })
-      
+
       console.log('Deleted points by filter:', filter)
-      
     } catch (error) {
       console.error('Error deleting by filter:', error)
       handleQdrantError(error)
@@ -302,13 +288,12 @@ class QdrantService {
 
     try {
       const info = await this.client.getCollection(QDRANT_CONFIG.collectionName)
-      
+
       return {
         name: QDRANT_CONFIG.collectionName,
         vectorsCount: (info as any).vectors_count || 0,
-        status: info.status
+        status: info.status,
       }
-      
     } catch (error) {
       console.error('Error getting collection info:', error)
       handleQdrantError(error)
@@ -320,7 +305,7 @@ class QdrantService {
 
     try {
       console.log('Recreating collection...')
-      
+
       // Delete existing collection
       try {
         await this.client.deleteCollection(QDRANT_CONFIG.collectionName)
@@ -328,17 +313,16 @@ class QdrantService {
         // Collection might not exist, continue
         console.log('Collection did not exist, creating new one')
       }
-      
+
       // Create new collection
       await this.client.createCollection(QDRANT_CONFIG.collectionName, {
         vectors: {
           size: QDRANT_CONFIG.vectorSize,
-          distance: QDRANT_CONFIG.distance
-        }
+          distance: QDRANT_CONFIG.distance,
+        },
       })
-      
+
       console.log('Collection recreated successfully')
-      
     } catch (error) {
       console.error('Error recreating collection:', error)
       handleQdrantError(error)
@@ -372,14 +356,13 @@ class QdrantService {
           must: [
             {
               key: 'user_id',
-              match: { value: userId }
-            }
-          ]
-        }
+              match: { value: userId },
+            },
+          ],
+        },
       })
-      
+
       return result.count
-      
     } catch (error) {
       console.error('Error counting user vectors:', error)
       handleQdrantError(error)
@@ -398,12 +381,12 @@ class QdrantService {
           must: [
             {
               key: 'user_id',
-              match: { value: userId }
-            }
-          ]
+              match: { value: userId },
+            },
+          ],
         },
         with_payload: true,
-        with_vector: false
+        with_vector: false,
       })
 
       const documentIds = new Set<string>()
@@ -414,7 +397,6 @@ class QdrantService {
       })
 
       return Array.from(documentIds)
-      
     } catch (error) {
       console.error('Error getting user documents:', error)
       handleQdrantError(error)

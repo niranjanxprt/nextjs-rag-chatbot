@@ -1,6 +1,6 @@
 /**
  * Property-Based Tests for UI Responsiveness
- * 
+ *
  * Property 11: User Interface Responsiveness
  * Validates: Requirements 9.1, 9.2, 9.3, 9.4
  */
@@ -58,7 +58,7 @@ class MockResponsiveUISystem {
     mobile: 640,
     tablet: 768,
     desktop: 1024,
-    wide: 1280
+    wide: 1280,
   }
 
   constructor() {
@@ -67,7 +67,7 @@ class MockResponsiveUISystem {
       components: [],
       navigationCollapsed: false,
       sidebarVisible: true,
-      modalOpen: false
+      modalOpen: false,
     }
   }
 
@@ -87,11 +87,11 @@ class MockResponsiveUISystem {
   addComponent(component: Omit<MockUIComponent, 'id'>): MockUIComponent {
     const id = `component_${this.layoutState.components.length + 1}`
     const fullComponent: MockUIComponent = { ...component, id }
-    
+
     this.validateComponent(fullComponent)
     this.layoutState.components.push(fullComponent)
     this.updateComponentLayout(fullComponent)
-    
+
     return fullComponent
   }
 
@@ -154,12 +154,12 @@ class MockResponsiveUISystem {
     // Mobile-specific adjustments
     component.styles.fontSize = Math.max(14, component.styles.fontSize * 0.9)
     component.styles.padding = Math.max(8, component.styles.padding * 0.8)
-    
+
     if (component.type === 'navigation') {
       component.dimensions.width = this.layoutState.viewport.width
       component.dimensions.height = Math.min(60, component.dimensions.height)
     }
-    
+
     if (component.type === 'button') {
       component.dimensions.height = Math.max(44, component.dimensions.height) // Touch target
     }
@@ -210,8 +210,10 @@ class MockResponsiveUISystem {
 
       // Check touch target size for mobile
       if (this.getCurrentBreakpoint(this.layoutState.viewport.width) === 'mobile') {
-        if (component.interactive && 
-            (component.dimensions.width < 44 || component.dimensions.height < 44)) {
+        if (
+          component.interactive &&
+          (component.dimensions.width < 44 || component.dimensions.height < 44)
+        ) {
           issues.push(`Component ${component.id} touch target too small`)
           isAccessible = false
         }
@@ -231,7 +233,7 @@ class MockResponsiveUISystem {
     return {
       totalComponents: this.layoutState.components.length,
       accessibleComponents: accessibleCount,
-      issues
+      issues,
     }
   }
 
@@ -254,7 +256,7 @@ class MockResponsiveUISystem {
 
     return {
       hasOverlaps: overlappingPairs.length > 0,
-      overlappingPairs
+      overlappingPairs,
     }
   }
 
@@ -262,10 +264,12 @@ class MockResponsiveUISystem {
     const rect1 = comp1.dimensions
     const rect2 = comp2.dimensions
 
-    return !(rect1.x + rect1.width <= rect2.x ||
-             rect2.x + rect2.width <= rect1.x ||
-             rect1.y + rect1.height <= rect2.y ||
-             rect2.y + rect2.height <= rect1.y)
+    return !(
+      rect1.x + rect1.width <= rect2.x ||
+      rect2.x + rect2.width <= rect1.x ||
+      rect1.y + rect1.height <= rect2.y ||
+      rect2.y + rect2.height <= rect1.y
+    )
   }
 
   checkPerformance(): {
@@ -278,9 +282,9 @@ class MockResponsiveUISystem {
     const viewportArea = this.layoutState.viewport.width * this.layoutState.viewport.height
 
     return {
-      renderTime: Math.max(16, componentCount * 2 + (viewportArea / 100000)), // Target 60fps
+      renderTime: Math.max(16, componentCount * 2 + viewportArea / 100000), // Target 60fps
       layoutShifts: Math.floor(componentCount / 10), // Fewer shifts with fewer components
-      memoryUsage: componentCount * 1024 + viewportArea * 0.1 // Bytes
+      memoryUsage: componentCount * 1024 + viewportArea * 0.1, // Bytes
     }
   }
 
@@ -294,7 +298,7 @@ class MockResponsiveUISystem {
       components: [],
       navigationCollapsed: false,
       sidebarVisible: true,
-      modalOpen: false
+      modalOpen: false,
     }
   }
 }
@@ -310,38 +314,49 @@ describe('UI Responsiveness - Property Tests', () => {
     it('should adapt layout correctly across different viewport sizes', async () => {
       await fc.assert(
         fc.property(
-          fc.array(fc.tuple(
-            fc.integer({ min: 320, max: 2560 }), // viewport width
-            fc.integer({ min: 240, max: 1440 }), // viewport height
-            fc.float({ min: Math.fround(1.0), max: Math.fround(3.0) }) // device pixel ratio
-          ), { minLength: 3, maxLength: 8 }),
-          fc.array(fc.record({
-            type: fc.constantFrom('button' as const, 'input' as const, 'card' as const, 'navigation' as const),
-            visible: fc.boolean(),
-            interactive: fc.boolean(),
-            dimensions: fc.record({
-              width: fc.integer({ min: 50, max: 400 }),
-              height: fc.integer({ min: 20, max: 200 }),
-              x: fc.integer({ min: 0, max: 100 }),
-              y: fc.integer({ min: 0, max: 100 })
+          fc.array(
+            fc.tuple(
+              fc.integer({ min: 320, max: 2560 }), // viewport width
+              fc.integer({ min: 240, max: 1440 }), // viewport height
+              fc.float({ min: Math.fround(1.0), max: Math.fround(3.0) }) // device pixel ratio
+            ),
+            { minLength: 3, maxLength: 8 }
+          ),
+          fc.array(
+            fc.record({
+              type: fc.constantFrom(
+                'button' as const,
+                'input' as const,
+                'card' as const,
+                'navigation' as const
+              ),
+              visible: fc.boolean(),
+              interactive: fc.boolean(),
+              dimensions: fc.record({
+                width: fc.integer({ min: 50, max: 400 }),
+                height: fc.integer({ min: 20, max: 200 }),
+                x: fc.integer({ min: 0, max: 100 }),
+                y: fc.integer({ min: 0, max: 100 }),
+              }),
+              styles: fc.record({
+                fontSize: fc.integer({ min: 12, max: 24 }),
+                padding: fc.integer({ min: 4, max: 32 }),
+                margin: fc.integer({ min: 0, max: 16 }),
+                borderRadius: fc.integer({ min: 0, max: 12 }),
+              }),
+              accessibility: fc.record({
+                hasAriaLabel: fc.boolean(),
+                hasRole: fc.boolean(),
+                keyboardNavigable: fc.boolean(),
+                focusable: fc.boolean(),
+              }),
+              responsive: fc.record({
+                breakpoints: fc.constant({}),
+                adaptiveLayout: fc.boolean(),
+              }),
             }),
-            styles: fc.record({
-              fontSize: fc.integer({ min: 12, max: 24 }),
-              padding: fc.integer({ min: 4, max: 32 }),
-              margin: fc.integer({ min: 0, max: 16 }),
-              borderRadius: fc.integer({ min: 0, max: 12 })
-            }),
-            accessibility: fc.record({
-              hasAriaLabel: fc.boolean(),
-              hasRole: fc.boolean(),
-              keyboardNavigable: fc.boolean(),
-              focusable: fc.boolean()
-            }),
-            responsive: fc.record({
-              breakpoints: fc.constant({}),
-              adaptiveLayout: fc.boolean()
-            })
-          }), { minLength: 2, maxLength: 10 }),
+            { minLength: 2, maxLength: 10 }
+          ),
           (viewportSpecs, componentSpecs) => {
             // Add components
             const components = componentSpecs.map(spec => uiSystem.addComponent(spec))
@@ -387,37 +402,46 @@ describe('UI Responsiveness - Property Tests', () => {
     it('should maintain accessibility standards across breakpoints', async () => {
       await fc.assert(
         fc.property(
-          fc.array(fc.tuple(
-            fc.integer({ min: 320, max: 1920 }),
-            fc.integer({ min: 240, max: 1080 })
-          ), { minLength: 4, maxLength: 6 }),
-          fc.array(fc.record({
-            type: fc.constantFrom('button' as const, 'input' as const, 'card' as const, 'navigation' as const, 'modal' as const),
-            visible: fc.constant(true),
-            interactive: fc.boolean(),
-            dimensions: fc.record({
-              width: fc.integer({ min: 30, max: 300 }),
-              height: fc.integer({ min: 20, max: 150 }),
-              x: fc.integer({ min: 0, max: 50 }),
-              y: fc.integer({ min: 0, max: 50 })
+          fc.array(
+            fc.tuple(fc.integer({ min: 320, max: 1920 }), fc.integer({ min: 240, max: 1080 })),
+            { minLength: 4, maxLength: 6 }
+          ),
+          fc.array(
+            fc.record({
+              type: fc.constantFrom(
+                'button' as const,
+                'input' as const,
+                'card' as const,
+                'navigation' as const,
+                'modal' as const
+              ),
+              visible: fc.constant(true),
+              interactive: fc.boolean(),
+              dimensions: fc.record({
+                width: fc.integer({ min: 30, max: 300 }),
+                height: fc.integer({ min: 20, max: 150 }),
+                x: fc.integer({ min: 0, max: 50 }),
+                y: fc.integer({ min: 0, max: 50 }),
+              }),
+              styles: fc.record({
+                fontSize: fc.integer({ min: 10, max: 20 }),
+                padding: fc.integer({ min: 2, max: 20 }),
+                margin: fc.integer({ min: 0, max: 10 }),
+                borderRadius: fc.integer({ min: 0, max: 8 }),
+              }),
+              accessibility: fc.record({
+                hasAriaLabel: fc.boolean(),
+                hasRole: fc.boolean(),
+                keyboardNavigable: fc.boolean(),
+                focusable: fc.boolean(),
+              }),
+              responsive: fc.record({
+                breakpoints: fc.constant({}),
+                adaptiveLayout: fc.constant(true),
+              }),
             }),
-            styles: fc.record({
-              fontSize: fc.integer({ min: 10, max: 20 }),
-              padding: fc.integer({ min: 2, max: 20 }),
-              margin: fc.integer({ min: 0, max: 10 }),
-              borderRadius: fc.integer({ min: 0, max: 8 })
-            }),
-            accessibility: fc.record({
-              hasAriaLabel: fc.boolean(),
-              hasRole: fc.boolean(),
-              keyboardNavigable: fc.boolean(),
-              focusable: fc.boolean()
-            }),
-            responsive: fc.record({
-              breakpoints: fc.constant({}),
-              adaptiveLayout: fc.constant(true)
-            })
-          }), { minLength: 3, maxLength: 12 }),
+            { minLength: 3, maxLength: 12 }
+          ),
           (viewportSpecs, componentSpecs) => {
             // Add components
             componentSpecs.forEach(spec => uiSystem.addComponent(spec))
@@ -428,27 +452,32 @@ describe('UI Responsiveness - Property Tests', () => {
               const accessibility = uiSystem.checkAccessibility()
 
               // Property: Should have reasonable accessibility compliance
-              const complianceRate = accessibility.accessibleComponents / accessibility.totalComponents
-              
+              const complianceRate =
+                accessibility.accessibleComponents / accessibility.totalComponents
+
               // Property: Interactive components should be accessible
               const layoutState = uiSystem.getLayoutState()
               const interactiveComponents = layoutState.components.filter(c => c.interactive)
-              
+
               interactiveComponents.forEach(component => {
                 // On mobile, interactive components should have adequate touch targets
                 if (width < 640) {
                   if (component.dimensions.width < 44 || component.dimensions.height < 44) {
-                    expect(accessibility.issues.some(issue => 
-                      issue.includes(component.id) && issue.includes('touch target')
-                    )).toBe(true)
+                    expect(
+                      accessibility.issues.some(
+                        issue => issue.includes(component.id) && issue.includes('touch target')
+                      )
+                    ).toBe(true)
                   }
                 }
 
                 // Font sizes should be readable
                 if (component.styles.fontSize < 12) {
-                  expect(accessibility.issues.some(issue => 
-                    issue.includes(component.id) && issue.includes('font size')
-                  )).toBe(true)
+                  expect(
+                    accessibility.issues.some(
+                      issue => issue.includes(component.id) && issue.includes('font size')
+                    )
+                  ).toBe(true)
                 }
               })
 
@@ -464,37 +493,37 @@ describe('UI Responsiveness - Property Tests', () => {
     it('should prevent layout overlaps and maintain visual hierarchy', async () => {
       await fc.assert(
         fc.property(
-          fc.tuple(
-            fc.integer({ min: 768, max: 1920 }),
-            fc.integer({ min: 600, max: 1080 })
+          fc.tuple(fc.integer({ min: 768, max: 1920 }), fc.integer({ min: 600, max: 1080 })),
+          fc.array(
+            fc.record({
+              type: fc.constantFrom('button' as const, 'input' as const, 'card' as const),
+              visible: fc.constant(true),
+              interactive: fc.constant(true),
+              dimensions: fc.record({
+                width: fc.integer({ min: 80, max: 200 }),
+                height: fc.integer({ min: 40, max: 100 }),
+                x: fc.integer({ min: 0, max: 300 }),
+                y: fc.integer({ min: 0, max: 200 }),
+              }),
+              styles: fc.record({
+                fontSize: fc.integer({ min: 14, max: 18 }),
+                padding: fc.integer({ min: 8, max: 16 }),
+                margin: fc.integer({ min: 4, max: 12 }),
+                borderRadius: fc.integer({ min: 0, max: 8 }),
+              }),
+              accessibility: fc.record({
+                hasAriaLabel: fc.constant(true),
+                hasRole: fc.constant(true),
+                keyboardNavigable: fc.constant(true),
+                focusable: fc.constant(true),
+              }),
+              responsive: fc.record({
+                breakpoints: fc.constant({}),
+                adaptiveLayout: fc.constant(true),
+              }),
+            }),
+            { minLength: 4, maxLength: 8 }
           ),
-          fc.array(fc.record({
-            type: fc.constantFrom('button' as const, 'input' as const, 'card' as const),
-            visible: fc.constant(true),
-            interactive: fc.constant(true),
-            dimensions: fc.record({
-              width: fc.integer({ min: 80, max: 200 }),
-              height: fc.integer({ min: 40, max: 100 }),
-              x: fc.integer({ min: 0, max: 300 }),
-              y: fc.integer({ min: 0, max: 200 })
-            }),
-            styles: fc.record({
-              fontSize: fc.integer({ min: 14, max: 18 }),
-              padding: fc.integer({ min: 8, max: 16 }),
-              margin: fc.integer({ min: 4, max: 12 }),
-              borderRadius: fc.integer({ min: 0, max: 8 })
-            }),
-            accessibility: fc.record({
-              hasAriaLabel: fc.constant(true),
-              hasRole: fc.constant(true),
-              keyboardNavigable: fc.constant(true),
-              focusable: fc.constant(true)
-            }),
-            responsive: fc.record({
-              breakpoints: fc.constant({}),
-              adaptiveLayout: fc.constant(true)
-            })
-          }), { minLength: 4, maxLength: 8 }),
           ([width, height], componentSpecs) => {
             uiSystem.setViewport({ width, height, devicePixelRatio: 1 })
 
@@ -505,8 +534,8 @@ describe('UI Responsiveness - Property Tests', () => {
                 dimensions: {
                   ...spec.dimensions,
                   x: spec.dimensions.x + (index % 3) * 150,
-                  y: spec.dimensions.y + Math.floor(index / 3) * 120
-                }
+                  y: spec.dimensions.y + Math.floor(index / 3) * 120,
+                },
               }
               uiSystem.addComponent(adjustedSpec)
             })
@@ -514,7 +543,8 @@ describe('UI Responsiveness - Property Tests', () => {
             const overlapCheck = uiSystem.checkLayoutOverlaps()
 
             // Property: Well-spaced components should not overlap
-            if (componentSpecs.length <= 6) { // For reasonable component counts
+            if (componentSpecs.length <= 6) {
+              // For reasonable component counts
               expect(overlapCheck.hasOverlaps).toBe(false)
             }
 
@@ -538,10 +568,7 @@ describe('UI Responsiveness - Property Tests', () => {
     it('should maintain acceptable performance across component counts', async () => {
       await fc.assert(
         fc.property(
-          fc.tuple(
-            fc.integer({ min: 1024, max: 1920 }),
-            fc.integer({ min: 768, max: 1080 })
-          ),
+          fc.tuple(fc.integer({ min: 1024, max: 1920 }), fc.integer({ min: 768, max: 1080 })),
           fc.integer({ min: 5, max: 50 }),
           ([width, height], componentCount) => {
             uiSystem.setViewport({ width, height, devicePixelRatio: 1 })
@@ -556,24 +583,24 @@ describe('UI Responsiveness - Property Tests', () => {
                   width: 100,
                   height: 80,
                   x: (i % 10) * 110,
-                  y: Math.floor(i / 10) * 90
+                  y: Math.floor(i / 10) * 90,
                 },
                 styles: {
                   fontSize: 14,
                   padding: 8,
                   margin: 4,
-                  borderRadius: 4
+                  borderRadius: 4,
                 },
                 accessibility: {
                   hasAriaLabel: true,
                   hasRole: true,
                   keyboardNavigable: false,
-                  focusable: false
+                  focusable: false,
                 },
                 responsive: {
                   breakpoints: {},
-                  adaptiveLayout: true
-                }
+                  adaptiveLayout: true,
+                },
               })
             }
 
@@ -591,7 +618,7 @@ describe('UI Responsiveness - Property Tests', () => {
             expect(performance.layoutShifts).toBeLessThanOrEqual(Math.ceil(componentCount / 5))
 
             // Property: Memory usage should be reasonable
-            const expectedMemory = componentCount * 1024 + (width * height * 0.1)
+            const expectedMemory = componentCount * 1024 + width * height * 0.1
             expect(Math.abs(performance.memoryUsage - expectedMemory)).toBeLessThan(1000)
           }
         ),
@@ -602,10 +629,10 @@ describe('UI Responsiveness - Property Tests', () => {
     it('should handle viewport changes efficiently', async () => {
       await fc.assert(
         fc.property(
-          fc.array(fc.tuple(
-            fc.integer({ min: 320, max: 2560 }),
-            fc.integer({ min: 240, max: 1440 })
-          ), { minLength: 5, maxLength: 15 }),
+          fc.array(
+            fc.tuple(fc.integer({ min: 320, max: 2560 }), fc.integer({ min: 240, max: 1440 })),
+            { minLength: 5, maxLength: 15 }
+          ),
           fc.integer({ min: 8, max: 25 }),
           (viewportChanges, componentCount) => {
             // Add components
@@ -618,38 +645,38 @@ describe('UI Responsiveness - Property Tests', () => {
                   width: 120,
                   height: 40,
                   x: (i % 5) * 130,
-                  y: Math.floor(i / 5) * 50
+                  y: Math.floor(i / 5) * 50,
                 },
                 styles: {
                   fontSize: 16,
                   padding: 12,
                   margin: 8,
-                  borderRadius: 6
+                  borderRadius: 6,
                 },
                 accessibility: {
                   hasAriaLabel: true,
                   hasRole: true,
                   keyboardNavigable: true,
-                  focusable: true
+                  focusable: true,
                 },
                 responsive: {
                   breakpoints: {},
-                  adaptiveLayout: true
-                }
+                  adaptiveLayout: true,
+                },
               })
             }
 
             // Apply viewport changes rapidly
             const startTime = Date.now()
-            
+
             viewportChanges.forEach(([width, height]) => {
               uiSystem.setViewport({ width, height, devicePixelRatio: 1 })
-              
+
               const layoutState = uiSystem.getLayoutState()
-              
+
               // Property: Layout should remain consistent after each change
               expect(layoutState.components).toHaveLength(componentCount)
-              
+
               // Property: All components should have valid properties
               layoutState.components.forEach(component => {
                 expect(component.dimensions.width).toBeGreaterThan(0)
@@ -673,57 +700,65 @@ describe('UI Responsiveness - Property Tests', () => {
     it('should adapt appropriately to different device characteristics', async () => {
       await fc.assert(
         fc.property(
-          fc.array(fc.record({
-            width: fc.integer({ min: 320, max: 2560 }),
-            height: fc.integer({ min: 240, max: 1440 }),
-            devicePixelRatio: fc.float({ min: Math.fround(1.0), max: Math.fround(3.0) }),
-            deviceType: fc.constantFrom('mobile', 'tablet', 'desktop', 'wide')
-          }), { minLength: 3, maxLength: 6 }),
-          fc.array(fc.record({
-            type: fc.constantFrom('button' as const, 'input' as const, 'navigation' as const),
-            interactive: fc.constant(true),
-            dimensions: fc.record({
-              width: fc.integer({ min: 60, max: 250 }),
-              height: fc.integer({ min: 30, max: 120 })
+          fc.array(
+            fc.record({
+              width: fc.integer({ min: 320, max: 2560 }),
+              height: fc.integer({ min: 240, max: 1440 }),
+              devicePixelRatio: fc.float({ min: Math.fround(1.0), max: Math.fround(3.0) }),
+              deviceType: fc.constantFrom('mobile', 'tablet', 'desktop', 'wide'),
             }),
-            styles: fc.record({
-              fontSize: fc.integer({ min: 12, max: 20 }),
-              padding: fc.integer({ min: 6, max: 20 })
-            })
-          }), { minLength: 3, maxLength: 8 }),
+            { minLength: 3, maxLength: 6 }
+          ),
+          fc.array(
+            fc.record({
+              type: fc.constantFrom('button' as const, 'input' as const, 'navigation' as const),
+              interactive: fc.constant(true),
+              dimensions: fc.record({
+                width: fc.integer({ min: 60, max: 250 }),
+                height: fc.integer({ min: 30, max: 120 }),
+              }),
+              styles: fc.record({
+                fontSize: fc.integer({ min: 12, max: 20 }),
+                padding: fc.integer({ min: 6, max: 20 }),
+              }),
+            }),
+            { minLength: 3, maxLength: 8 }
+          ),
           (devices, componentSpecs) => {
             // Add components
-            const components = componentSpecs.map(spec => uiSystem.addComponent({
-              ...spec,
-              visible: true,
-              dimensions: {
-                ...spec.dimensions,
-                x: 0,
-                y: 0
-              },
-              styles: {
-                ...spec.styles,
-                margin: 4,
-                borderRadius: 4
-              },
-              accessibility: {
-                hasAriaLabel: true,
-                hasRole: true,
-                keyboardNavigable: true,
-                focusable: true
-              },
-              responsive: {
-                breakpoints: {},
-                adaptiveLayout: true
-              }
-            }))
+            const components = componentSpecs.map(spec =>
+              uiSystem.addComponent({
+                ...spec,
+                visible: true,
+                dimensions: {
+                  ...spec.dimensions,
+                  x: 0,
+                  y: 0,
+                },
+                styles: {
+                  ...spec.styles,
+                  margin: 4,
+                  borderRadius: 4,
+                },
+                accessibility: {
+                  hasAriaLabel: true,
+                  hasRole: true,
+                  keyboardNavigable: true,
+                  focusable: true,
+                },
+                responsive: {
+                  breakpoints: {},
+                  adaptiveLayout: true,
+                },
+              })
+            )
 
             // Test each device
             devices.forEach(device => {
               uiSystem.setViewport({
                 width: device.width,
                 height: device.height,
-                devicePixelRatio: device.devicePixelRatio
+                devicePixelRatio: device.devicePixelRatio,
               })
 
               const layoutState = uiSystem.getLayoutState()

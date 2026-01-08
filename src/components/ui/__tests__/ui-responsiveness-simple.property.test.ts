@@ -1,6 +1,6 @@
 /**
  * Simplified Property-Based Tests for UI Responsiveness
- * 
+ *
  * Property 11: User Interface Responsiveness
  * Validates: Requirements 9.1, 9.2, 9.3, 9.4
  */
@@ -43,9 +43,9 @@ class SimpleResponsiveSystem {
       width: 100,
       height: 40,
       fontSize: 16,
-      interactive
+      interactive,
     }
-    
+
     this.components.push(component)
     this.updateComponent(component)
     return component
@@ -99,16 +99,19 @@ describe('UI Responsiveness - Simplified Property Tests', () => {
     it('should adapt components to different viewport sizes', () => {
       fc.assert(
         fc.property(
-          fc.array(fc.tuple(
-            fc.integer({ min: 320, max: 1920 }),
-            fc.integer({ min: 240, max: 1080 })
-          ), { minLength: 2, maxLength: 5 }),
-          fc.array(fc.constantFrom('button' as const, 'input' as const, 'card' as const), { minLength: 1, maxLength: 5 }),
+          fc.array(
+            fc.tuple(fc.integer({ min: 320, max: 1920 }), fc.integer({ min: 240, max: 1080 })),
+            { minLength: 2, maxLength: 5 }
+          ),
+          fc.array(fc.constantFrom('button' as const, 'input' as const, 'card' as const), {
+            minLength: 1,
+            maxLength: 5,
+          }),
           (viewports, componentTypes) => {
             const testSystem = new SimpleResponsiveSystem()
-            
+
             // Add components
-            const components = componentTypes.map(type => 
+            const components = componentTypes.map(type =>
               testSystem.addComponent(type, type === 'button' || type === 'input')
             )
 
@@ -151,13 +154,13 @@ describe('UI Responsiveness - Simplified Property Tests', () => {
       fc.assert(
         fc.property(
           fc.integer({ min: 1, max: 8 }),
-          fc.array(fc.tuple(
-            fc.integer({ min: 320, max: 1920 }),
-            fc.integer({ min: 240, max: 1080 })
-          ), { minLength: 3, maxLength: 8 }),
+          fc.array(
+            fc.tuple(fc.integer({ min: 320, max: 1920 }), fc.integer({ min: 240, max: 1080 })),
+            { minLength: 3, maxLength: 8 }
+          ),
           (componentCount, viewports) => {
             const testSystem = new SimpleResponsiveSystem()
-            
+
             // Add components
             for (let i = 0; i < componentCount; i++) {
               testSystem.addComponent('button', true)
@@ -166,7 +169,7 @@ describe('UI Responsiveness - Simplified Property Tests', () => {
             // Apply viewport changes
             viewports.forEach(([width, height]) => {
               testSystem.setViewport({ width, height })
-              
+
               const viewport = testSystem.getViewport()
               const components = testSystem.getComponents()
 
@@ -190,10 +193,13 @@ describe('UI Responsiveness - Simplified Property Tests', () => {
     it('should maintain component properties across breakpoints', () => {
       fc.assert(
         fc.property(
-          fc.array(fc.constantFrom('button' as const, 'input' as const), { minLength: 2, maxLength: 6 }),
-          (componentTypes) => {
+          fc.array(fc.constantFrom('button' as const, 'input' as const), {
+            minLength: 2,
+            maxLength: 6,
+          }),
+          componentTypes => {
             const testSystem = new SimpleResponsiveSystem()
-            
+
             // Add components
             componentTypes.forEach(type => testSystem.addComponent(type, true))
 
@@ -201,7 +207,7 @@ describe('UI Responsiveness - Simplified Property Tests', () => {
               { width: 320, height: 568 }, // Mobile
               { width: 768, height: 1024 }, // Tablet
               { width: 1024, height: 768 }, // Desktop
-              { width: 1920, height: 1080 } // Wide
+              { width: 1920, height: 1080 }, // Wide
             ]
 
             breakpoints.forEach(viewport => {
@@ -217,9 +223,7 @@ describe('UI Responsiveness - Simplified Property Tests', () => {
               expect(components).toHaveLength(componentTypes.length)
 
               // Property: Component types should be preserved
-              expect(components.map(c => c.type).sort()).toEqual(
-                componentTypes.sort()
-              )
+              expect(components.map(c => c.type).sort()).toEqual(componentTypes.sort())
             })
           }
         ),
@@ -231,61 +235,55 @@ describe('UI Responsiveness - Simplified Property Tests', () => {
   describe('Property 11: Edge Cases', () => {
     it('should handle minimum viewport sizes', () => {
       fc.assert(
-        fc.property(
-          fc.integer({ min: 1, max: 5 }),
-          (componentCount) => {
-            const testSystem = new SimpleResponsiveSystem()
-            
-            // Add components
-            for (let i = 0; i < componentCount; i++) {
-              testSystem.addComponent('button', true)
-            }
+        fc.property(fc.integer({ min: 1, max: 5 }), componentCount => {
+          const testSystem = new SimpleResponsiveSystem()
 
-            // Test minimum viewport
-            testSystem.setViewport({ width: 320, height: 240 })
-            const components = testSystem.getComponents()
-
-            // Property: Should handle minimum viewport without errors
-            expect(components).toHaveLength(componentCount)
-            
-            // Property: Touch targets should be adequate
-            components.forEach(comp => {
-              expect(comp.height).toBeGreaterThanOrEqual(44)
-              expect(comp.fontSize).toBeGreaterThanOrEqual(14)
-            })
+          // Add components
+          for (let i = 0; i < componentCount; i++) {
+            testSystem.addComponent('button', true)
           }
-        ),
+
+          // Test minimum viewport
+          testSystem.setViewport({ width: 320, height: 240 })
+          const components = testSystem.getComponents()
+
+          // Property: Should handle minimum viewport without errors
+          expect(components).toHaveLength(componentCount)
+
+          // Property: Touch targets should be adequate
+          components.forEach(comp => {
+            expect(comp.height).toBeGreaterThanOrEqual(44)
+            expect(comp.fontSize).toBeGreaterThanOrEqual(14)
+          })
+        }),
         { numRuns: 2 }
       )
     })
 
     it('should handle maximum viewport sizes', () => {
       fc.assert(
-        fc.property(
-          fc.integer({ min: 1, max: 5 }),
-          (componentCount) => {
-            const testSystem = new SimpleResponsiveSystem()
-            
-            // Add components
-            for (let i = 0; i < componentCount; i++) {
-              testSystem.addComponent('card', false)
-            }
+        fc.property(fc.integer({ min: 1, max: 5 }), componentCount => {
+          const testSystem = new SimpleResponsiveSystem()
 
-            // Test maximum viewport
-            testSystem.setViewport({ width: 2560, height: 1440 })
-            const components = testSystem.getComponents()
-
-            // Property: Should handle large viewport without errors
-            expect(components).toHaveLength(componentCount)
-            
-            // Property: Components should remain valid
-            components.forEach(comp => {
-              expect(comp.width).toBeGreaterThan(0)
-              expect(comp.height).toBeGreaterThan(0)
-              expect(comp.fontSize).toBeGreaterThan(0)
-            })
+          // Add components
+          for (let i = 0; i < componentCount; i++) {
+            testSystem.addComponent('card', false)
           }
-        ),
+
+          // Test maximum viewport
+          testSystem.setViewport({ width: 2560, height: 1440 })
+          const components = testSystem.getComponents()
+
+          // Property: Should handle large viewport without errors
+          expect(components).toHaveLength(componentCount)
+
+          // Property: Components should remain valid
+          components.forEach(comp => {
+            expect(comp.width).toBeGreaterThan(0)
+            expect(comp.height).toBeGreaterThan(0)
+            expect(comp.fontSize).toBeGreaterThan(0)
+          })
+        }),
         { numRuns: 2 }
       )
     })

@@ -1,6 +1,6 @@
 /**
  * Dashboard Layout
- * 
+ *
  * Layout wrapper for authenticated dashboard pages
  */
 
@@ -37,7 +37,7 @@ export function DashboardLayout({ children, showBreadcrumbs = true }: DashboardL
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation />
-      
+
       {/* Breadcrumbs */}
       {showBreadcrumbs && (
         <div className="bg-white border-b border-gray-200">
@@ -46,10 +46,8 @@ export function DashboardLayout({ children, showBreadcrumbs = true }: DashboardL
           </div>
         </div>
       )}
-      
-      <main className="py-6">
-        {children}
-      </main>
+
+      <main className="py-6">{children}</main>
     </div>
   )
 }

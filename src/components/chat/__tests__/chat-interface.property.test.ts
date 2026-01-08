@@ -31,7 +31,7 @@ class MockConversationService {
       userId,
       messages: [],
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     }
 
     this.conversations.set(conversation.id, conversation)
@@ -55,7 +55,7 @@ class MockConversationService {
       content,
       userId,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     }
 
     return message
@@ -79,48 +79,57 @@ describe('Chat Interface Property Tests', () => {
 
   describe('conversation creation', () => {
     test('creates conversations with valid data', async () => {
-      await fc.assert(fc.asyncProperty(
-        fc.string({ minLength: 1, maxLength: 100 }),
-        fc.string({ minLength: 1 }),
-        async (title, userId) => {
-          const conversation = await mockService.createConversation(title, userId)
-          
-          expect(conversation.title).toBe(title)
-          expect(conversation.userId).toBe(userId)
-          expect(conversation.id).toBeDefined()
-        }
-      ), { numRuns: 5 })
+      await fc.assert(
+        fc.asyncProperty(
+          fc.string({ minLength: 1, maxLength: 100 }),
+          fc.string({ minLength: 1 }),
+          async (title, userId) => {
+            const conversation = await mockService.createConversation(title, userId)
+
+            expect(conversation.title).toBe(title)
+            expect(conversation.userId).toBe(userId)
+            expect(conversation.id).toBeDefined()
+          }
+        ),
+        { numRuns: 5 }
+      )
     })
   })
 
   describe('message handling', () => {
     test('adds valid messages', async () => {
-      await fc.assert(fc.asyncProperty(
-        fc.string({ minLength: 1, maxLength: 500 }),
-        fc.constantFrom('user' as const, 'assistant' as const),
-        fc.string({ minLength: 1 }),
-        async (content, role, userId) => {
-          const conversation = await mockService.createConversation('Test', userId)
-          const message = await mockService.addMessage(conversation.id, role, content, userId)
-          
-          expect(message.content).toBe(content)
-          expect(message.role).toBe(role)
-        }
-      ), { numRuns: 5 })
+      await fc.assert(
+        fc.asyncProperty(
+          fc.string({ minLength: 1, maxLength: 500 }),
+          fc.constantFrom('user' as const, 'assistant' as const),
+          fc.string({ minLength: 1 }),
+          async (content, role, userId) => {
+            const conversation = await mockService.createConversation('Test', userId)
+            const message = await mockService.addMessage(conversation.id, role, content, userId)
+
+            expect(message.content).toBe(content)
+            expect(message.role).toBe(role)
+          }
+        ),
+        { numRuns: 5 }
+      )
     })
 
     test('rejects empty content', async () => {
-      await fc.assert(fc.asyncProperty(
-        fc.constantFrom('user' as const, 'assistant' as const),
-        fc.string({ minLength: 1 }),
-        async (role, userId) => {
-          const conversation = await mockService.createConversation('Test', userId)
-          
-          await expect(
-            mockService.addMessage(conversation.id, role, '', userId)
-          ).rejects.toThrow('Message content cannot be empty')
-        }
-      ), { numRuns: 5 })
+      await fc.assert(
+        fc.asyncProperty(
+          fc.constantFrom('user' as const, 'assistant' as const),
+          fc.string({ minLength: 1 }),
+          async (role, userId) => {
+            const conversation = await mockService.createConversation('Test', userId)
+
+            await expect(mockService.addMessage(conversation.id, role, '', userId)).rejects.toThrow(
+              'Message content cannot be empty'
+            )
+          }
+        ),
+        { numRuns: 5 }
+      )
     })
   })
 })

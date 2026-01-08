@@ -1,6 +1,6 @@
 /**
  * Feature Integration Tester
- * 
+ *
  * Tests core RAG chatbot features and workflows
  */
 
@@ -13,7 +13,7 @@ const colors = {
   red: '\x1b[31m',
   yellow: '\x1b[33m',
   blue: '\x1b[34m',
-  reset: '\x1b[0m'
+  reset: '\x1b[0m',
 } as const
 
 function logSuccess(message: string): void {
@@ -126,11 +126,17 @@ async function validateDatabaseSchema(): Promise<boolean> {
     // Validate migration content
     for (const migration of migrations) {
       const content = fs.readFileSync(path.join(migrationsDir, migration), 'utf8')
-      
+
       // Check for required tables
-      const requiredTables = ['profiles', 'documents', 'document_chunks', 'conversations', 'messages']
+      const requiredTables = [
+        'profiles',
+        'documents',
+        'document_chunks',
+        'conversations',
+        'messages',
+      ]
       const foundTables = requiredTables.filter(table => content.includes(table))
-      
+
       if (foundTables.length > 0) {
         logSuccess(`Migration ${migration} contains required tables: ${foundTables.join(', ')}`)
       }
@@ -149,7 +155,7 @@ async function testDocumentProcessing(): Promise<boolean> {
     // Check if document processing utilities exist
     const processingFiles = [
       'src/lib/services/document-processor.ts',
-      'src/lib/services/embeddings.ts'
+      'src/lib/services/embeddings.ts',
     ]
 
     let allFilesExist = true
@@ -233,7 +239,7 @@ testEmbedding().then(success => process.exit(success ? 0 : 1))
     fs.writeFileSync('temp-embedding-test.js', testScript)
     execSync('node temp-embedding-test.js', { stdio: 'pipe' })
     fs.unlinkSync('temp-embedding-test.js')
-    
+
     logSuccess('Embedding generation test passed')
     return true
   } catch (error) {
@@ -289,7 +295,7 @@ testVectorDB().then(success => process.exit(success ? 0 : 1))
       fs.writeFileSync('temp-vector-test.js', testScript)
       execSync('node temp-vector-test.js', { stdio: 'pipe' })
       fs.unlinkSync('temp-vector-test.js')
-      
+
       logSuccess('Vector search capability verified')
     } else {
       logWarning('Qdrant not configured - vector search will use fallback')
@@ -308,10 +314,7 @@ testVectorDB().then(success => process.exit(success ? 0 : 1))
 async function testRAGPipeline(): Promise<boolean> {
   try {
     // Check if RAG components exist
-    const ragFiles = [
-      'src/app/api/chat/route.ts',
-      'src/app/api/search/route.ts'
-    ]
+    const ragFiles = ['src/app/api/chat/route.ts', 'src/app/api/search/route.ts']
 
     let allFilesExist = true
     for (const file of ragFiles) {
@@ -366,7 +369,7 @@ testChat().then(success => process.exit(success ? 0 : 1))
     fs.writeFileSync('temp-chat-test.js', testScript)
     execSync('node temp-chat-test.js', { stdio: 'pipe' })
     fs.unlinkSync('temp-chat-test.js')
-    
+
     logSuccess('RAG pipeline components verified')
     return allFilesExist
   } catch (error) {
@@ -381,11 +384,7 @@ testChat().then(success => process.exit(success ? 0 : 1))
 async function testAuthenticationFlow(): Promise<boolean> {
   try {
     // Check if auth components exist
-    const authFiles = [
-      'src/lib/auth',
-      'src/lib/supabase',
-      'src/middleware.ts'
-    ]
+    const authFiles = ['src/lib/auth', 'src/lib/supabase', 'src/middleware.ts']
 
     let allFilesExist = true
     for (const file of authFiles) {
@@ -442,7 +441,7 @@ testCache().then(success => process.exit(success ? 0 : 1))
       fs.writeFileSync('temp-cache-test.js', testScript)
       execSync('node temp-cache-test.js', { stdio: 'pipe' })
       fs.unlinkSync('temp-cache-test.js')
-      
+
       logSuccess('Caching system verified')
     } else {
       logWarning('Redis not configured - caching will use in-memory fallback')
@@ -464,7 +463,7 @@ async function testErrorHandling(): Promise<boolean> {
     const errorFiles = [
       'src/app/api/errors/route.ts',
       'src/app/error.tsx',
-      'src/app/global-error.tsx'
+      'src/app/global-error.tsx',
     ]
 
     for (const file of errorFiles) {
@@ -487,31 +486,33 @@ async function testPerformance(): Promise<boolean> {
   try {
     // Basic performance checks
     const buildDir = path.join(process.cwd(), '.next')
-    
+
     if (fs.existsSync(buildDir)) {
       // Check bundle sizes
       const staticDir = path.join(buildDir, 'static')
       if (fs.existsSync(staticDir)) {
         const chunksDir = path.join(staticDir, 'chunks')
         if (fs.existsSync(chunksDir)) {
-          const chunks = fs.readdirSync(chunksDir, { withFileTypes: true })
+          const chunks = fs
+            .readdirSync(chunksDir, { withFileTypes: true })
             .filter(dirent => dirent.isFile() && dirent.name.endsWith('.js'))
-          
+
           let totalSize = 0
           let largeChunks = 0
-          
+
           for (const chunk of chunks) {
             const chunkPath = path.join(chunksDir, chunk.name)
             const stats = fs.statSync(chunkPath)
             totalSize += stats.size
-            
-            if (stats.size > 500 * 1024) { // 500KB threshold
+
+            if (stats.size > 500 * 1024) {
+              // 500KB threshold
               largeChunks++
             }
           }
-          
+
           logInfo(`Total bundle size: ${Math.round(totalSize / 1024)}KB`)
-          
+
           if (largeChunks > 0) {
             logWarning(`${largeChunks} large chunks detected (>500KB)`)
           } else {

@@ -33,7 +33,7 @@ const colors: Colors = {
   yellow: '\x1b[33m',
   blue: '\x1b[34m',
   reset: '\x1b[0m',
-  bold: '\x1b[1m'
+  bold: '\x1b[1m',
 } as const
 
 function log(message: string, color: keyof Colors = 'reset'): void {
@@ -72,12 +72,12 @@ async function runCommand(command: string, description: string): Promise<boolean
 
 async function checkEnvironment(): Promise<boolean> {
   logStep(1, 'Checking Environment Variables')
-  
+
   const requiredVars: string[] = [
     'OPENAI_API_KEY',
     'NEXT_PUBLIC_SUPABASE_URL',
     'NEXT_PUBLIC_SUPABASE_ANON_KEY',
-    'SUPABASE_SERVICE_ROLE_KEY'
+    'SUPABASE_SERVICE_ROLE_KEY',
   ]
 
   let allPresent = true
@@ -95,7 +95,7 @@ async function checkEnvironment(): Promise<boolean> {
 
 async function installDependencies(): Promise<boolean> {
   logStep(2, 'Installing Dependencies')
-  
+
   try {
     await fs.access('node_modules')
     logSuccess('Dependencies already installed')
@@ -108,11 +108,11 @@ async function installDependencies(): Promise<boolean> {
 
 async function runTests(): Promise<boolean> {
   logStep(3, 'Running Test Suite')
-  
+
   const tests = [
     { command: 'npm run type-check', name: 'TypeScript Type Check' },
     { command: 'npm run lint', name: 'ESLint Code Quality' },
-    { command: 'npm test -- --passWithNoTests --silent', name: 'Unit Tests' }
+    { command: 'npm test -- --passWithNoTests --silent', name: 'Unit Tests' },
   ]
 
   let allPassed = true
@@ -131,7 +131,7 @@ async function buildApplication(): Promise<boolean> {
 
 async function testConnections(): Promise<boolean> {
   logStep(5, 'Testing External Service Connections')
-  
+
   // Test Supabase connection
   try {
     const testScript = `
@@ -151,7 +151,7 @@ supabase.from('profiles').select('count').limit(1).then(() => {
     await fs.writeFile('temp-supabase-test.mjs', testScript)
     const supabaseOk = await runCommand('node temp-supabase-test.mjs', 'Supabase Connection')
     await fs.unlink('temp-supabase-test.mjs')
-    
+
     if (supabaseOk) {
       logSuccess('Supabase connection successful')
     } else {
@@ -180,7 +180,7 @@ openai.models.list().then(() => {
     await fs.writeFile('temp-openai-test.mjs', testScript)
     const openaiOk = await runCommand('node temp-openai-test.mjs', 'OpenAI Connection')
     await fs.unlink('temp-openai-test.mjs')
-    
+
     if (openaiOk) {
       logSuccess('OpenAI connection successful')
     } else {
@@ -198,7 +198,7 @@ openai.models.list().then(() => {
 
 async function startDevServer(): Promise<void> {
   logStep(6, 'Starting Development Server for Manual Testing')
-  
+
   log('\n🚀 Starting Next.js development server...')
   log('📍 Server will be available at: http://localhost:3000')
   log('\n📋 Manual Testing Checklist:')
@@ -209,23 +209,22 @@ async function startDevServer(): Promise<void> {
   log('5. ✅ Test chat interface')
   log('6. ✅ Check browser console for errors')
   log('\n⏹️  Press Ctrl+C to stop the server when testing is complete\n')
-  
+
   try {
-    const devServer: ChildProcess = spawn('npm', ['run', 'dev'], { 
+    const devServer: ChildProcess = spawn('npm', ['run', 'dev'], {
       stdio: 'inherit',
-      shell: true 
+      shell: true,
     })
-    
+
     // Handle server shutdown
     process.on('SIGINT', () => {
       log('\n🛑 Shutting down development server...')
       devServer.kill('SIGINT')
       process.exit(0)
     })
-    
+
     // Wait for server to start
     await new Promise<void>(resolve => setTimeout(resolve, 3000))
-    
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
     logError(`Failed to start development server: ${errorMessage}`)
@@ -235,10 +234,10 @@ async function startDevServer(): Promise<void> {
 async function askUserInput(question: string): Promise<string> {
   const rl = readline.createInterface({
     input: process.stdin,
-    output: process.stdout
+    output: process.stdout,
   })
-  
-  return new Promise<string>((resolve) => {
+
+  return new Promise<string>(resolve => {
     rl.question(question, (answer: string) => {
       rl.close()
       resolve(answer)
@@ -283,10 +282,10 @@ async function main(): Promise<void> {
     log('1. Test manually with the development server')
     log('2. Deploy to Vercel with: npx vercel --prod')
     log('')
-    
+
     // Ask if user wants to start dev server
     const answer = await askUserInput('Start development server for manual testing? (y/n): ')
-    
+
     if (answer.toLowerCase() === 'y') {
       await startDevServer()
     } else {

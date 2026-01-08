@@ -1,6 +1,6 @@
 /**
  * Vector Search Engine
- * 
+ *
  * Combines embedding generation, vector search, result reranking,
  * and caching for optimal RAG performance
  */
@@ -69,7 +69,7 @@ const SEARCH_CONFIG = {
   cacheTTL: 300, // 5 minutes
   rerankingEnabled: true,
   hybridSearchEnabled: true,
-  maxQueryLength: 1000
+  maxQueryLength: 1000,
 }
 
 // =============================================================================
@@ -96,23 +96,20 @@ export class VectorSearchError extends Error {
 // Utility Functions
 // =============================================================================
 
-function generateSearchCacheKey(
-  query: string,
-  options: SearchOptions
-): string {
+function generateSearchCacheKey(query: string, options: SearchOptions): string {
   const optionsHash = createHash('sha256')
-    .update(JSON.stringify({
-      userId: options.userId,
-      topK: options.topK,
-      threshold: options.threshold,
-      documentIds: options.documentIds?.sort()
-    }))
+    .update(
+      JSON.stringify({
+        userId: options.userId,
+        topK: options.topK,
+        threshold: options.threshold,
+        documentIds: options.documentIds?.sort(),
+      })
+    )
     .digest('hex')
-  
-  const queryHash = createHash('sha256')
-    .update(query)
-    .digest('hex')
-  
+
+  const queryHash = createHash('sha256').update(query).digest('hex')
+
   return `${SEARCH_CONFIG.cachePrefix}${queryHash}:${optionsHash}`
 }
 
@@ -120,7 +117,7 @@ function validateSearchQuery(query: string): void {
   if (!query || query.trim().length === 0) {
     throw new VectorSearchError('Search query cannot be empty')
   }
-  
+
   if (query.length > SEARCH_CONFIG.maxQueryLength) {
     throw new VectorSearchError(
       `Query too long: ${query.length} characters (max: ${SEARCH_CONFIG.maxQueryLength})`
@@ -132,13 +129,11 @@ function validateSearchOptions(options: SearchOptions): void {
   if (!options.userId) {
     throw new VectorSearchError('User ID is required')
   }
-  
+
   if (options.topK && (options.topK < 1 || options.topK > SEARCH_CONFIG.maxTopK)) {
-    throw new VectorSearchError(
-      `topK must be between 1 and ${SEARCH_CONFIG.maxTopK}`
-    )
+    throw new VectorSearchError(`topK must be between 1 and ${SEARCH_CONFIG.maxTopK}`)
   }
-  
+
   if (options.threshold && (options.threshold < 0 || options.threshold > 1)) {
     throw new VectorSearchError('threshold must be between 0 and 1')
   }
@@ -153,7 +148,7 @@ async function getCachedSearchResults(
   options: SearchOptions
 ): Promise<SearchResponse | null> {
   if (!options.useCache) return null
-  
+
   try {
     return await searchCache.get(query, options)
   } catch (error) {
@@ -168,7 +163,7 @@ async function setCachedSearchResults(
   results: SearchResponse
 ): Promise<void> {
   if (!options.useCache) return
-  
+
   try {
     await searchCache.set(query, options, results)
   } catch (error) {
@@ -191,56 +186,48 @@ function convertQdrantResults(
     content: result.payload.content,
     filename: result.payload.filename,
     score: result.score,
-    metadata: includeMetadata ? {
-      createdAt: result.payload.created_at,
-      chunkId: result.id
-    } : undefined
+    metadata: includeMetadata
+      ? {
+          createdAt: result.payload.created_at,
+          chunkId: result.id,
+        }
+      : undefined,
   }))
 }
 
-function calculateRelevanceScore(
-  result: SearchResult,
-  query: string
-): number {
+function calculateRelevanceScore(result: SearchResult, query: string): number {
   // Simple relevance scoring based on:
   // 1. Semantic similarity (score from vector search)
   // 2. Query term frequency in content
   // 3. Content length (prefer more substantial chunks)
-  
+
   const semanticScore = result.score
-  
+
   // Calculate query term frequency
   const queryTerms = query.toLowerCase().split(/\s+/)
   const content = result.content.toLowerCase()
   const termMatches = queryTerms.filter(term => content.includes(term)).length
   const termFrequencyScore = termMatches / queryTerms.length
-  
+
   // Content length score (normalized)
   const contentLengthScore = Math.min(result.content.length / 1000, 1)
-  
+
   // Weighted combination
-  return (
-    semanticScore * 0.7 +
-    termFrequencyScore * 0.2 +
-    contentLengthScore * 0.1
-  )
+  return semanticScore * 0.7 + termFrequencyScore * 0.2 + contentLengthScore * 0.1
 }
 
-function rerankResults(
-  results: SearchResult[],
-  query: string
-): SearchResult[] {
+function rerankResults(results: SearchResult[], query: string): SearchResult[] {
   if (!SEARCH_CONFIG.rerankingEnabled) return results
-  
+
   // Calculate relevance scores
   const rerankedResults = results.map(result => ({
     ...result,
-    relevanceScore: calculateRelevanceScore(result, query)
+    relevanceScore: calculateRelevanceScore(result, query),
   }))
-  
+
   // Sort by relevance score (descending)
   rerankedResults.sort((a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0))
-  
+
   return rerankedResults
 }
 
@@ -265,11 +252,11 @@ export async function searchDocuments(
   options: SearchOptions
 ): Promise<SearchResponse> {
   const startTime = Date.now()
-  
+
   // Validate inputs
   validateSearchQuery(query)
   validateSearchOptions(options)
-  
+
   // Set defaults
   const searchOptions: SearchOptions = {
     topK: SEARCH_CONFIG.defaultTopK,
@@ -278,73 +265,70 @@ export async function searchDocuments(
     useCache: true,
     cacheTTL: SEARCH_CONFIG.cacheTTL,
     rerankResults: true,
-    ...options
+    ...options,
   }
-  
+
   // Check cache first
   const cachedResults = await getCachedSearchResults(query, searchOptions)
   if (cachedResults) {
     console.log('Search cache hit')
     return cachedResults
   }
-  
+
   try {
     // Generate query embedding
     console.log('Generating query embedding...')
     const embeddingResult = await generateEmbedding(query, {
-      useCache: true
+      useCache: true,
     })
-    
+
     // Build search filter
     const searchFilter: Record<string, any> = {}
     if (searchOptions.documentIds && searchOptions.documentIds.length > 0) {
       searchFilter.document_id = searchOptions.documentIds
     }
-    
+
     // Perform vector search
     console.log('Performing vector search...')
     const qdrantResults = await searchVectors(embeddingResult.embedding, {
       userId: searchOptions.userId,
       topK: searchOptions.topK,
       threshold: searchOptions.threshold,
-      filter: searchFilter
+      filter: searchFilter,
     })
-    
+
     // Convert and process results
     let results = convertQdrantResults(qdrantResults, searchOptions.includeMetadata)
-    
+
     // Deduplicate results
     results = deduplicateResults(results)
-    
+
     // Rerank results if enabled
     if (searchOptions.rerankResults) {
       console.log('Reranking results...')
       results = rerankResults(results, query)
     }
-    
+
     const searchTime = Date.now() - startTime
-    
+
     const response: SearchResponse = {
       results,
       totalResults: results.length,
       searchTime,
       cached: false,
       query,
-      options: searchOptions
+      options: searchOptions,
     }
-    
+
     // Cache the results
     await setCachedSearchResults(query, searchOptions, response)
-    
+
     console.log(`Search completed in ${searchTime}ms, found ${results.length} results`)
-    
+
     return response
-    
   } catch (error) {
     console.error('Vector search error:', error)
-    throw new VectorSearchError(
-      error instanceof Error ? error.message : 'Search failed'
-    )
+    throw new VectorSearchError(error instanceof Error ? error.message : 'Search failed')
   }
 }
 
@@ -358,49 +342,49 @@ export async function hybridSearch(
 ): Promise<SearchResponse> {
   // For now, this is primarily semantic search with enhanced reranking
   // In a full implementation, you might combine with keyword search (e.g., Elasticsearch)
-  
+
   const {
     keywordWeight = 0.3,
     semanticWeight = 0.7,
     recencyWeight = 0.1,
     ...searchOptions
   } = options
-  
+
   // Perform semantic search
   const semanticResults = await searchDocuments(query, {
     ...searchOptions,
-    rerankResults: false // We'll do custom reranking
+    rerankResults: false, // We'll do custom reranking
   })
-  
+
   // Enhanced reranking with hybrid scoring
   const hybridResults = semanticResults.results.map(result => {
     const semanticScore = result.score * semanticWeight
-    
+
     // Simple keyword matching score
     const queryTerms = query.toLowerCase().split(/\s+/)
     const content = result.content.toLowerCase()
     const keywordMatches = queryTerms.filter(term => content.includes(term)).length
     const keywordScore = (keywordMatches / queryTerms.length) * keywordWeight
-    
+
     // Recency score (newer documents get slight boost)
     const createdAt = new Date(result.metadata?.createdAt || 0)
     const daysSinceCreation = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24)
-    const recencyScore = Math.max(0, 1 - (daysSinceCreation / 365)) * recencyWeight
-    
+    const recencyScore = Math.max(0, 1 - daysSinceCreation / 365) * recencyWeight
+
     const hybridScore = semanticScore + keywordScore + recencyScore
-    
+
     return {
       ...result,
-      relevanceScore: hybridScore
+      relevanceScore: hybridScore,
     }
   })
-  
+
   // Sort by hybrid score
   hybridResults.sort((a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0))
-  
+
   return {
     ...semanticResults,
-    results: hybridResults
+    results: hybridResults,
   }
 }
 
@@ -417,7 +401,7 @@ export async function searchInDocument(
   return searchDocuments(query, {
     ...options,
     userId,
-    documentIds: [documentId]
+    documentIds: [documentId],
   })
 }
 
@@ -430,7 +414,7 @@ export async function searchSimilarChunks(
     ...options,
     userId,
     threshold: 0.8, // Higher threshold for similarity search
-    topK: 10
+    topK: 10,
   })
 }
 
@@ -445,17 +429,16 @@ export async function getRelatedDocuments(
     if (chunks.length === 0) {
       throw new VectorSearchError('Document has no chunks')
     }
-    
+
     // Use the first chunk as the query
     const sampleChunk = chunks[0]
-    
+
     return searchDocuments(sampleChunk.content, {
       ...options,
       userId,
       threshold: 0.6,
-      topK: 20
+      topK: 20,
     })
-    
   } catch (error) {
     console.error('Error finding related documents:', error)
     throw new VectorSearchError('Failed to find related documents')
@@ -488,7 +471,7 @@ export async function getSearchCacheStats(): Promise<{
     // For now, return basic stats
     return {
       totalKeys: 0,
-      estimatedSize: '0KB'
+      estimatedSize: '0KB',
     }
   } catch (error) {
     console.error('Error getting search cache stats:', error)
@@ -498,9 +481,10 @@ export async function getSearchCacheStats(): Promise<{
 
 export function formatSearchResults(results: SearchResult[]): string {
   return results
-    .map((result, index) => 
-      `${index + 1}. ${result.filename} (Score: ${result.score.toFixed(3)})\n` +
-      `   ${result.content.substring(0, 200)}...`
+    .map(
+      (result, index) =>
+        `${index + 1}. ${result.filename} (Score: ${result.score.toFixed(3)})\n` +
+        `   ${result.content.substring(0, 200)}...`
     )
     .join('\n\n')
 }

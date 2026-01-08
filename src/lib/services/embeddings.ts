@@ -1,6 +1,6 @@
 /**
  * Embedding Generation Service
- * 
+ *
  * Handles OpenAI embedding generation with rate limiting,
  * batch processing, and comprehensive caching
  */
@@ -47,7 +47,7 @@ const EMBEDDING_CONFIG = {
   maxRetries: 3,
   retryDelay: 1000, // ms
   cachePrefix: 'embedding:',
-  cacheTTL: 3600 // 1 hour in seconds
+  cacheTTL: 3600, // 1 hour in seconds
 }
 
 // =============================================================================
@@ -55,7 +55,7 @@ const EMBEDDING_CONFIG = {
 // =============================================================================
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!
+  apiKey: process.env.OPENAI_API_KEY!,
 })
 
 // =============================================================================
@@ -75,24 +75,20 @@ export class EmbeddingError extends Error {
 
 function handleOpenAIError(error: any): never {
   console.error('OpenAI embedding error:', error)
-  
+
   if (error.status === 429) {
     throw new EmbeddingError('Rate limit exceeded', 'RATE_LIMIT', 429)
   }
-  
+
   if (error.status === 401) {
     throw new EmbeddingError('Invalid API key', 'INVALID_API_KEY', 401)
   }
-  
+
   if (error.status === 400) {
     throw new EmbeddingError('Invalid request', 'INVALID_REQUEST', 400)
   }
-  
-  throw new EmbeddingError(
-    error.message || 'OpenAI API error',
-    error.code,
-    error.status
-  )
+
+  throw new EmbeddingError(error.message || 'OpenAI API error', error.code, error.status)
 }
 
 // =============================================================================
@@ -100,9 +96,7 @@ function handleOpenAIError(error: any): never {
 // =============================================================================
 
 function generateCacheKey(text: string, model: string, dimensions: number): string {
-  const hash = createHash('sha256')
-    .update(`${text}:${model}:${dimensions}`)
-    .digest('hex')
+  const hash = createHash('sha256').update(`${text}:${model}:${dimensions}`).digest('hex')
   return `${EMBEDDING_CONFIG.cachePrefix}${hash}`
 }
 
@@ -116,7 +110,7 @@ function validateText(text: string): void {
   if (!text || text.trim().length === 0) {
     throw new EmbeddingError('Text cannot be empty')
   }
-  
+
   const tokenCount = estimateTokenCount(text)
   if (tokenCount > EMBEDDING_CONFIG.maxTokens) {
     throw new EmbeddingError(
@@ -140,15 +134,15 @@ async function getCachedEmbedding(
 ): Promise<EmbeddingResult | null> {
   try {
     const cached = await embeddingCache.get(text)
-    
+
     if (cached) {
       return {
         embedding: cached,
         tokenCount: estimateTokenCount(text),
-        cached: true
+        cached: true,
       }
     }
-    
+
     return null
   } catch (error) {
     console.error('Cache retrieval error:', error)
@@ -184,25 +178,24 @@ async function generateEmbeddingWithRetry(
     const response = await openai.embeddings.create({
       model: options.model || EMBEDDING_CONFIG.model,
       input: text,
-      dimensions: options.dimensions || EMBEDDING_CONFIG.dimensions
+      dimensions: options.dimensions || EMBEDDING_CONFIG.dimensions,
     })
-    
+
     const embedding = response.data[0].embedding
     const tokenCount = response.usage.total_tokens
-    
+
     return {
       embedding,
       tokenCount,
-      cached: false
+      cached: false,
     }
-    
   } catch (error) {
     if (retryCount < EMBEDDING_CONFIG.maxRetries) {
       console.log(`Retrying embedding generation (attempt ${retryCount + 1})`)
       await sleep(EMBEDDING_CONFIG.retryDelay * (retryCount + 1))
       return generateEmbeddingWithRetry(text, options, retryCount + 1)
     }
-    
+
     handleOpenAIError(error)
   }
 }
@@ -216,14 +209,14 @@ export async function generateEmbedding(
   options: EmbeddingOptions = {}
 ): Promise<EmbeddingResult> {
   validateText(text)
-  
+
   const {
     model = EMBEDDING_CONFIG.model,
     dimensions = EMBEDDING_CONFIG.dimensions,
     useCache = true,
-    cacheTTL = EMBEDDING_CONFIG.cacheTTL
+    cacheTTL = EMBEDDING_CONFIG.cacheTTL,
   } = options
-  
+
   // Check cache first
   if (useCache) {
     const cached = await getCachedEmbedding(text, model, dimensions)
@@ -232,16 +225,16 @@ export async function generateEmbedding(
       return cached
     }
   }
-  
+
   // Generate new embedding
   console.log('Generating new embedding')
   const result = await generateEmbeddingWithRetry(text, { model, dimensions })
-  
+
   // Cache the result
   if (useCache) {
     await setCachedEmbedding(text, model, dimensions, result, cacheTTL)
   }
-  
+
   return result
 }
 
@@ -252,30 +245,30 @@ export async function generateEmbeddings(
   if (texts.length === 0) {
     throw new EmbeddingError('No texts provided')
   }
-  
+
   // Validate all texts
   texts.forEach(validateText)
-  
+
   const {
     model = EMBEDDING_CONFIG.model,
     dimensions = EMBEDDING_CONFIG.dimensions,
     useCache = true,
-    cacheTTL = EMBEDDING_CONFIG.cacheTTL
+    cacheTTL = EMBEDDING_CONFIG.cacheTTL,
   } = options
-  
+
   const embeddings: number[][] = []
   const tokenCounts: number[] = []
   let totalTokens = 0
   let cached = 0
   let generated = 0
-  
+
   // Process in batches
   for (let i = 0; i < texts.length; i += EMBEDDING_CONFIG.batchSize) {
     const batch = texts.slice(i, i + EMBEDDING_CONFIG.batchSize)
     const batchResults: EmbeddingResult[] = []
     const uncachedTexts: string[] = []
     const uncachedIndices: number[] = []
-    
+
     // Check cache for each text in batch
     if (useCache) {
       for (let j = 0; j < batch.length; j++) {
@@ -292,54 +285,47 @@ export async function generateEmbeddings(
       uncachedTexts.push(...batch)
       uncachedIndices.push(...batch.map((_, idx) => idx))
     }
-    
+
     // Generate embeddings for uncached texts
     if (uncachedTexts.length > 0) {
       try {
         const response = await openai.embeddings.create({
           model,
           input: uncachedTexts,
-          dimensions
+          dimensions,
         })
-        
+
         // Process results
         for (let j = 0; j < uncachedTexts.length; j++) {
           const embedding = response.data[j].embedding
           const tokenCount = estimateTokenCount(uncachedTexts[j])
-          
+
           const result: EmbeddingResult = {
             embedding,
             tokenCount,
-            cached: false
+            cached: false,
           }
-          
+
           batchResults[uncachedIndices[j]] = result
           generated++
-          
+
           // Cache the result
           if (useCache) {
-            await setCachedEmbedding(
-              uncachedTexts[j],
-              model,
-              dimensions,
-              result,
-              cacheTTL
-            )
+            await setCachedEmbedding(uncachedTexts[j], model, dimensions, result, cacheTTL)
           }
         }
-        
+
         totalTokens += response.usage.total_tokens
-        
       } catch (error) {
         handleOpenAIError(error)
       }
-      
+
       // Rate limiting delay between batches
       if (i + EMBEDDING_CONFIG.batchSize < texts.length) {
         await sleep(EMBEDDING_CONFIG.rateLimitDelay)
       }
     }
-    
+
     // Add batch results to final arrays
     batchResults.forEach(result => {
       embeddings.push(result.embedding)
@@ -349,15 +335,15 @@ export async function generateEmbeddings(
       }
     })
   }
-  
+
   console.log(`Generated embeddings: ${generated} new, ${cached} cached`)
-  
+
   return {
     embeddings,
     tokenCounts,
     totalTokens,
     cached,
-    generated
+    generated,
   }
 }
 
@@ -383,7 +369,7 @@ export async function getEmbeddingCacheStats(): Promise<{
     // For now, return basic stats
     return {
       totalKeys: 0,
-      estimatedSize: '0KB'
+      estimatedSize: '0KB',
     }
   } catch (error) {
     console.error('Error getting cache stats:', error)
@@ -402,16 +388,16 @@ export function calculateCosineSimilarity(a: number[], b: number[]): number {
   if (a.length !== b.length) {
     throw new EmbeddingError('Vectors must have the same dimensions')
   }
-  
+
   let dotProduct = 0
   let normA = 0
   let normB = 0
-  
+
   for (let i = 0; i < a.length; i++) {
     dotProduct += a[i] * b[i]
     normA += a[i] * a[i]
     normB += b[i] * b[i]
   }
-  
+
   return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB))
 }

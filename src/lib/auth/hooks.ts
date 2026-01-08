@@ -11,7 +11,7 @@ export function useAuthActions() {
   const signInWithMagicLink = async (email: string) => {
     setLoading(true)
     setError(null)
-    
+
     try {
       const { error } = await supabase.auth.signInWithOtp({
         email,
@@ -19,7 +19,7 @@ export function useAuthActions() {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       })
-      
+
       if (error) throw error
       return { success: true }
     } catch (err) {
@@ -34,14 +34,14 @@ export function useAuthActions() {
   const signInWithOTP = async (email: string, token: string) => {
     setLoading(true)
     setError(null)
-    
+
     try {
       const { error } = await supabase.auth.verifyOtp({
         email,
         token,
         type: 'email',
       })
-      
+
       if (error) throw error
       return { success: true }
     } catch (err) {
@@ -56,7 +56,7 @@ export function useAuthActions() {
   const requestOTP = async (email: string) => {
     setLoading(true)
     setError(null)
-    
+
     try {
       const { error } = await supabase.auth.signInWithOtp({
         email,
@@ -64,7 +64,7 @@ export function useAuthActions() {
           shouldCreateUser: true,
         },
       })
-      
+
       if (error) throw error
       return { success: true }
     } catch (err) {

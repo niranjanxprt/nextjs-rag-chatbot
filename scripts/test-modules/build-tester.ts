@@ -1,6 +1,6 @@
 /**
  * Build & Code Quality Tester
- * 
+ *
  * Tests TypeScript compilation, linting, unit tests, and build process
  */
 
@@ -13,7 +13,7 @@ const colors = {
   red: '\x1b[31m',
   yellow: '\x1b[33m',
   blue: '\x1b[34m',
-  reset: '\x1b[0m'
+  reset: '\x1b[0m',
 } as const
 
 interface CommandResult {
@@ -43,13 +43,17 @@ function logInfo(message: string): void {
   console.log(`${colors.blue}ℹ️  ${message}${colors.reset}`)
 }
 
-async function runCommand(command: string, description: string, options: CommandOptions = {}): Promise<CommandResult> {
+async function runCommand(
+  command: string,
+  description: string,
+  options: CommandOptions = {}
+): Promise<CommandResult> {
   try {
     logInfo(`Running: ${command}`)
-    const output = execSync(command, { 
-      encoding: 'utf8', 
+    const output = execSync(command, {
+      encoding: 'utf8',
       stdio: options.silent ? 'pipe' : 'inherit',
-      timeout: options.timeout || 120000
+      timeout: options.timeout || 120000,
     })
     logSuccess(`${description} - PASSED`)
     return { success: true, output }
@@ -90,7 +94,10 @@ async function testBuild(): Promise<boolean> {
   // 4. Integration Tests (if they exist)
   console.log('\n🔗 Integration Tests:')
   try {
-    const integrationResult = await runCommand('npm run test:integration -- --passWithNoTests', 'Integration tests')
+    const integrationResult = await runCommand(
+      'npm run test:integration -- --passWithNoTests',
+      'Integration tests'
+    )
     results.push(integrationResult.success)
     if (!integrationResult.success) allPassed = false
   } catch (error) {
@@ -123,7 +130,9 @@ async function testBuild(): Promise<boolean> {
   // 8. Security Audit
   console.log('\n🔒 Security Audit:')
   try {
-    const auditResult = await runCommand('npm audit --audit-level=high', 'Security audit', { silent: true })
+    const auditResult = await runCommand('npm audit --audit-level=high', 'Security audit', {
+      silent: true,
+    })
     if (auditResult.success) {
       logSuccess('No high-severity security vulnerabilities found')
     } else {
@@ -138,7 +147,7 @@ async function testBuild(): Promise<boolean> {
 
 function validateBuildOutput(): boolean {
   const buildDir = path.join(process.cwd(), '.next')
-  
+
   if (!fs.existsSync(buildDir)) {
     logError('.next build directory not found')
     return false
@@ -148,7 +157,7 @@ function validateBuildOutput(): boolean {
   const requiredFiles = [
     '.next/BUILD_ID',
     '.next/build-manifest.json',
-    '.next/routes-manifest.json'
+    '.next/routes-manifest.json',
   ]
 
   let allFilesExist = true
@@ -189,22 +198,22 @@ interface BuildManifest {
 
 function analyzeBundleSize(): void {
   const buildManifestPath = path.join(process.cwd(), '.next', 'build-manifest.json')
-  
+
   if (!fs.existsSync(buildManifestPath)) {
     throw new Error('Build manifest not found')
   }
 
   const manifest: BuildManifest = JSON.parse(fs.readFileSync(buildManifestPath, 'utf8'))
-  
+
   // Analyze page bundles
   const pages = manifest.pages || {}
   const totalPages = Object.keys(pages).length
-  
+
   logInfo(`📄 Total pages: ${totalPages}`)
-  
+
   // Check for large bundles (warning threshold)
   const largeBundleThreshold = 500 * 1024 // 500KB
-  
+
   for (const [page, files] of Object.entries(pages)) {
     const pageFiles = Array.isArray(files) ? files : []
     logInfo(`Page ${page}: ${pageFiles.length} chunks`)
@@ -215,16 +224,17 @@ function analyzeBundleSize(): void {
   if (fs.existsSync(staticDir)) {
     const chunksDir = path.join(staticDir, 'chunks')
     if (fs.existsSync(chunksDir)) {
-      const chunks = fs.readdirSync(chunksDir, { withFileTypes: true })
+      const chunks = fs
+        .readdirSync(chunksDir, { withFileTypes: true })
         .filter(dirent => dirent.isFile() && dirent.name.endsWith('.js'))
-      
+
       logInfo(`📦 JavaScript chunks: ${chunks.length}`)
-      
+
       // Check for excessively large chunks
       for (const chunk of chunks) {
         const chunkPath = path.join(chunksDir, chunk.name)
         const stats = fs.statSync(chunkPath)
-        
+
         if (stats.size > largeBundleThreshold) {
           logWarning(`Large chunk detected: ${chunk.name} (${Math.round(stats.size / 1024)}KB)`)
         }

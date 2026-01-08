@@ -1,6 +1,6 @@
 /**
  * Performance Monitoring and Metrics
- * 
+ *
  * Utilities for tracking application performance,
  * API response times, and system health
  */
@@ -28,17 +28,22 @@ class PerformanceMonitor {
   private readonly maxMetrics = 1000 // Keep last 1000 metrics in memory
 
   // Record a performance metric
-  recordMetric(name: string, value: number, unit: PerformanceMetric['unit'], tags?: Record<string, string>): void {
+  recordMetric(
+    name: string,
+    value: number,
+    unit: PerformanceMetric['unit'],
+    tags?: Record<string, string>
+  ): void {
     const metric: PerformanceMetric = {
       name,
       value,
       unit,
       timestamp: new Date().toISOString(),
-      tags
+      tags,
     }
 
     this.metrics.push(metric)
-    
+
     // Keep only the most recent metrics
     if (this.metrics.length > this.maxMetrics) {
       this.metrics = this.metrics.slice(-this.maxMetrics)
@@ -48,7 +53,7 @@ class PerformanceMonitor {
     if (this.shouldLogMetric(name, value, unit)) {
       logger.info(`Performance metric: ${name}`, {
         operation: 'performance_metric',
-        metadata: { name, value, unit, tags }
+        metadata: { name, value, unit, tags },
       })
     }
   }
@@ -58,17 +63,17 @@ class PerformanceMonitor {
     if (name.includes('api_response_time') && unit === 'ms' && value > 1000) {
       return true
     }
-    
+
     // Log high memory usage
     if (name.includes('memory') && unit === 'bytes' && value > 100 * 1024 * 1024) {
       return true
     }
-    
+
     // Log error rates
     if (name.includes('error_rate') && unit === 'percentage' && value > 5) {
       return true
     }
-    
+
     return false
   }
 
@@ -90,7 +95,7 @@ class PerformanceMonitor {
   // Calculate average for a metric
   getAverageMetric(name: string, since?: Date): number | null {
     const metrics = this.getMetrics(since, name)
-    
+
     if (metrics.length === 0) {
       return null
     }
@@ -102,14 +107,14 @@ class PerformanceMonitor {
   // Get percentile for a metric
   getPercentile(name: string, percentile: number, since?: Date): number | null {
     const metrics = this.getMetrics(since, name)
-    
+
     if (metrics.length === 0) {
       return null
     }
 
     const sorted = metrics.map(m => m.value).sort((a, b) => a - b)
     const index = Math.ceil((percentile / 100) * sorted.length) - 1
-    
+
     return sorted[Math.max(0, index)]
   }
 
@@ -145,7 +150,7 @@ export class APIMonitor {
       const startTime = Date.now()
       const originalSend = res.send
 
-      res.send = function(data: any) {
+      res.send = function (data: any) {
         const duration = Date.now() - startTime
         const method = req.method
         const path = req.url
@@ -166,7 +171,7 @@ export class APIMonitor {
       method,
       path: this.sanitizePath(path),
       status: status.toString(),
-      status_class: this.getStatusClass(status)
+      status_class: this.getStatusClass(status),
     }
 
     this.performanceMonitor.recordMetric('api_response_time', duration, 'ms', tags)
@@ -177,7 +182,7 @@ export class APIMonitor {
       logger.warn(`Slow API request: ${method} ${path}`, {
         operation: 'slow_api_request',
         duration,
-        metadata: { method, path, status }
+        metadata: { method, path, status },
       })
     }
   }
@@ -216,69 +221,69 @@ export class HealthMonitor {
 
   async checkDatabaseHealth(): Promise<HealthCheck> {
     const startTime = Date.now()
-    
+
     try {
       // Simple health check - you can expand this
       const responseTime = Date.now() - startTime
-      
+
       return {
         service: 'database',
         status: responseTime < 1000 ? 'healthy' : 'degraded',
         responseTime,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       }
     } catch (error) {
       return {
         service: 'database',
         status: 'unhealthy',
         error: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       }
     }
   }
 
   async checkVectorDatabaseHealth(): Promise<HealthCheck> {
     const startTime = Date.now()
-    
+
     try {
       // You can add actual Qdrant health check here
       const responseTime = Date.now() - startTime
-      
+
       return {
         service: 'vector_database',
         status: responseTime < 2000 ? 'healthy' : 'degraded',
         responseTime,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       }
     } catch (error) {
       return {
         service: 'vector_database',
         status: 'unhealthy',
         error: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       }
     }
   }
 
   async checkRedisHealth(): Promise<HealthCheck> {
     const startTime = Date.now()
-    
+
     try {
       // You can add actual Redis health check here
       const responseTime = Date.now() - startTime
-      
+
       return {
         service: 'redis',
         status: responseTime < 500 ? 'healthy' : 'degraded',
         responseTime,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       }
     } catch (error) {
       return {
         service: 'redis',
         status: 'unhealthy',
         error: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       }
     }
   }
@@ -287,22 +292,22 @@ export class HealthMonitor {
     const checks = await Promise.all([
       this.checkDatabaseHealth(),
       this.checkVectorDatabaseHealth(),
-      this.checkRedisHealth()
+      this.checkRedisHealth(),
     ])
 
     this.healthChecks = checks
-    
+
     // Log unhealthy services
     checks.forEach(check => {
       if (check.status === 'unhealthy') {
         logger.error(`Service unhealthy: ${check.service}`, {
           operation: 'health_check',
-          metadata: { service: check.service, error: check.error }
+          metadata: { service: check.service, error: check.error },
         })
       } else if (check.status === 'degraded') {
         logger.warn(`Service degraded: ${check.service}`, {
           operation: 'health_check',
-          metadata: { service: check.service, responseTime: check.responseTime }
+          metadata: { service: check.service, responseTime: check.responseTime },
         })
       }
     })
@@ -326,7 +331,7 @@ export class MemoryMonitor {
   recordMemoryUsage(): void {
     if (typeof process !== 'undefined' && process.memoryUsage) {
       const usage = process.memoryUsage()
-      
+
       this.performanceMonitor.recordMetric('memory_rss', usage.rss, 'bytes')
       this.performanceMonitor.recordMetric('memory_heap_used', usage.heapUsed, 'bytes')
       this.performanceMonitor.recordMetric('memory_heap_total', usage.heapTotal, 'bytes')
@@ -355,9 +360,9 @@ export const performanceMonitor = new PerformanceMonitor()
 export const startMonitoring = () => {
   // Start memory monitoring
   memoryMonitor.startPeriodicMonitoring()
-  
+
   // Log startup
   logger.info('Performance monitoring started', {
-    operation: 'monitoring_startup'
+    operation: 'monitoring_startup',
   })
 }

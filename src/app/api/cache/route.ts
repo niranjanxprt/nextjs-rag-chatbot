@@ -1,20 +1,20 @@
 /**
  * Cache Management API Route
- * 
+ *
  * Handles cache statistics, invalidation, and warming operations
  */
 
 import { NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { 
-  getStats, 
-  clearAll, 
-  invalidateByTag, 
+import {
+  getStats,
+  clearAll,
+  invalidateByTag,
   invalidateByPattern,
   warmCache,
   embeddings,
   search,
-  documents
+  documents,
 } from '@/lib/services/cache'
 import { createErrorResponse, createSuccessResponse, createError } from '@/lib/utils/error-handler'
 
@@ -26,23 +26,25 @@ export async function GET(request: NextRequest) {
   try {
     // Check authentication (admin only)
     const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
     if (authError || !user) {
       throw createError.unauthorized('Authentication required')
     }
 
     // In a real app, you'd check for admin role here
     // For now, any authenticated user can view cache stats
-    
+
     const stats = await getStats()
-    
+
     return createSuccessResponse({
       message: 'Cache statistics retrieved',
       stats,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     })
-
   } catch (error) {
     console.error('Cache stats API error:', error)
     return createErrorResponse(error instanceof Error ? error : new Error(String(error)))
@@ -57,8 +59,11 @@ export async function DELETE(request: NextRequest) {
   try {
     // Check authentication (admin only)
     const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
     if (authError || !user) {
       throw createError.unauthorized('Authentication required')
     }
@@ -108,9 +113,8 @@ export async function DELETE(request: NextRequest) {
       message: `Cache cleared successfully`,
       operation,
       clearedCount,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     })
-
   } catch (error) {
     console.error('Cache clear API error:', error)
     return createErrorResponse(error instanceof Error ? error : new Error(String(error)))
@@ -125,8 +129,11 @@ export async function POST(request: NextRequest) {
   try {
     // Check authentication (admin only)
     const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
     if (authError || !user) {
       throw createError.unauthorized('Authentication required')
     }
@@ -146,7 +153,7 @@ export async function POST(request: NextRequest) {
         return createSuccessResponse({
           message: 'Cache warming initiated',
           operation: 'warm',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         })
 
       case 'invalidate_user':
@@ -159,13 +166,12 @@ export async function POST(request: NextRequest) {
           operation: 'invalidate_user',
           clearedCount: userClearedCount,
           userId: params.userId,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         })
 
       default:
         throw createError.validation(`Unknown operation: ${operation}`)
     }
-
   } catch (error) {
     console.error('Cache operation API error:', error)
     return createErrorResponse(error instanceof Error ? error : new Error(String(error)))

@@ -1,16 +1,16 @@
 /**
  * Zod Validation Schemas for Next.js RAG Chatbot
- * 
+ *
  * Comprehensive validation schemas for API requests, form data,
  * and database operations with proper error handling
  */
 
 import { z } from 'zod'
-import type { 
-  DocumentProcessingStatus, 
+import type {
+  DocumentProcessingStatus,
   MessageRole,
   VectorSearchOptions,
-  PaginationOptions 
+  PaginationOptions,
 } from '@/lib/types/database'
 
 // =============================================================================
@@ -36,37 +36,37 @@ export const supportedMimeTypes = [
   'text/plain',
   'text/markdown',
   'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 ] as const
 
 export const fileUploadSchema = z.object({
-  file: z.instanceof(File, { message: 'File is required' })
+  file: z
+    .instanceof(File, { message: 'File is required' })
+    .refine(file => file.size > 0, 'File cannot be empty')
     .refine(
-      (file) => file.size > 0,
-      'File cannot be empty'
-    )
-    .refine(
-      (file) => file.size <= 10 * 1024 * 1024, // 10MB
+      file => file.size <= 10 * 1024 * 1024, // 10MB
       'File size must be less than 10MB'
     )
     .refine(
-      (file) => supportedMimeTypes.includes(file.type as any),
+      file => supportedMimeTypes.includes(file.type as any),
       `File type must be one of: ${supportedMimeTypes.join(', ')}`
     ),
-  userId: uuidSchema
+  userId: uuidSchema,
 })
 
 export const documentUploadFormSchema = z.object({
-  filename: z.string()
+  filename: z
+    .string()
     .min(1, 'Filename is required')
     .max(255, 'Filename too long')
     .regex(/^[^<>:"/\\|?*]+$/, 'Invalid filename characters'),
-  fileSize: z.number()
+  fileSize: z
+    .number()
     .positive('File size must be positive')
     .max(10 * 1024 * 1024, 'File size must be less than 10MB'),
   mimeType: z.enum(supportedMimeTypes, {
-    errorMap: () => ({ message: 'Unsupported file type' })
-  })
+    errorMap: () => ({ message: 'Unsupported file type' }),
+  }),
 })
 
 // =============================================================================
@@ -79,20 +79,20 @@ export const profileSchema = z.object({
   full_name: z.string().max(100, 'Name too long').nullable(),
   avatar_url: z.string().url('Invalid URL format').nullable(),
   created_at: timestampSchema,
-  updated_at: timestampSchema
+  updated_at: timestampSchema,
 })
 
 export const profileInsertSchema = z.object({
   id: uuidSchema,
   email: emailSchema,
   full_name: z.string().max(100, 'Name too long').optional(),
-  avatar_url: z.string().url('Invalid URL format').optional()
+  avatar_url: z.string().url('Invalid URL format').optional(),
 })
 
 export const profileUpdateSchema = z.object({
   email: emailSchema.optional(),
   full_name: z.string().max(100, 'Name too long').nullable().optional(),
-  avatar_url: z.string().url('Invalid URL format').nullable().optional()
+  avatar_url: z.string().url('Invalid URL format').nullable().optional(),
 })
 
 // =============================================================================
@@ -101,9 +101,9 @@ export const profileUpdateSchema = z.object({
 
 export const documentProcessingStatusSchema = z.enum([
   'pending',
-  'processing', 
+  'processing',
   'completed',
-  'failed'
+  'failed',
 ] as const)
 
 export const documentSchema = z.object({
@@ -117,7 +117,7 @@ export const documentSchema = z.object({
   chunk_count: z.number().min(0, 'Chunk count cannot be negative'),
   error_message: z.string().nullable(),
   created_at: timestampSchema,
-  updated_at: timestampSchema
+  updated_at: timestampSchema,
 })
 
 export const documentInsertSchema = z.object({
@@ -128,14 +128,14 @@ export const documentInsertSchema = z.object({
   storage_path: z.string().min(1, 'Storage path is required'),
   processing_status: documentProcessingStatusSchema.optional(),
   chunk_count: z.number().min(0, 'Chunk count cannot be negative').optional(),
-  error_message: z.string().nullable().optional()
+  error_message: z.string().nullable().optional(),
 })
 
 export const documentUpdateSchema = z.object({
   filename: z.string().min(1, 'Filename is required').max(255, 'Filename too long').optional(),
   processing_status: documentProcessingStatusSchema.optional(),
   chunk_count: z.number().min(0, 'Chunk count cannot be negative').optional(),
-  error_message: z.string().nullable().optional()
+  error_message: z.string().nullable().optional(),
 })
 
 // =============================================================================
@@ -149,7 +149,7 @@ export const documentChunkSchema = z.object({
   content: z.string().min(1, 'Content is required').max(10000, 'Content too long'),
   token_count: z.number().positive('Token count must be positive'),
   qdrant_point_id: uuidSchema.nullable(),
-  created_at: timestampSchema
+  created_at: timestampSchema,
 })
 
 export const documentChunkInsertSchema = z.object({
@@ -157,13 +157,13 @@ export const documentChunkInsertSchema = z.object({
   chunk_index: z.number().min(0, 'Chunk index cannot be negative'),
   content: z.string().min(1, 'Content is required').max(10000, 'Content too long'),
   token_count: z.number().positive('Token count must be positive'),
-  qdrant_point_id: uuidSchema.nullable().optional()
+  qdrant_point_id: uuidSchema.nullable().optional(),
 })
 
 export const documentChunkUpdateSchema = z.object({
   content: z.string().min(1, 'Content is required').max(10000, 'Content too long').optional(),
   token_count: z.number().positive('Token count must be positive').optional(),
-  qdrant_point_id: uuidSchema.nullable().optional()
+  qdrant_point_id: uuidSchema.nullable().optional(),
 })
 
 // =============================================================================
@@ -175,16 +175,16 @@ export const conversationSchema = z.object({
   user_id: uuidSchema,
   title: z.string().max(200, 'Title too long').nullable(),
   created_at: timestampSchema,
-  updated_at: timestampSchema
+  updated_at: timestampSchema,
 })
 
 export const conversationInsertSchema = z.object({
   user_id: uuidSchema,
-  title: z.string().max(200, 'Title too long').optional()
+  title: z.string().max(200, 'Title too long').optional(),
 })
 
 export const conversationUpdateSchema = z.object({
-  title: z.string().max(200, 'Title too long').nullable().optional()
+  title: z.string().max(200, 'Title too long').nullable().optional(),
 })
 
 // =============================================================================
@@ -199,19 +199,19 @@ export const messageSchema = z.object({
   role: messageRoleSchema,
   content: z.string().min(1, 'Content is required').max(50000, 'Content too long'),
   metadata: z.record(z.any()).default({}),
-  created_at: timestampSchema
+  created_at: timestampSchema,
 })
 
 export const messageInsertSchema = z.object({
   conversation_id: uuidSchema,
   role: messageRoleSchema,
   content: z.string().min(1, 'Content is required').max(50000, 'Content too long'),
-  metadata: z.record(z.any()).optional().default({})
+  metadata: z.record(z.any()).optional().default({}),
 })
 
 export const messageUpdateSchema = z.object({
   content: z.string().min(1, 'Content is required').max(50000, 'Content too long').optional(),
-  metadata: z.record(z.any()).optional()
+  metadata: z.record(z.any()).optional(),
 })
 
 // =============================================================================
@@ -219,13 +219,17 @@ export const messageUpdateSchema = z.object({
 // =============================================================================
 
 export const chatRequestSchema = z.object({
-  messages: z.array(z.object({
-    role: messageRoleSchema,
-    content: z.string().min(1, 'Message content is required').max(10000, 'Message too long')
-  })).min(1, 'At least one message is required'),
+  messages: z
+    .array(
+      z.object({
+        role: messageRoleSchema,
+        content: z.string().min(1, 'Message content is required').max(10000, 'Message too long'),
+      })
+    )
+    .min(1, 'At least one message is required'),
   conversationId: uuidSchema.optional(),
   temperature: z.number().min(0).max(2).optional().default(0.1),
-  maxTokens: z.number().positive().max(4000).optional().default(1000)
+  maxTokens: z.number().positive().max(4000).optional().default(1000),
 })
 
 export const vectorSearchSchema = z.object({
@@ -233,13 +237,13 @@ export const vectorSearchSchema = z.object({
   userId: uuidSchema,
   topK: z.number().positive().max(20).optional().default(5),
   threshold: z.number().min(0).max(1).optional().default(0.7),
-  includeMetadata: z.boolean().optional().default(true)
+  includeMetadata: z.boolean().optional().default(true),
 })
 
 export const documentProcessingRequestSchema = z.object({
   documentId: uuidSchema,
   chunkSize: z.number().positive().max(2000).optional().default(500),
-  chunkOverlap: z.number().min(0).max(500).optional().default(50)
+  chunkOverlap: z.number().min(0).max(500).optional().default(50),
 })
 
 // =============================================================================
@@ -250,7 +254,7 @@ export const paginationSchema = z.object({
   page: z.number().positive().optional().default(1),
   limit: z.number().positive().max(100).optional().default(20),
   sortBy: z.string().optional(),
-  sortOrder: z.enum(['asc', 'desc']).optional().default('desc')
+  sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
 })
 
 // =============================================================================
@@ -259,18 +263,21 @@ export const paginationSchema = z.object({
 
 export const magicLinkRequestSchema = z.object({
   email: emailSchema,
-  redirectTo: z.string().url('Invalid redirect URL').optional()
+  redirectTo: z.string().url('Invalid redirect URL').optional(),
 })
 
 export const otpRequestSchema = z.object({
   email: emailSchema,
-  createUser: z.boolean().optional().default(true)
+  createUser: z.boolean().optional().default(true),
 })
 
 export const otpVerifySchema = z.object({
   email: emailSchema,
-  token: z.string().length(6, 'OTP must be 6 digits').regex(/^\d+$/, 'OTP must contain only digits'),
-  type: z.enum(['email', 'sms']).default('email')
+  token: z
+    .string()
+    .length(6, 'OTP must be 6 digits')
+    .regex(/^\d+$/, 'OTP must contain only digits'),
+  type: z.enum(['email', 'sms']).default('email'),
 })
 
 // =============================================================================
@@ -281,23 +288,26 @@ export const envSchema = z.object({
   // Next.js
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   NEXT_PUBLIC_SITE_URL: z.string().url('Invalid site URL').optional(),
-  
+
   // Supabase
   NEXT_PUBLIC_SUPABASE_URL: z.string().url('Invalid Supabase URL'),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1, 'Supabase anon key is required'),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'Supabase service role key is required'),
-  
+
   // OpenAI
   OPENAI_API_KEY: z.string().min(1, 'OpenAI API key is required'),
-  
+
   // Qdrant
   QDRANT_URL: z.string().url('Invalid Qdrant URL'),
   QDRANT_API_KEY: z.string().min(1, 'Qdrant API key is required'),
-  QDRANT_COLLECTION_NAME: z.string().min(1, 'Qdrant collection name is required').default('documents'),
-  
+  QDRANT_COLLECTION_NAME: z
+    .string()
+    .min(1, 'Qdrant collection name is required')
+    .default('documents'),
+
   // Upstash Redis
   UPSTASH_REDIS_REST_URL: z.string().url('Invalid Upstash Redis URL'),
-  UPSTASH_REDIS_REST_TOKEN: z.string().min(1, 'Upstash Redis token is required')
+  UPSTASH_REDIS_REST_TOKEN: z.string().min(1, 'Upstash Redis token is required'),
 })
 
 // =============================================================================
@@ -306,22 +316,22 @@ export const envSchema = z.object({
 
 export const loginFormSchema = z.object({
   email: emailSchema,
-  method: z.enum(['magic_link', 'otp']).default('magic_link')
+  method: z.enum(['magic_link', 'otp']).default('magic_link'),
 })
 
 export const otpFormSchema = z.object({
   email: emailSchema,
-  otp: z.string().length(6, 'OTP must be 6 digits').regex(/^\d+$/, 'OTP must contain only digits')
+  otp: z.string().length(6, 'OTP must be 6 digits').regex(/^\d+$/, 'OTP must contain only digits'),
 })
 
 export const profileFormSchema = z.object({
   full_name: z.string().max(100, 'Name too long').optional(),
-  email: emailSchema
+  email: emailSchema,
 })
 
 export const documentDeleteSchema = z.object({
   documentId: uuidSchema,
-  confirmDelete: z.boolean().refine(val => val === true, 'Please confirm deletion')
+  confirmDelete: z.boolean().refine(val => val === true, 'Please confirm deletion'),
 })
 
 // =============================================================================
@@ -332,7 +342,7 @@ export const errorResponseSchema = z.object({
   error: z.string(),
   message: z.string(),
   code: z.string().optional(),
-  details: z.any().optional()
+  details: z.any().optional(),
 })
 
 // =============================================================================
@@ -342,7 +352,7 @@ export const errorResponseSchema = z.object({
 export const successResponseSchema = z.object({
   success: z.boolean(),
   data: z.any().optional(),
-  message: z.string().optional()
+  message: z.string().optional(),
 })
 
 // =============================================================================

@@ -2,10 +2,10 @@
 
 /**
  * Comprehensive Local Testing Script for Next.js RAG Chatbot
- * 
+ *
  * Validates entire application before Vercel deployment including:
  * - Environment validation
- * - Build testing  
+ * - Build testing
  * - API endpoint testing
  * - Feature validation
  * - Performance checks
@@ -31,7 +31,7 @@ const colors = {
   cyan: '\x1b[36m',
   magenta: '\x1b[35m',
   reset: '\x1b[0m',
-  bold: '\x1b[1m'
+  bold: '\x1b[1m',
 } as const
 
 type ColorKey = keyof typeof colors
@@ -87,13 +87,17 @@ function logInfo(message: string): void {
   log(`ℹ️  ${message}`, 'cyan')
 }
 
-async function runCommand(command: string, description: string, options: CommandOptions = {}): Promise<CommandResult> {
+async function runCommand(
+  command: string,
+  description: string,
+  options: CommandOptions = {}
+): Promise<CommandResult> {
   try {
     log(`Running: ${command}`)
-    const output = execSync(command, { 
-      encoding: 'utf8', 
+    const output = execSync(command, {
+      encoding: 'utf8',
       stdio: options.silent ? 'pipe' : 'inherit',
-      timeout: options.timeout || 60000
+      timeout: options.timeout || 60000,
     })
     logSuccess(`${description} - OK`)
     return { success: true, output }
@@ -112,7 +116,7 @@ async function waitForServer(url: string, timeout: number = 30000): Promise<bool
   while (Date.now() - start < timeout) {
     try {
       await new Promise<number>((resolve, reject) => {
-        const req = http.get(url, (res) => {
+        const req = http.get(url, res => {
           resolve(res.statusCode || 0)
         })
         req.on('error', reject)
@@ -128,10 +132,10 @@ async function waitForServer(url: string, timeout: number = 30000): Promise<bool
 
 async function startDevServerForTesting(): Promise<ChildProcess> {
   logInfo('Starting development server for API testing...')
-  
+
   const server = spawn('npm', ['run', 'dev'], {
     stdio: 'pipe',
-    env: { ...process.env, NODE_ENV: 'development' }
+    env: { ...process.env, NODE_ENV: 'development' },
   })
 
   // Wait for server to start
@@ -163,7 +167,7 @@ async function main(): Promise<number> {
         // If dotenv is not installed, try to load manually
         const envContent = fs.readFileSync('.env.local', 'utf8')
         const envLines = envContent.split('\n').filter(line => line.trim() && !line.startsWith('#'))
-        
+
         for (const line of envLines) {
           const [key, ...valueParts] = line.split('=')
           if (key && valueParts.length > 0) {
@@ -191,7 +195,7 @@ async function main(): Promise<number> {
     try {
       devServer = await startDevServerForTesting()
       await new Promise(resolve => setTimeout(resolve, 3000)) // Give server time to fully start
-      
+
       const apiResult = await testAPIs('http://localhost:3000')
       results.push(apiResult)
     } catch (error) {
@@ -207,7 +211,6 @@ async function main(): Promise<number> {
 
     // Generate comprehensive report
     await generateTestReport(results)
-
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
     logError(`Testing suite failed: ${errorMessage}`)
@@ -244,7 +247,7 @@ async function main(): Promise<number> {
 
 async function generateTestReport(results: boolean[]): Promise<void> {
   logStep('REPORT', 'Generating Test Report')
-  
+
   const report: TestReport = {
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
@@ -252,13 +255,13 @@ async function generateTestReport(results: boolean[]): Promise<void> {
       environment: results[0] || false,
       build: results[1] || false,
       api: results[2] || false,
-      features: results[3] || false
+      features: results[3] || false,
     },
     summary: {
       total: results.length,
       passed: results.filter(Boolean).length,
-      failed: results.filter(r => !r).length
-    }
+      failed: results.filter(r => !r).length,
+    },
   }
 
   // Save report to file
@@ -291,12 +294,14 @@ process.on('SIGINT', () => {
 })
 
 if (require.main === module) {
-  main().then(exitCode => {
-    process.exit(exitCode)
-  }).catch((error: Error) => {
-    logError(`Script failed: ${error.message}`)
-    process.exit(1)
-  })
+  main()
+    .then(exitCode => {
+      process.exit(exitCode)
+    })
+    .catch((error: Error) => {
+      logError(`Script failed: ${error.message}`)
+      process.exit(1)
+    })
 }
 
 export { main, runCommand, log, logSuccess, logError, logWarning, logInfo }

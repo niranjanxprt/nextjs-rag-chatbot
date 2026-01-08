@@ -1,6 +1,6 @@
 /**
  * Auth Layout
- * 
+ *
  * Layout wrapper for authentication pages
  */
 
@@ -13,10 +13,10 @@ interface AuthLayoutProps {
   description?: string
 }
 
-export function AuthLayout({ 
-  children, 
-  title = "Welcome to RAG Chatbot",
-  description = "Sign in to access your personalized AI assistant"
+export function AuthLayout({
+  children,
+  title = 'Welcome to RAG Chatbot',
+  description = 'Sign in to access your personalized AI assistant',
 }: AuthLayoutProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
@@ -33,9 +33,7 @@ export function AuthLayout({
             <CardTitle className="text-xl">{title}</CardTitle>
             <CardDescription>{description}</CardDescription>
           </CardHeader>
-          <CardContent>
-            {children}
-          </CardContent>
+          <CardContent>{children}</CardContent>
         </Card>
 
         {/* Footer */}

@@ -1,6 +1,6 @@
 /**
  * Environment Variables Validator
- * 
+ *
  * Validates all required and optional environment variables
  * Tests external service connections
  */
@@ -12,7 +12,7 @@ const colors = {
   green: '\x1b[32m',
   red: '\x1b[31m',
   yellow: '\x1b[33m',
-  reset: '\x1b[0m'
+  reset: '\x1b[0m',
 } as const
 
 function logSuccess(message: string): void {
@@ -35,18 +35,18 @@ async function validateEnvironment(): Promise<boolean> {
   // Required environment variables
   const requiredVars = [
     'OPENAI_API_KEY',
-    'NEXT_PUBLIC_SUPABASE_URL', 
+    'NEXT_PUBLIC_SUPABASE_URL',
     'NEXT_PUBLIC_SUPABASE_ANON_KEY',
-    'SUPABASE_SERVICE_ROLE_KEY'
+    'SUPABASE_SERVICE_ROLE_KEY',
   ]
 
   // Optional but recommended variables
   const optionalVars = [
     'QDRANT_URL',
-    'QDRANT_API_KEY', 
+    'QDRANT_API_KEY',
     'QDRANT_COLLECTION_NAME',
     'UPSTASH_REDIS_REST_URL',
-    'UPSTASH_REDIS_REST_TOKEN'
+    'UPSTASH_REDIS_REST_TOKEN',
   ]
 
   // Check required variables
@@ -72,7 +72,7 @@ async function validateEnvironment(): Promise<boolean> {
 
   // Check dependencies
   console.log('\n📦 Dependencies Check:')
-  
+
   if (!fs.existsSync('node_modules')) {
     logError('node_modules not found. Run: npm install')
     allValid = false
@@ -89,7 +89,7 @@ async function validateEnvironment(): Promise<boolean> {
 
   // Test external service connections
   console.log('\n🌐 External Service Connections:')
-  
+
   // Test Supabase connection
   if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     try {
@@ -191,7 +191,7 @@ async function test() {
 
 test().then(success => process.exit(success ? 0 : 1))
 `
-  
+
   try {
     fs.writeFileSync('temp-supabase-test.js', testScript)
     execSync('node temp-supabase-test.js', { stdio: 'pipe' })
@@ -225,7 +225,7 @@ async function test() {
 
 test().then(success => process.exit(success ? 0 : 1))
 `
-  
+
   try {
     fs.writeFileSync('temp-openai-test.js', testScript)
     execSync('node temp-openai-test.js', { stdio: 'pipe' })
@@ -260,7 +260,7 @@ async function test() {
 
 test().then(success => process.exit(success ? 0 : 1))
 `
-  
+
   try {
     fs.writeFileSync('temp-qdrant-test.js', testScript)
     execSync('node temp-qdrant-test.js', { stdio: 'pipe' })
@@ -295,7 +295,7 @@ async function test() {
 
 test().then(success => process.exit(success ? 0 : 1))
 `
-  
+
   try {
     fs.writeFileSync('temp-redis-test.js', testScript)
     execSync('node temp-redis-test.js', { stdio: 'pipe' })

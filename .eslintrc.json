@@ -1,6 +1,21 @@
 {
   "extends": ["next/core-web-vitals"],
+  "plugins": ["testing-library", "jest"],
   "rules": {
-    "react/no-unescaped-entities": "off"
-  }
+    "react/no-unescaped-entities": "off",
+    "no-unused-vars": "warn",
+    "prefer-const": "error",
+    "no-var": "error",
+    "no-console": "warn",
+    "@next/next/no-html-link-for-pages": "off"
+  },
+  "overrides": [
+    {
+      "files": ["**/__tests__/**/*", "**/*.test.*"],
+      "env": {
+        "jest": true
+      },
+      "extends": ["plugin:testing-library/react", "plugin:jest/recommended"]
+    }
+  ]
 }

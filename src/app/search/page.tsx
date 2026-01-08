@@ -1,6 +1,6 @@
 /**
  * Search Page
- * 
+ *
  * Dedicated search interface for finding information in documents
  */
 
@@ -70,7 +70,7 @@ export default function SearchPage() {
           includeMetadata: true,
           keywordWeight: 0.3,
           semanticWeight: 0.7,
-          recencyWeight: 0.1
+          recencyWeight: 0.1,
         }),
       })
 
@@ -79,7 +79,7 @@ export default function SearchPage() {
       }
 
       const data: SearchResponse = await response.json()
-      
+
       if (data.success) {
         setResults(data.data.results)
         setSearchTime(data.data.searchTime)
@@ -116,148 +116,147 @@ export default function SearchPage() {
   return (
     <DashboardLayout>
       <div className="container mx-auto py-6 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold">Search Documents</h1>
-        <p className="text-muted-foreground">
-          Find specific information across all your uploaded documents
-        </p>
-      </div>
-
-      {/* Search Form */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Search className="w-5 h-5" />
-            Search Query
-          </CardTitle>
-          <CardDescription>
-            Enter your question or keywords to search through your documents
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <form onSubmit={handleSearch} className="flex gap-2">
-            <Input
-              placeholder="What would you like to know about your documents?"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="flex-1"
-            />
-            <Button type="submit" disabled={isLoading || !query.trim()}>
-              {isLoading ? 'Searching...' : 'Search'}
-            </Button>
-          </form>
-
-          {/* Search Type Tabs */}
-          <Tabs value={searchType} onValueChange={(value) => setSearchType(value as 'semantic' | 'hybrid')}>
-            <TabsList>
-              <TabsTrigger value="semantic" className="flex items-center gap-2">
-                <Zap className="w-4 h-4" />
-                Semantic Search
-              </TabsTrigger>
-              <TabsTrigger value="hybrid" className="flex items-center gap-2">
-                <Filter className="w-4 h-4" />
-                Hybrid Search
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="semantic" className="text-sm text-muted-foreground">
-              AI-powered search that understands meaning and context
-            </TabsContent>
-            <TabsContent value="hybrid" className="text-sm text-muted-foreground">
-              Combines semantic understanding with keyword matching for comprehensive results
-            </TabsContent>
-          </Tabs>
-
-          {/* Quick Search Suggestions */}
-          <div className="space-y-2">
-            <p className="text-sm font-medium">Quick searches:</p>
-            <div className="flex flex-wrap gap-2">
-              {[
-                'What is the main topic?',
-                'Summarize key points',
-                'What are the conclusions?',
-                'Explain the methodology',
-                'What are the recommendations?'
-              ].map((suggestion) => (
-                <Button
-                  key={suggestion}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleQuickSearch(suggestion)}
-                  disabled={isLoading}
-                >
-                  {suggestion}
-                </Button>
-              ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Search Results */}
-      {error && (
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="pt-6">
-            <p className="text-red-600">{error}</p>
-          </CardContent>
-        </Card>
-      )}
-
-      {searchTime !== null && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Clock className="w-4 h-4" />
-          Search completed in {searchTime}ms
-          {results.length > 0 && ` • Found ${results.length} results`}
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold">Search Documents</h1>
+          <p className="text-muted-foreground">
+            Find specific information across all your uploaded documents
+          </p>
         </div>
-      )}
 
-      {results.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Search Results</h2>
-          
-          {results.map((result, index) => (
-            <Card key={result.id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-blue-500" />
-                    <CardTitle className="text-lg">{result.filename}</CardTitle>
-                  </div>
-                  <Badge variant="secondary">
-                    {formatScore(result.score)}% match
-                  </Badge>
-                </div>
-                {result.metadata?.chunkIndex !== undefined && (
-                  <CardDescription>
-                    Chunk {result.metadata.chunkIndex + 1} of {result.metadata.totalChunks}
-                  </CardDescription>
-                )}
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm leading-relaxed">
-                  {truncateContent(result.content)}
-                </p>
-                {result.metadata?.createdAt && (
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Document uploaded: {new Date(result.metadata.createdAt).toLocaleDateString()}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {results.length === 0 && query && !isLoading && !error && (
+        {/* Search Form */}
         <Card>
-          <CardContent className="pt-6 text-center">
-            <p className="text-muted-foreground">
-              No results found for "{query}". Try different keywords or upload more documents.
-            </p>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Search className="w-5 h-5" />
+              Search Query
+            </CardTitle>
+            <CardDescription>
+              Enter your question or keywords to search through your documents
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <form onSubmit={handleSearch} className="flex gap-2">
+              <Input
+                placeholder="What would you like to know about your documents?"
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                className="flex-1"
+              />
+              <Button type="submit" disabled={isLoading || !query.trim()}>
+                {isLoading ? 'Searching...' : 'Search'}
+              </Button>
+            </form>
+
+            {/* Search Type Tabs */}
+            <Tabs
+              value={searchType}
+              onValueChange={value => setSearchType(value as 'semantic' | 'hybrid')}
+            >
+              <TabsList>
+                <TabsTrigger value="semantic" className="flex items-center gap-2">
+                  <Zap className="w-4 h-4" />
+                  Semantic Search
+                </TabsTrigger>
+                <TabsTrigger value="hybrid" className="flex items-center gap-2">
+                  <Filter className="w-4 h-4" />
+                  Hybrid Search
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="semantic" className="text-sm text-muted-foreground">
+                AI-powered search that understands meaning and context
+              </TabsContent>
+              <TabsContent value="hybrid" className="text-sm text-muted-foreground">
+                Combines semantic understanding with keyword matching for comprehensive results
+              </TabsContent>
+            </Tabs>
+
+            {/* Quick Search Suggestions */}
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Quick searches:</p>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  'What is the main topic?',
+                  'Summarize key points',
+                  'What are the conclusions?',
+                  'Explain the methodology',
+                  'What are the recommendations?',
+                ].map(suggestion => (
+                  <Button
+                    key={suggestion}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleQuickSearch(suggestion)}
+                    disabled={isLoading}
+                  >
+                    {suggestion}
+                  </Button>
+                ))}
+              </div>
+            </div>
           </CardContent>
         </Card>
-      )}
-    </div>
+
+        {/* Search Results */}
+        {error && (
+          <Card className="border-red-200 bg-red-50">
+            <CardContent className="pt-6">
+              <p className="text-red-600">{error}</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {searchTime !== null && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Clock className="w-4 h-4" />
+            Search completed in {searchTime}ms
+            {results.length > 0 && ` • Found ${results.length} results`}
+          </div>
+        )}
+
+        {results.length > 0 && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">Search Results</h2>
+
+            {results.map((result, index) => (
+              <Card key={result.id} className="hover:shadow-md transition-shadow">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-5 h-5 text-blue-500" />
+                      <CardTitle className="text-lg">{result.filename}</CardTitle>
+                    </div>
+                    <Badge variant="secondary">{formatScore(result.score)}% match</Badge>
+                  </div>
+                  {result.metadata?.chunkIndex !== undefined && (
+                    <CardDescription>
+                      Chunk {result.metadata.chunkIndex + 1} of {result.metadata.totalChunks}
+                    </CardDescription>
+                  )}
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm leading-relaxed">{truncateContent(result.content)}</p>
+                  {result.metadata?.createdAt && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Document uploaded: {new Date(result.metadata.createdAt).toLocaleDateString()}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        {results.length === 0 && query && !isLoading && !error && (
+          <Card>
+            <CardContent className="pt-6 text-center">
+              <p className="text-muted-foreground">
+                No results found for "{query}". Try different keywords or upload more documents.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </DashboardLayout>
   )
 }

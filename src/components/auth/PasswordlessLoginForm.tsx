@@ -31,14 +31,14 @@ export const PasswordlessLoginForm: React.FC<PasswordlessLoginFormProps> = ({
   onSuccess,
   onError,
   onBack,
-  className = ''
+  className = '',
 }) => {
   const [formState, setFormState] = useState<FormState>({
     email: '',
     method: 'magic_link',
     isLoading: false,
     message: '',
-    error: ''
+    error: '',
   })
 
   const { signInWithMagicLink, requestOTP, loading, error } = useAuthActions()
@@ -54,7 +54,7 @@ export const PasswordlessLoginForm: React.FC<PasswordlessLoginFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     // Clear previous messages
     updateFormState({ message: '', error: '' })
 
@@ -84,9 +84,10 @@ export const PasswordlessLoginForm: React.FC<PasswordlessLoginFormProps> = ({
       }
 
       if (result.success) {
-        const message = formState.method === 'magic_link' 
-          ? 'Magic link sent! Check your email to sign in.'
-          : 'Verification code sent! Check your email.'
+        const message =
+          formState.method === 'magic_link'
+            ? 'Magic link sent! Check your email to sign in.'
+            : 'Verification code sent! Check your email.'
         updateFormState({ message })
         // Log success for debugging
         console.log('Login success:', message)
@@ -117,20 +118,12 @@ export const PasswordlessLoginForm: React.FC<PasswordlessLoginFormProps> = ({
         <div className="flex items-center justify-between">
           <CardTitle className="text-2xl font-bold">Sign In</CardTitle>
           {onBack && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onBack}
-              className="p-2"
-              disabled={loading}
-            >
+            <Button variant="ghost" size="sm" onClick={onBack} className="p-2" disabled={loading}>
               <ArrowLeft className="h-4 w-4" />
             </Button>
           )}
         </div>
-        <CardDescription>
-          Enter your email to receive a secure sign-in link or code
-        </CardDescription>
+        <CardDescription>Enter your email to receive a secure sign-in link or code</CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-4">
@@ -200,18 +193,12 @@ export const PasswordlessLoginForm: React.FC<PasswordlessLoginFormProps> = ({
           {/* Success Message */}
           {formState.message && (
             <Alert>
-              <AlertDescription className="text-green-700">
-                {formState.message}
-              </AlertDescription>
+              <AlertDescription className="text-green-700">{formState.message}</AlertDescription>
             </Alert>
           )}
 
           {/* Submit Button */}
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={loading || !formState.email.trim()}
-          >
+          <Button type="submit" className="w-full" disabled={loading || !formState.email.trim()}>
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -238,10 +225,9 @@ export const PasswordlessLoginForm: React.FC<PasswordlessLoginFormProps> = ({
         {/* Help Text */}
         <div className="text-center text-sm text-muted-foreground">
           <p>
-            {formState.method === 'magic_link' 
+            {formState.method === 'magic_link'
               ? "We'll send you a secure link that will sign you in automatically"
-              : "We'll send you a 6-digit code to verify your identity"
-            }
+              : "We'll send you a 6-digit code to verify your identity"}
           </p>
         </div>
       </CardContent>

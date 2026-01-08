@@ -1,6 +1,6 @@
 /**
  * Message List Component
- * 
+ *
  * Displays chat messages with proper formatting and source citations
  */
 
@@ -9,10 +9,10 @@
 import React from 'react'
 import { Message } from '@/lib/types/database'
 import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { User, Bot, Clock, FileText } from 'lucide-react'
+import { User, Bot, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { SourceCitations, type Source } from './SourceCitations'
 
 // =============================================================================
 // Types
@@ -36,17 +36,25 @@ function formatTimestamp(timestamp: Date | string): string {
   const date = typeof timestamp === 'string' ? new Date(timestamp) : timestamp
   return date.toLocaleTimeString('en-US', {
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
   })
 }
 
-function extractSourcesFromMetadata(metadata: any): Array<{
-  documentId: string
-  filename: string
-  score: number
-}> {
-  if (!metadata || !metadata.contextSources) return []
-  return metadata.contextSources
+function extractSourcesFromMetadata(metadata: any): Source[] {
+  if (!metadata) return []
+
+  // Handle contextSources from RAG context
+  if (metadata.contextSources && Array.isArray(metadata.contextSources)) {
+    return metadata.contextSources.map((source: any) => ({
+      documentId: source.documentId,
+      filename: source.filename || source.name || 'Unknown',
+      score: source.score || 0,
+      excerpt: source.excerpt,
+      pageNumber: source.pageNumber,
+    }))
+  }
+
+  return []
 }
 
 // =============================================================================
@@ -59,21 +67,11 @@ function MessageItem({ message, isLast }: MessageItemProps) {
   const sources = extractSourcesFromMetadata(message.metadata)
 
   return (
-    <div className={cn(
-      'flex gap-3 p-4',
-      isLast && 'pb-6'
-    )}>
+    <div className={cn('flex gap-3 p-4', isLast && 'pb-6')}>
       {/* Avatar */}
-      <Avatar className={cn(
-        'w-8 h-8 shrink-0',
-        isUser ? 'bg-primary' : 'bg-secondary'
-      )}>
+      <Avatar className={cn('w-8 h-8 shrink-0', isUser ? 'bg-primary' : 'bg-secondary')}>
         <AvatarFallback>
-          {isUser ? (
-            <User className="w-4 h-4" />
-          ) : (
-            <Bot className="w-4 h-4" />
-          )}
+          {isUser ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
         </AvatarFallback>
       </Avatar>
 
@@ -81,9 +79,7 @@ function MessageItem({ message, isLast }: MessageItemProps) {
       <div className="flex-1 space-y-2">
         {/* Message Header */}
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">
-            {isUser ? 'You' : 'AI Assistant'}
-          </span>
+          <span className="text-sm font-medium">{isUser ? 'You' : 'AI Assistant'}</span>
           <span className="text-xs text-muted-foreground flex items-center gap-1">
             <Clock className="w-3 h-3" />
             {formatTimestamp(message.created_at || new Date())}
@@ -91,19 +87,16 @@ function MessageItem({ message, isLast }: MessageItemProps) {
         </div>
 
         {/* Message Text */}
-        <Card className={cn(
-          'max-w-none',
-          isUser 
-            ? 'bg-primary text-primary-foreground' 
-            : 'bg-muted'
-        )}>
+        <Card
+          className={cn('max-w-none', isUser ? 'bg-primary text-primary-foreground' : 'bg-muted')}
+        >
           <CardContent className="p-3">
             <div className="prose prose-sm max-w-none dark:prose-invert">
               {message.content.split('\n').map((line, index) => (
-                <p key={index} className={cn(
-                  'mb-2 last:mb-0',
-                  isUser && 'text-primary-foreground'
-                )}>
+                <p
+                  key={index}
+                  className={cn('mb-2 last:mb-0', isUser && 'text-primary-foreground')}
+                >
                   {line}
                 </p>
               ))}
@@ -113,26 +106,7 @@ function MessageItem({ message, isLast }: MessageItemProps) {
 
         {/* Sources (for assistant messages) */}
         {isAssistant && sources.length > 0 && (
-          <div className="space-y-2">
-            <div className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-              <FileText className="w-3 h-3" />
-              Sources ({sources.length})
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {sources.map((source, index) => (
-                <Badge
-                  key={`${source.documentId}-${index}`}
-                  variant="outline"
-                  className="text-xs"
-                >
-                  {source.filename}
-                  <span className="ml-1 text-muted-foreground">
-                    ({(source.score * 100).toFixed(0)}%)
-                  </span>
-                </Badge>
-              ))}
-            </div>
-          </div>
+          <SourceCitations sources={sources} variant="card" />
         )}
 
         {/* Metadata (for debugging - only show in development) */}

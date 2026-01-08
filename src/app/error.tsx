@@ -1,6 +1,6 @@
 /**
  * Global Error Boundary
- * 
+ *
  * Catches and displays errors in the application
  */
 
@@ -31,26 +31,25 @@ export default function Error({ error, reset }: ErrorProps) {
           </div>
           <CardTitle className="text-xl">Something went wrong!</CardTitle>
           <CardDescription>
-            An unexpected error occurred. Please try again or contact support if the problem persists.
+            An unexpected error occurred. Please try again or contact support if the problem
+            persists.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {process.env.NODE_ENV === 'development' && (
             <div className="p-3 bg-gray-100 rounded-md">
-              <p className="text-xs font-mono text-gray-600 break-all">
-                {error.message}
-              </p>
+              <p className="text-xs font-mono text-gray-600 break-all">{error.message}</p>
             </div>
           )}
-          
+
           <div className="flex gap-2">
             <Button onClick={reset} className="flex-1">
               <RefreshCw className="w-4 h-4 mr-2" />
               Try again
             </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => window.location.href = '/dashboard'}
+            <Button
+              variant="outline"
+              onClick={() => (window.location.href = '/dashboard')}
               className="flex-1"
             >
               Go to Dashboard

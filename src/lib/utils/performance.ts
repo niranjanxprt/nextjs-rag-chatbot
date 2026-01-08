@@ -1,6 +1,6 @@
 /**
  * Performance Monitoring Utilities
- * 
+ *
  * Tools for measuring and optimizing application performance
  * on Vercel and other deployment platforms
  */
@@ -42,49 +42,49 @@ export class PerformanceTimer {
   mark(label: string): void {
     const now = performance.now()
     this.marks.set(label, now)
-    
+
     this.metrics.push({
       name: `${this.name}.${label}`,
       value: now - this.startTime,
       unit: 'ms',
-      timestamp: Date.now()
+      timestamp: Date.now(),
     })
   }
 
   measure(startLabel: string, endLabel?: string): number {
     const startTime = this.marks.get(startLabel)
     const endTime = endLabel ? this.marks.get(endLabel) : performance.now()
-    
+
     if (!startTime) {
       throw new Error(`Mark "${startLabel}" not found`)
     }
-    
+
     if (endLabel && !endTime) {
       throw new Error(`Mark "${endLabel}" not found`)
     }
-    
+
     const duration = (endTime || performance.now()) - startTime
-    
+
     this.metrics.push({
       name: `${this.name}.${startLabel}_to_${endLabel || 'end'}`,
       value: duration,
       unit: 'ms',
-      timestamp: Date.now()
+      timestamp: Date.now(),
     })
-    
+
     return duration
   }
 
   end(): PerformanceReport {
     const totalTime = performance.now() - this.startTime
-    
+
     return {
       metrics: this.metrics,
       summary: {
         totalTime,
         memoryUsage: process.memoryUsage(),
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      },
     }
   }
 
@@ -103,35 +103,35 @@ export function withPerformanceTracking<T extends any[], R>(
 ) {
   return async (...args: T): Promise<R> => {
     const timer = new PerformanceTimer(name)
-    
+
     try {
       timer.mark('start')
       const result = await fn(...args)
       timer.mark('end')
-      
+
       const report = timer.end()
-      
+
       // Log performance metrics in development
       if (process.env.NODE_ENV === 'development') {
         console.log(`Performance Report for ${name}:`, report)
       }
-      
+
       // In production, you might want to send to monitoring service
       if (process.env.NODE_ENV === 'production') {
         await sendPerformanceMetrics(report)
       }
-      
+
       return result
     } catch (error) {
       timer.mark('error')
       const report = timer.end()
-      
+
       // Log error with performance context
       console.error(`Performance Error in ${name}:`, {
         error,
-        performance: report
+        performance: report,
       })
-      
+
       throw error
     }
   }
@@ -149,27 +149,27 @@ export function getMemoryUsage(): {
   arrayBuffers: string
 } {
   const usage = process.memoryUsage()
-  
+
   return {
     rss: formatBytes(usage.rss),
     heapUsed: formatBytes(usage.heapUsed),
     heapTotal: formatBytes(usage.heapTotal),
     external: formatBytes(usage.external),
-    arrayBuffers: formatBytes(usage.arrayBuffers)
+    arrayBuffers: formatBytes(usage.arrayBuffers),
   }
 }
 
 export function checkMemoryThreshold(thresholdMB: number = 100): boolean {
   const usage = process.memoryUsage()
   const heapUsedMB = usage.heapUsed / 1024 / 1024
-  
+
   return heapUsedMB > thresholdMB
 }
 
 export function logMemoryUsage(context?: string): void {
   const usage = getMemoryUsage()
   const prefix = context ? `[${context}]` : ''
-  
+
   console.log(`${prefix} Memory Usage:`, usage)
 }
 
@@ -181,44 +181,44 @@ export function createAPIPerformanceMiddleware() {
   return (handler: Function) => {
     return async (req: any, res: any) => {
       const timer = new PerformanceTimer(`api_${req.method}_${req.url}`)
-      
+
       timer.mark('request_start')
-      
+
       // Add performance headers
       res.setHeader('X-Response-Time-Start', Date.now().toString())
-      
+
       try {
         const result = await handler(req, res)
-        
+
         timer.mark('request_end')
         const report = timer.end()
-        
+
         // Add performance headers
         res.setHeader('X-Response-Time', `${report.summary.totalTime.toFixed(2)}ms`)
         res.setHeader('X-Memory-Usage', formatBytes(report.summary.memoryUsage.heapUsed))
-        
+
         // Log slow requests
         if (report.summary.totalTime > 1000) {
           console.warn('Slow API request:', {
             method: req.method,
             url: req.url,
             duration: report.summary.totalTime,
-            memory: report.summary.memoryUsage
+            memory: report.summary.memoryUsage,
           })
         }
-        
+
         return result
       } catch (error) {
         timer.mark('request_error')
         const report = timer.end()
-        
+
         console.error('API Performance Error:', {
           method: req.method,
           url: req.url,
           error,
-          performance: report
+          performance: report,
         })
-        
+
         throw error
       }
     }
@@ -231,9 +231,9 @@ export function createAPIPerformanceMiddleware() {
 
 export function measureWebVitals() {
   if (typeof window === 'undefined') return
-  
+
   // Core Web Vitals
-  const observer = new PerformanceObserver((list) => {
+  const observer = new PerformanceObserver(list => {
     for (const entry of list.getEntries()) {
       const metric: PerformanceMetric = {
         name: entry.name,
@@ -242,22 +242,22 @@ export function measureWebVitals() {
         timestamp: Date.now(),
         context: {
           entryType: entry.entryType,
-          startTime: entry.startTime
-        }
+          startTime: entry.startTime,
+        },
       }
-      
+
       // Log in development
       if (process.env.NODE_ENV === 'development') {
         console.log('Web Vital:', metric)
       }
-      
+
       // Send to analytics in production
       if (process.env.NODE_ENV === 'production') {
         sendWebVital(metric)
       }
     }
   })
-  
+
   // Observe different performance entry types
   try {
     observer.observe({ entryTypes: ['navigation', 'paint', 'largest-contentful-paint'] })
@@ -268,12 +268,12 @@ export function measureWebVitals() {
 
 export function measurePageLoad(pageName: string) {
   if (typeof window === 'undefined') return
-  
+
   const timer = new PerformanceTimer(`page_${pageName}`)
-  
+
   // Mark when page starts loading
   timer.mark('load_start')
-  
+
   // Mark when DOM is ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
@@ -282,18 +282,18 @@ export function measurePageLoad(pageName: string) {
   } else {
     timer.mark('dom_ready')
   }
-  
+
   // Mark when page is fully loaded
   window.addEventListener('load', () => {
     timer.mark('load_complete')
-    
+
     const report = timer.end()
-    
+
     if (process.env.NODE_ENV === 'development') {
       console.log(`Page Load Performance for ${pageName}:`, report)
     }
   })
-  
+
   return timer
 }
 
@@ -303,11 +303,11 @@ export function measurePageLoad(pageName: string) {
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 Bytes'
-  
+
   const k = 1024
   const sizes = ['Bytes', 'KB', 'MB', 'GB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
-  
+
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
@@ -315,18 +315,17 @@ async function sendPerformanceMetrics(report: PerformanceReport): Promise<void> 
   try {
     // In production, send to your monitoring service
     // For example: DataDog, New Relic, Vercel Analytics, etc.
-    
+
     // Placeholder implementation
     if (process.env.VERCEL_ANALYTICS_ID) {
       // Send to Vercel Analytics
       console.log('Would send to Vercel Analytics:', report)
     }
-    
+
     if (process.env.DATADOG_API_KEY) {
       // Send to DataDog
       console.log('Would send to DataDog:', report)
     }
-    
   } catch (error) {
     console.error('Failed to send performance metrics:', error)
   }
@@ -353,11 +352,11 @@ export function optimizeForVercel() {
   if (typeof global !== 'undefined') {
     // Set up memory monitoring
     const memoryThreshold = parseInt(process.env.MEMORY_THRESHOLD_MB || '100')
-    
+
     setInterval(() => {
       if (checkMemoryThreshold(memoryThreshold)) {
         console.warn('Memory threshold exceeded:', getMemoryUsage())
-        
+
         // Force garbage collection if available
         if (global.gc) {
           global.gc()
@@ -366,7 +365,7 @@ export function optimizeForVercel() {
       }
     }, 30000) // Check every 30 seconds
   }
-  
+
   // Set up performance monitoring
   if (typeof window !== 'undefined') {
     measureWebVitals()
@@ -379,7 +378,7 @@ export function optimizeForVercel() {
 
 export function analyzeBundleSize() {
   if (typeof window === 'undefined') return
-  
+
   // Analyze loaded scripts
   const scripts = Array.from(document.scripts)
   const totalSize = scripts.reduce((size, script) => {
@@ -389,11 +388,11 @@ export function analyzeBundleSize() {
     }
     return size
   }, 0)
-  
+
   console.log('Bundle Analysis:', {
     scriptCount: scripts.length,
     estimatedSize: `${totalSize}KB`,
-    scripts: scripts.map(s => s.src).filter(Boolean)
+    scripts: scripts.map(s => s.src).filter(Boolean),
   })
 }
 
@@ -404,7 +403,7 @@ export function analyzeBundleSize() {
 export function warmupFunction() {
   // Pre-initialize expensive operations
   const startTime = performance.now()
-  
+
   // Pre-load critical modules
   try {
     require('crypto')
@@ -413,9 +412,9 @@ export function warmupFunction() {
   } catch (error) {
     console.warn('Module pre-loading failed:', error)
   }
-  
+
   const warmupTime = performance.now() - startTime
   console.log(`Function warmup completed in ${warmupTime.toFixed(2)}ms`)
-  
+
   return warmupTime
 }

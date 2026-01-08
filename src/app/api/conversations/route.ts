@@ -1,16 +1,16 @@
 /**
  * Conversations API Route
- * 
+ *
  * Handles conversation management operations
  */
 
 import { NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { 
-  getUserConversations, 
-  getConversationState, 
+import {
+  getUserConversations,
+  getConversationState,
   deleteConversation,
-  getConversationStats 
+  getConversationStats,
 } from '@/lib/services/conversation-state'
 
 // =============================================================================
@@ -21,8 +21,11 @@ export async function GET(request: NextRequest) {
   try {
     // Check authentication
     const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
     if (authError || !user) {
       return new Response('Unauthorized', { status: 401 })
     }
@@ -47,16 +50,14 @@ export async function GET(request: NextRequest) {
       pagination: {
         limit,
         offset,
-        total: conversations.length
-      }
+        total: conversations.length,
+      },
     })
-
   } catch (error) {
     console.error('Conversations API error:', error)
-    return new Response(
-      error instanceof Error ? error.message : 'Internal server error',
-      { status: 500 }
-    )
+    return new Response(error instanceof Error ? error.message : 'Internal server error', {
+      status: 500,
+    })
   }
 }
 
@@ -68,15 +69,18 @@ export async function DELETE(request: NextRequest) {
   try {
     // Check authentication
     const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
     if (authError || !user) {
       return new Response('Unauthorized', { status: 401 })
     }
 
     // Get all user conversations
     const conversations = await getUserConversations(user.id, 1000) // Get all
-    
+
     // Delete each conversation
     let deletedCount = 0
     for (const conversation of conversations) {
@@ -88,14 +92,12 @@ export async function DELETE(request: NextRequest) {
 
     return Response.json({
       message: `Deleted ${deletedCount} conversations`,
-      deletedCount
+      deletedCount,
     })
-
   } catch (error) {
     console.error('Conversations delete API error:', error)
-    return new Response(
-      error instanceof Error ? error.message : 'Internal server error',
-      { status: 500 }
-    )
+    return new Response(error instanceof Error ? error.message : 'Internal server error', {
+      status: 500,
+    })
   }
 }

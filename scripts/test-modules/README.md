@@ -15,11 +15,13 @@ npm run test:local:comprehensive
 ## Test Phases
 
 ### Phase 1: Environment & Dependencies
+
 - ✅ Validates all required environment variables
 - ✅ Tests external service connections (Supabase, OpenAI, Qdrant, Redis)
 - ✅ Checks project dependencies
 
 ### Phase 2: Build & Code Quality
+
 - ✅ TypeScript type checking
 - ✅ ESLint code quality checks
 - ✅ Unit tests execution
@@ -30,6 +32,7 @@ npm run test:local:comprehensive
 - ✅ Security audit
 
 ### Phase 3: API Endpoints
+
 - ✅ Health check endpoints
 - ✅ Monitoring endpoints
 - ✅ Document management APIs
@@ -40,6 +43,7 @@ npm run test:local:comprehensive
 - ✅ CORS configuration
 
 ### Phase 4: Feature Integration
+
 - ✅ Database schema validation
 - ✅ Document processing pipeline
 - ✅ Embedding generation
@@ -63,6 +67,7 @@ The testing suite is modular and consists of:
 ## Output
 
 The script generates:
+
 - Real-time console output with color-coded results
 - Detailed test report saved to `test-report.json`
 - Exit code 0 for success, 1 for failure
@@ -77,6 +82,7 @@ The script generates:
 ## Error Handling
 
 The script includes comprehensive error handling:
+
 - Graceful cleanup of test resources
 - Proper server shutdown
 - Detailed error reporting
@@ -104,6 +110,7 @@ Common issues and solutions:
 ## Performance Benchmarks
 
 The script includes performance validation:
+
 - Bundle size analysis (warns if chunks > 500KB)
 - Build time monitoring
 - API response time validation

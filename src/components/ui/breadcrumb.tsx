@@ -1,6 +1,6 @@
 /**
  * Breadcrumb Component
- * 
+ *
  * Navigation breadcrumbs for deep page navigation
  */
 
@@ -29,7 +29,7 @@ const pathToLabel: Record<string, string> = {
   chat: 'Chat',
   search: 'Search',
   settings: 'Settings',
-  profile: 'Profile'
+  profile: 'Profile',
 }
 
 function generateBreadcrumbsFromPath(pathname: string): BreadcrumbItem[] {
@@ -38,18 +38,18 @@ function generateBreadcrumbsFromPath(pathname: string): BreadcrumbItem[] {
     {
       label: 'Home',
       href: '/dashboard',
-      icon: <Home className="w-4 h-4" />
-    }
+      icon: <Home className="w-4 h-4" />,
+    },
   ]
 
   let currentPath = ''
   for (const segment of segments) {
     currentPath += `/${segment}`
     const label = pathToLabel[segment] || segment.charAt(0).toUpperCase() + segment.slice(1)
-    
+
     breadcrumbs.push({
       label,
-      href: currentPath
+      href: currentPath,
     })
   }
 
@@ -68,13 +68,11 @@ export function Breadcrumb({ items, className }: BreadcrumbProps) {
     <nav className={cn('flex items-center space-x-1 text-sm text-gray-500', className)}>
       {breadcrumbItems.map((item, index) => {
         const isLast = index === breadcrumbItems.length - 1
-        
+
         return (
           <React.Fragment key={item.href}>
-            {index > 0 && (
-              <ChevronRight className="w-4 h-4 text-gray-400" />
-            )}
-            
+            {index > 0 && <ChevronRight className="w-4 h-4 text-gray-400" />}
+
             {isLast ? (
               <span className="flex items-center gap-1 text-gray-900 font-medium">
                 {item.icon}

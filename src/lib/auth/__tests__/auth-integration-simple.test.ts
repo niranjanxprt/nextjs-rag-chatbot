@@ -41,7 +41,7 @@ describe('Authentication Integration Tests', () => {
       } as Response)
 
       const { data, error } = await supabaseClient.auth.getSession()
-      
+
       expect(error).toBeNull()
       expect(data).toBeDefined()
       expect(data.session).toBeNull() // Should be null initially
@@ -130,12 +130,12 @@ describe('Authentication Integration Tests', () => {
       mockFetch.mockResolvedValue(mockResponse)
 
       // Test multiple concurrent session checks
-      const sessionPromises = Array(3).fill(null).map(() => 
-        supabaseClient.auth.getSession()
-      )
+      const sessionPromises = Array(3)
+        .fill(null)
+        .map(() => supabaseClient.auth.getSession())
 
       const results = await Promise.all(sessionPromises)
-      
+
       // All results should be consistent
       results.forEach(({ data, error }) => {
         expect(error).toBeNull()
@@ -151,7 +151,7 @@ describe('Authentication Integration Tests', () => {
       } as Response)
 
       const { error } = await supabaseClient.auth.signOut()
-      
+
       // Should not error even if not signed in
       expect(error).toBeNull()
     })
@@ -167,7 +167,7 @@ describe('Authentication Integration Tests', () => {
         'QDRANT_URL',
         'QDRANT_API_KEY',
         'UPSTASH_REDIS_REST_URL',
-        'UPSTASH_REDIS_REST_TOKEN'
+        'UPSTASH_REDIS_REST_TOKEN',
       ]
 
       requiredVars.forEach(varName => {
@@ -191,7 +191,7 @@ describe('Authentication Integration Tests', () => {
       const client = createClient()
       expect(client).toBeDefined()
       expect(client.auth).toBeDefined()
-      
+
       // Verify client has required methods
       expect(typeof client.auth.getSession).toBe('function')
       expect(typeof client.auth.signInWithOtp).toBe('function')

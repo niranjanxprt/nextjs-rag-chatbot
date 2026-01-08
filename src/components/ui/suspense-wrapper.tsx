@@ -1,6 +1,6 @@
 /**
  * Suspense Wrapper Components
- * 
+ *
  * Provides consistent loading states and error boundaries
  * for async components and data fetching
  */
@@ -43,7 +43,7 @@ export function SuspenseWrapper({
   children,
   fallback,
   errorFallback,
-  showErrorDetails = false
+  showErrorDetails = false,
 }: SuspenseWrapperProps) {
   const defaultFallback = (
     <div className="flex items-center justify-center p-8">
@@ -53,9 +53,7 @@ export function SuspenseWrapper({
 
   return (
     <ErrorBoundary fallback={errorFallback} showDetails={showErrorDetails}>
-      <Suspense fallback={fallback || defaultFallback}>
-        {children}
-      </Suspense>
+      <Suspense fallback={fallback || defaultFallback}>{children}</Suspense>
     </ErrorBoundary>
   )
 }
@@ -74,7 +72,7 @@ export function PageSuspense({ children, title, description }: PageSuspenseProps
             {description && <Skeleton className="h-4 w-96" />}
           </div>
         )}
-        
+
         <div className="grid gap-6">
           <Card>
             <CardContent className="p-6">
@@ -85,7 +83,7 @@ export function PageSuspense({ children, title, description }: PageSuspenseProps
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-6">
               <div className="space-y-4">
@@ -115,33 +113,26 @@ export function ComponentSuspense({
   children,
   height = '200px',
   width = '100%',
-  className = ''
+  className = '',
 }: ComponentSuspenseProps) {
   const fallback = (
-    <div 
-      className={`flex items-center justify-center ${className}`}
-      style={{ height, width }}
-    >
+    <div className={`flex items-center justify-center ${className}`} style={{ height, width }}>
       <LoadingSpinner />
     </div>
   )
 
-  return (
-    <SuspenseWrapper fallback={fallback}>
-      {children}
-    </SuspenseWrapper>
-  )
+  return <SuspenseWrapper fallback={fallback}>{children}</SuspenseWrapper>
 }
 
 // =============================================================================
 // List Suspense (for data lists)
 // =============================================================================
 
-export function ListSuspense({ 
-  children, 
+export function ListSuspense({
+  children,
   itemCount = 3,
-  className = ''
-}: { 
+  className = '',
+}: {
   children: ReactNode
   itemCount?: number
   className?: string
@@ -168,11 +159,7 @@ export function ListSuspense({
     </div>
   )
 
-  return (
-    <SuspenseWrapper fallback={fallback}>
-      {children}
-    </SuspenseWrapper>
-  )
+  return <SuspenseWrapper fallback={fallback}>{children}</SuspenseWrapper>
 }
 
 // =============================================================================
@@ -192,7 +179,7 @@ export function ChatSuspense({ children }: { children: ReactNode }) {
           </div>
         </div>
       </div>
-      
+
       {/* Chat messages skeleton */}
       <div className="flex-1 p-4 space-y-4">
         {/* User message */}
@@ -201,7 +188,7 @@ export function ChatSuspense({ children }: { children: ReactNode }) {
             <Skeleton className="h-4 w-32" />
           </div>
         </div>
-        
+
         {/* Assistant message */}
         <div className="flex justify-start">
           <div className="bg-gray-100 rounded-lg p-3 max-w-xs">
@@ -212,7 +199,7 @@ export function ChatSuspense({ children }: { children: ReactNode }) {
             </div>
           </div>
         </div>
-        
+
         {/* User message */}
         <div className="flex justify-end">
           <div className="bg-blue-100 rounded-lg p-3 max-w-xs">
@@ -220,7 +207,7 @@ export function ChatSuspense({ children }: { children: ReactNode }) {
           </div>
         </div>
       </div>
-      
+
       {/* Chat input skeleton */}
       <div className="border-t p-4">
         <div className="flex space-x-2">
@@ -231,11 +218,7 @@ export function ChatSuspense({ children }: { children: ReactNode }) {
     </div>
   )
 
-  return (
-    <SuspenseWrapper fallback={fallback}>
-      {children}
-    </SuspenseWrapper>
-  )
+  return <SuspenseWrapper fallback={fallback}>{children}</SuspenseWrapper>
 }
 
 // =============================================================================
@@ -260,7 +243,7 @@ export function DocumentSuspense({ children }: { children: ReactNode }) {
           </div>
         </CardContent>
       </Card>
-      
+
       {/* Document list skeleton */}
       <div className="space-y-4">
         <Skeleton className="h-6 w-32" />
@@ -289,11 +272,7 @@ export function DocumentSuspense({ children }: { children: ReactNode }) {
     </div>
   )
 
-  return (
-    <SuspenseWrapper fallback={fallback}>
-      {children}
-    </SuspenseWrapper>
-  )
+  return <SuspenseWrapper fallback={fallback}>{children}</SuspenseWrapper>
 }
 
 // =============================================================================
@@ -312,14 +291,14 @@ export function SearchSuspense({ children }: { children: ReactNode }) {
           <Skeleton className="h-8 w-16" />
         </div>
       </div>
-      
+
       {/* Search results skeleton */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <Skeleton className="h-5 w-32" />
           <Skeleton className="h-4 w-24" />
         </div>
-        
+
         <div className="space-y-4">
           {Array.from({ length: 5 }).map((_, index) => (
             <Card key={index}>
@@ -344,9 +323,5 @@ export function SearchSuspense({ children }: { children: ReactNode }) {
     </div>
   )
 
-  return (
-    <SuspenseWrapper fallback={fallback}>
-      {children}
-    </SuspenseWrapper>
-  )
+  return <SuspenseWrapper fallback={fallback}>{children}</SuspenseWrapper>
 }

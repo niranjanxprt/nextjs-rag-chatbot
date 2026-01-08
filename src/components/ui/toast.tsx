@@ -1,6 +1,6 @@
 /**
  * Toast Notification System
- * 
+ *
  * Provides user feedback through toast notifications
  */
 
@@ -64,23 +64,26 @@ export function ToastProvider({ children }: ToastProviderProps) {
     setToasts(prev => prev.filter(toast => toast.id !== id))
   }, [])
 
-  const addToast = useCallback((toast: Omit<Toast, 'id'>) => {
-    const id = Math.random().toString(36).substring(2, 9)
-    const newToast: Toast = {
-      ...toast,
-      id,
-      duration: toast.duration ?? 5000
-    }
+  const addToast = useCallback(
+    (toast: Omit<Toast, 'id'>) => {
+      const id = Math.random().toString(36).substring(2, 9)
+      const newToast: Toast = {
+        ...toast,
+        id,
+        duration: toast.duration ?? 5000,
+      }
 
-    setToasts(prev => [...prev, newToast])
+      setToasts(prev => [...prev, newToast])
 
-    // Auto-remove toast after duration
-    if (newToast.duration && newToast.duration > 0) {
-      setTimeout(() => {
-        removeToast(id)
-      }, newToast.duration)
-    }
-  }, [removeToast])
+      // Auto-remove toast after duration
+      if (newToast.duration && newToast.duration > 0) {
+        setTimeout(() => {
+          removeToast(id)
+        }, newToast.duration)
+      }
+    },
+    [removeToast]
+  )
 
   const clearToasts = useCallback(() => {
     setToasts([])
@@ -131,21 +134,21 @@ function ToastItem({ toast }: ToastItemProps) {
     success: CheckCircle,
     error: AlertCircle,
     warning: AlertTriangle,
-    info: Info
+    info: Info,
   }
 
   const styles = {
     success: 'bg-green-50 border-green-200 text-green-800',
     error: 'bg-red-50 border-red-200 text-red-800',
     warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
-    info: 'bg-blue-50 border-blue-200 text-blue-800'
+    info: 'bg-blue-50 border-blue-200 text-blue-800',
   }
 
   const iconStyles = {
     success: 'text-green-500',
     error: 'text-red-500',
     warning: 'text-yellow-500',
-    info: 'text-blue-500'
+    info: 'text-blue-500',
   }
 
   const Icon = icons[toast.type]
@@ -160,13 +163,11 @@ function ToastItem({ toast }: ToastItemProps) {
       aria-live="polite"
     >
       <Icon className={cn('w-5 h-5 mt-0.5 flex-shrink-0', iconStyles[toast.type])} />
-      
+
       <div className="flex-1 min-w-0">
         <h4 className="text-sm font-medium">{toast.title}</h4>
-        {toast.description && (
-          <p className="text-sm opacity-90 mt-1">{toast.description}</p>
-        )}
-        
+        {toast.description && <p className="text-sm opacity-90 mt-1">{toast.description}</p>}
+
         {toast.action && (
           <button
             onClick={toast.action.onClick}
@@ -198,14 +199,12 @@ export function useToastActions() {
   return {
     success: (title: string, description?: string) =>
       addToast({ type: 'success', title, description }),
-    
-    error: (title: string, description?: string) =>
-      addToast({ type: 'error', title, description }),
-    
+
+    error: (title: string, description?: string) => addToast({ type: 'error', title, description }),
+
     warning: (title: string, description?: string) =>
       addToast({ type: 'warning', title, description }),
-    
-    info: (title: string, description?: string) =>
-      addToast({ type: 'info', title, description }),
+
+    info: (title: string, description?: string) => addToast({ type: 'info', title, description }),
   }
 }

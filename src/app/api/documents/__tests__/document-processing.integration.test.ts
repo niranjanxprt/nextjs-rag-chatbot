@@ -1,6 +1,6 @@
 /**
  * Integration Tests for Document Processing Pipeline
- * 
+ *
  * End-to-end tests covering the complete document processing workflow
  * with proper mocking for Next.js API routes
  */
@@ -34,19 +34,23 @@ const mockSupabaseClient: MockSupabaseClient = {
   auth: {
     getUser: jest.fn().mockResolvedValue({
       data: { user: { id: '550e8400-e29b-41d4-a716-446655440000', email: 'test@example.com' } },
-      error: null
-    })
+      error: null,
+    }),
   },
   storage: {
     from: jest.fn().mockReturnThis(),
     upload: jest.fn().mockResolvedValue({ error: null }),
-    download: jest.fn().mockResolvedValue({ data: { arrayBuffer: jest.fn().mockResolvedValue(new ArrayBuffer(100)) } })
-  }
+    download: jest.fn().mockResolvedValue({
+      data: { arrayBuffer: jest.fn().mockResolvedValue(new ArrayBuffer(100)) },
+    }),
+  },
 }
 
 const mockGetDocument = getDocument as jest.MockedFunction<typeof getDocument>
 const mockUpdateDocument = updateDocument as jest.MockedFunction<typeof updateDocument>
-const mockCreateDocumentChunks = createDocumentChunks as jest.MockedFunction<typeof createDocumentChunks>
+const mockCreateDocumentChunks = createDocumentChunks as jest.MockedFunction<
+  typeof createDocumentChunks
+>
 const mockProcessDocument = processDocument as jest.MockedFunction<typeof processDocument>
 
 // Mock createClient to return our mock
@@ -54,20 +58,24 @@ const mockCreateClient = createClient as jest.MockedFunction<typeof createClient
 mockCreateClient.mockResolvedValue(mockSupabaseClient as any)
 
 // Helper to create mock NextRequest
-function createMockRequest(method: string, body?: any, headers?: Record<string, string>): NextRequest {
+function createMockRequest(
+  method: string,
+  body?: any,
+  headers?: Record<string, string>
+): NextRequest {
   const request = new Request('http://localhost', {
     method,
     headers: headers || {},
-    body: body ? JSON.stringify(body) : undefined
+    body: body ? JSON.stringify(body) : undefined,
   }) as NextRequest
-  
+
   // Add formData method for POST requests
   if (method === 'POST' && body instanceof FormData) {
     request.formData = jest.fn().mockResolvedValue(body)
   } else if (method === 'POST') {
     request.json = jest.fn().mockResolvedValue(body)
   }
-  
+
   return request
 }
 
@@ -90,7 +98,7 @@ describe('Document Processing Integration Tests', () => {
         chunk_count: 0,
         error_message: null,
         created_at: '2023-01-01T00:00:00Z',
-        updated_at: '2023-01-01T00:00:00Z'
+        updated_at: '2023-01-01T00:00:00Z',
       }
 
       // Mock file with proper arrayBuffer method
@@ -98,12 +106,12 @@ describe('Document Processing Integration Tests', () => {
         name: 'test.pdf',
         type: 'application/pdf',
         size: 1024,
-        arrayBuffer: jest.fn().mockResolvedValue(new ArrayBuffer(1024))
+        arrayBuffer: jest.fn().mockResolvedValue(new ArrayBuffer(1024)),
       }
 
       // Mock form data
       const mockFormData = {
-        get: jest.fn().mockReturnValue(mockFile)
+        get: jest.fn().mockReturnValue(mockFile),
       }
 
       // Mock request for upload
@@ -113,23 +121,54 @@ describe('Document Processing Integration Tests', () => {
       // Mock document creation and updates
       mockGetDocument.mockResolvedValueOnce(null) // Document doesn't exist yet
       mockGetDocument.mockResolvedValueOnce(testDocument) // After creation
-      mockUpdateDocument.mockResolvedValueOnce({ ...testDocument, processing_status: 'processing' as DocumentProcessingStatus as DocumentProcessingStatus })
-      mockUpdateDocument.mockResolvedValueOnce({ ...testDocument, processing_status: 'completed' as DocumentProcessingStatus as DocumentProcessingStatus, chunk_count: 3 })
+      mockUpdateDocument.mockResolvedValueOnce({
+        ...testDocument,
+        processing_status: 'processing' as DocumentProcessingStatus as DocumentProcessingStatus,
+      })
+      mockUpdateDocument.mockResolvedValueOnce({
+        ...testDocument,
+        processing_status: 'completed' as DocumentProcessingStatus as DocumentProcessingStatus,
+        chunk_count: 3,
+      })
 
       // Mock processing result
       mockProcessDocument.mockResolvedValue({
         chunks: [
           { content: 'chunk 1', tokenCount: 10, qdrantPointId: 'qdrant-1' },
           { content: 'chunk 2', tokenCount: 15, qdrantPointId: 'qdrant-2' },
-          { content: 'chunk 3', tokenCount: 12, qdrantPointId: 'qdrant-3' }
+          { content: 'chunk 3', tokenCount: 12, qdrantPointId: 'qdrant-3' },
         ],
-        processingTime: 150
+        processingTime: 150,
       })
 
       mockCreateDocumentChunks.mockResolvedValue([
-        { id: 'chunk-1-id', document_id: testDocument.id, chunk_index: 0, content: 'chunk 1', token_count: 10, qdrant_point_id: 'qdrant-1', created_at: new Date().toISOString() },
-        { id: 'chunk-2-id', document_id: testDocument.id, chunk_index: 1, content: 'chunk 2', token_count: 15, qdrant_point_id: 'qdrant-2', created_at: new Date().toISOString() },
-        { id: 'chunk-3-id', document_id: testDocument.id, chunk_index: 2, content: 'chunk 3', token_count: 12, qdrant_point_id: 'qdrant-3', created_at: new Date().toISOString() }
+        {
+          id: 'chunk-1-id',
+          document_id: testDocument.id,
+          chunk_index: 0,
+          content: 'chunk 1',
+          token_count: 10,
+          qdrant_point_id: 'qdrant-1',
+          created_at: new Date().toISOString(),
+        },
+        {
+          id: 'chunk-2-id',
+          document_id: testDocument.id,
+          chunk_index: 1,
+          content: 'chunk 2',
+          token_count: 15,
+          qdrant_point_id: 'qdrant-2',
+          created_at: new Date().toISOString(),
+        },
+        {
+          id: 'chunk-3-id',
+          document_id: testDocument.id,
+          chunk_index: 2,
+          content: 'chunk 3',
+          token_count: 12,
+          qdrant_point_id: 'qdrant-3',
+          created_at: new Date().toISOString(),
+        },
       ])
 
       // Step 1: Upload document
@@ -145,7 +184,7 @@ describe('Document Processing Integration Tests', () => {
       const processRequest = createMockRequest('POST', { chunkSize: 500, chunkOverlap: 50 })
 
       const processResponse = await processHandler(processRequest, {
-        params: Promise.resolve({ id: testDocument.id })
+        params: Promise.resolve({ id: testDocument.id }),
       })
       const processData = await processResponse.json()
 
@@ -159,7 +198,7 @@ describe('Document Processing Integration Tests', () => {
       const statusRequest = createMockRequest('GET')
 
       const statusResponse = await statusHandler(statusRequest, {
-        params: Promise.resolve({ id: testDocument.id })
+        params: Promise.resolve({ id: testDocument.id }),
       })
       const statusData = await statusResponse.json()
 
@@ -178,7 +217,7 @@ describe('Document Processing Integration Tests', () => {
         expect.arrayContaining([
           expect.objectContaining({ content: 'chunk 1', token_count: 10 }),
           expect.objectContaining({ content: 'chunk 2', token_count: 15 }),
-          expect.objectContaining({ content: 'chunk 3', token_count: 12 })
+          expect.objectContaining({ content: 'chunk 3', token_count: 12 }),
         ])
       )
     })
@@ -196,20 +235,27 @@ describe('Document Processing Integration Tests', () => {
         chunk_count: 0,
         error_message: null,
         created_at: '2023-01-01T00:00:00Z',
-        updated_at: '2023-01-01T00:00:00Z'
+        updated_at: '2023-01-01T00:00:00Z',
       }
 
       // Mock processing error
       mockProcessDocument.mockRejectedValue(new Error('Processing failed: invalid file format'))
-      mockUpdateDocument.mockResolvedValueOnce({ ...testDocument, processing_status: 'processing' as DocumentProcessingStatus as DocumentProcessingStatus })
-      mockUpdateDocument.mockResolvedValueOnce({ ...testDocument, processing_status: 'failed' as DocumentProcessingStatus, error_message: 'Processing failed: invalid file format' })
+      mockUpdateDocument.mockResolvedValueOnce({
+        ...testDocument,
+        processing_status: 'processing' as DocumentProcessingStatus as DocumentProcessingStatus,
+      })
+      mockUpdateDocument.mockResolvedValueOnce({
+        ...testDocument,
+        processing_status: 'failed' as DocumentProcessingStatus,
+        error_message: 'Processing failed: invalid file format',
+      })
 
       // Mock requests
       const processRequest = createMockRequest('POST', { chunkSize: 500, chunkOverlap: 50 })
 
       // Process document (should fail)
       const processResponse = await processHandler(processRequest, {
-        params: Promise.resolve({ id: testDocument.id })
+        params: Promise.resolve({ id: testDocument.id }),
       })
       const processData = await processResponse.json()
 
@@ -221,7 +267,7 @@ describe('Document Processing Integration Tests', () => {
       const statusRequest = createMockRequest('GET')
 
       const statusResponse = await statusHandler(statusRequest, {
-        params: Promise.resolve({ id: testDocument.id })
+        params: Promise.resolve({ id: testDocument.id }),
       })
       const statusData = await statusResponse.json()
 
@@ -243,7 +289,7 @@ describe('Document Processing Integration Tests', () => {
         chunk_count: 0,
         error_message: null,
         created_at: '2023-01-01T00:00:00Z',
-        updated_at: '2023-01-01T00:00:00Z'
+        updated_at: '2023-01-01T00:00:00Z',
       }
 
       mockGetDocument.mockResolvedValue(testDocument)
@@ -251,7 +297,7 @@ describe('Document Processing Integration Tests', () => {
       const processRequest = createMockRequest('POST', { chunkSize: 500, chunkOverlap: 50 })
 
       const processResponse = await processHandler(processRequest, {
-        params: Promise.resolve({ id: testDocument.id })
+        params: Promise.resolve({ id: testDocument.id }),
       })
       const processData = await processResponse.json()
 
@@ -274,7 +320,7 @@ describe('Document Processing Integration Tests', () => {
         chunk_count: 5,
         error_message: null,
         created_at: '2023-01-01T00:00:00Z',
-        updated_at: '2023-01-01T00:00:00Z'
+        updated_at: '2023-01-01T00:00:00Z',
       }
 
       mockGetDocument.mockResolvedValue(testDocument)
@@ -282,7 +328,7 @@ describe('Document Processing Integration Tests', () => {
       const processRequest = createMockRequest('POST', { chunkSize: 500, chunkOverlap: 50 })
 
       const processResponse = await processHandler(processRequest, {
-        params: Promise.resolve({ id: testDocument.id })
+        params: Promise.resolve({ id: testDocument.id }),
       })
       const processData = await processResponse.json()
 
@@ -297,11 +343,11 @@ describe('Document Processing Integration Tests', () => {
       const mockFile = {
         name: 'test.pdf',
         type: 'application/pdf',
-        size: 11 * 1024 * 1024 // 11MB (over limit)
+        size: 11 * 1024 * 1024, // 11MB (over limit)
       }
 
       const mockFormData = {
-        get: jest.fn().mockReturnValue(mockFile)
+        get: jest.fn().mockReturnValue(mockFile),
       }
 
       const uploadRequest = createMockRequest('POST', mockFormData)
@@ -321,11 +367,11 @@ describe('Document Processing Integration Tests', () => {
       const mockFile = {
         name: 'test.exe',
         type: 'application/x-msdownload',
-        size: 1024
+        size: 1024,
       }
 
       const mockFormData = {
-        get: jest.fn().mockReturnValue(mockFile)
+        get: jest.fn().mockReturnValue(mockFile),
       }
 
       const uploadRequest = createMockRequest('POST', mockFormData)
@@ -344,7 +390,7 @@ describe('Document Processing Integration Tests', () => {
       // Mock authentication failure
       mockSupabaseClient.auth.getUser.mockResolvedValueOnce({
         data: { user: null },
-        error: new Error('Not authenticated')
+        error: new Error('Not authenticated'),
       })
 
       const uploadRequest = createMockRequest('POST', new FormData())
@@ -365,7 +411,7 @@ describe('Document Processing Integration Tests', () => {
       const processRequest = createMockRequest('POST', { chunkSize: 500, chunkOverlap: 50 })
 
       const processResponse = await processHandler(processRequest, {
-        params: Promise.resolve({ id: '550e8400-e29b-41d4-a716-446655440001' })
+        params: Promise.resolve({ id: '550e8400-e29b-41d4-a716-446655440001' }),
       })
       const processData = await processResponse.json()
 
@@ -387,7 +433,7 @@ describe('Document Processing Integration Tests', () => {
         chunk_count: 0,
         error_message: null,
         created_at: '2023-01-01T00:00:00Z',
-        updated_at: '2023-01-01T00:00:00Z'
+        updated_at: '2023-01-01T00:00:00Z',
       }
 
       mockGetDocument.mockResolvedValue(testDocument)
@@ -396,7 +442,7 @@ describe('Document Processing Integration Tests', () => {
       const processRequest = createMockRequest('POST', { chunkSize: 3000, chunkOverlap: 50 })
 
       const processResponse = await processHandler(processRequest, {
-        params: Promise.resolve({ id: testDocument.id })
+        params: Promise.resolve({ id: testDocument.id }),
       })
       const processData = await processResponse.json()
 
@@ -413,7 +459,7 @@ describe('Document Processing Integration Tests', () => {
       const statusRequest = createMockRequest('GET')
 
       const statusResponse = await statusHandler(statusRequest, {
-        params: Promise.resolve({ id: '550e8400-e29b-41d4-a716-446655440001' })
+        params: Promise.resolve({ id: '550e8400-e29b-41d4-a716-446655440001' }),
       })
       const statusData = await statusResponse.json()
 
@@ -437,28 +483,35 @@ describe('Document Processing Integration Tests', () => {
         chunk_count: 0,
         error_message: null,
         created_at: '2023-01-01T00:00:00Z',
-        updated_at: '2023-01-01T00:00:00Z'
+        updated_at: '2023-01-01T00:00:00Z',
       }
 
       // Mock processing result with many chunks
       const manyChunks = Array.from({ length: 50 }, (_, i) => ({
         content: `chunk ${i + 1} content`,
         tokenCount: 20,
-        qdrantPointId: `qdrant-${i + 1}`
+        qdrantPointId: `qdrant-${i + 1}`,
       }))
 
       mockProcessDocument.mockResolvedValue({
         chunks: manyChunks,
-        processingTime: 5000 // 5 seconds
+        processingTime: 5000, // 5 seconds
       })
 
-      mockUpdateDocument.mockResolvedValueOnce({ ...testDocument, processing_status: 'processing' as DocumentProcessingStatus })
-      mockUpdateDocument.mockResolvedValueOnce({ ...testDocument, processing_status: 'completed' as DocumentProcessingStatus as DocumentProcessingStatus, chunk_count: 50 })
+      mockUpdateDocument.mockResolvedValueOnce({
+        ...testDocument,
+        processing_status: 'processing' as DocumentProcessingStatus,
+      })
+      mockUpdateDocument.mockResolvedValueOnce({
+        ...testDocument,
+        processing_status: 'completed' as DocumentProcessingStatus as DocumentProcessingStatus,
+        chunk_count: 50,
+      })
 
       const processRequest = createMockRequest('POST', { chunkSize: 200, chunkOverlap: 20 })
 
       const processResponse = await processHandler(processRequest, {
-        params: Promise.resolve({ id: testDocument.id })
+        params: Promise.resolve({ id: testDocument.id }),
       })
       const processData = await processResponse.json()
 
@@ -481,24 +534,29 @@ describe('Document Processing Integration Tests', () => {
         chunk_count: 0,
         error_message: null,
         created_at: '2023-01-01T00:00:00Z',
-        updated_at: '2023-01-01T00:00:00Z'
+        updated_at: '2023-01-01T00:00:00Z',
       }
 
       // Mock processing result with single chunk
       mockProcessDocument.mockResolvedValue({
-        chunks: [
-          { content: 'minimal content', tokenCount: 5, qdrantPointId: 'qdrant-1' }
-        ],
-        processingTime: 100
+        chunks: [{ content: 'minimal content', tokenCount: 5, qdrantPointId: 'qdrant-1' }],
+        processingTime: 100,
       })
 
-      mockUpdateDocument.mockResolvedValueOnce({ ...testDocument, processing_status: 'processing' as DocumentProcessingStatus })
-      mockUpdateDocument.mockResolvedValueOnce({ ...testDocument, processing_status: 'completed' as DocumentProcessingStatus as DocumentProcessingStatus, chunk_count: 1 })
+      mockUpdateDocument.mockResolvedValueOnce({
+        ...testDocument,
+        processing_status: 'processing' as DocumentProcessingStatus,
+      })
+      mockUpdateDocument.mockResolvedValueOnce({
+        ...testDocument,
+        processing_status: 'completed' as DocumentProcessingStatus as DocumentProcessingStatus,
+        chunk_count: 1,
+      })
 
       const processRequest = createMockRequest('POST', { chunkSize: 500, chunkOverlap: 50 })
 
       const processResponse = await processHandler(processRequest, {
-        params: Promise.resolve({ id: testDocument.id })
+        params: Promise.resolve({ id: testDocument.id }),
       })
       const processData = await processResponse.json()
 
@@ -511,7 +569,7 @@ describe('Document Processing Integration Tests', () => {
       const fileTypes = [
         { type: 'application/pdf', extension: 'pdf' },
         { type: 'text/plain', extension: 'txt' },
-        { type: 'text/markdown', extension: 'md' }
+        { type: 'text/markdown', extension: 'md' },
       ]
 
       for (const fileType of fileTypes) {
@@ -527,23 +585,30 @@ describe('Document Processing Integration Tests', () => {
           chunk_count: 0,
           error_message: null,
           created_at: '2023-01-01T00:00:00Z',
-          updated_at: '2023-01-01T00:00:00Z'
+          updated_at: '2023-01-01T00:00:00Z',
         }
 
         mockProcessDocument.mockResolvedValue({
           chunks: [
-            { content: `content from ${fileType.type}`, tokenCount: 10, qdrantPointId: 'qdrant-1' }
+            { content: `content from ${fileType.type}`, tokenCount: 10, qdrantPointId: 'qdrant-1' },
           ],
-          processingTime: 100
+          processingTime: 100,
         })
 
-        mockUpdateDocument.mockResolvedValueOnce({ ...testDocument, processing_status: 'processing' as DocumentProcessingStatus })
-        mockUpdateDocument.mockResolvedValueOnce({ ...testDocument, processing_status: 'completed' as DocumentProcessingStatus as DocumentProcessingStatus, chunk_count: 1 })
+        mockUpdateDocument.mockResolvedValueOnce({
+          ...testDocument,
+          processing_status: 'processing' as DocumentProcessingStatus,
+        })
+        mockUpdateDocument.mockResolvedValueOnce({
+          ...testDocument,
+          processing_status: 'completed' as DocumentProcessingStatus as DocumentProcessingStatus,
+          chunk_count: 1,
+        })
 
         const processRequest = createMockRequest('POST', { chunkSize: 500, chunkOverlap: 50 })
 
         const processResponse = await processHandler(processRequest, {
-          params: Promise.resolve({ id: testDocument.id })
+          params: Promise.resolve({ id: testDocument.id }),
         })
         const processData = await processResponse.json()
 
@@ -555,7 +620,7 @@ describe('Document Processing Integration Tests', () => {
         jest.clearAllMocks()
         mockSupabaseClient.auth.getUser.mockResolvedValue({
           data: { user: { id: '550e8400-e29b-41d4-a716-446655440000', email: 'test@example.com' } },
-          error: null
+          error: null,
         })
       }
     })
@@ -573,32 +638,39 @@ describe('Document Processing Integration Tests', () => {
         chunk_count: 0,
         error_message: null,
         created_at: '2023-01-01T00:00:00Z',
-        updated_at: '2023-01-01T00:00:00Z'
+        updated_at: '2023-01-01T00:00:00Z',
       }
 
       // Test different chunking parameters
       const chunkingParams = [
         { chunkSize: 200, chunkOverlap: 20 },
         { chunkSize: 1000, chunkOverlap: 100 },
-        { chunkSize: 500, chunkOverlap: 0 }
+        { chunkSize: 500, chunkOverlap: 0 },
       ]
 
       for (const params of chunkingParams) {
         mockProcessDocument.mockResolvedValue({
           chunks: [
             { content: 'chunk 1', tokenCount: 10, qdrantPointId: 'qdrant-1' },
-            { content: 'chunk 2', tokenCount: 15, qdrantPointId: 'qdrant-2' }
+            { content: 'chunk 2', tokenCount: 15, qdrantPointId: 'qdrant-2' },
           ],
-          processingTime: 100
+          processingTime: 100,
         })
 
-        mockUpdateDocument.mockResolvedValueOnce({ ...testDocument, processing_status: 'processing' as DocumentProcessingStatus })
-        mockUpdateDocument.mockResolvedValueOnce({ ...testDocument, processing_status: 'completed' as DocumentProcessingStatus as DocumentProcessingStatus, chunk_count: 2 })
+        mockUpdateDocument.mockResolvedValueOnce({
+          ...testDocument,
+          processing_status: 'processing' as DocumentProcessingStatus,
+        })
+        mockUpdateDocument.mockResolvedValueOnce({
+          ...testDocument,
+          processing_status: 'completed' as DocumentProcessingStatus as DocumentProcessingStatus,
+          chunk_count: 2,
+        })
 
         const processRequest = createMockRequest('POST', params)
 
         const processResponse = await processHandler(processRequest, {
-          params: Promise.resolve({ id: testDocument.id })
+          params: Promise.resolve({ id: testDocument.id }),
         })
         const processData = await processResponse.json()
 
@@ -613,7 +685,7 @@ describe('Document Processing Integration Tests', () => {
         jest.clearAllMocks()
         mockSupabaseClient.auth.getUser.mockResolvedValue({
           data: { user: { id: '550e8400-e29b-41d4-a716-446655440000', email: 'test@example.com' } },
-          error: null
+          error: null,
         })
       }
     })

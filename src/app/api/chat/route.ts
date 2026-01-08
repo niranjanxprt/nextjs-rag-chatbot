@@ -1,36 +1,44 @@
 /**
  * Chat API Route with OpenAI SDK
- * 
+ *
  * Handles streaming chat responses with RAG context integration
  */
 
 import { NextRequest } from 'next/server'
+import { streamText } from 'ai'
+import { createOpenAI } from '@ai-sdk/openai'
 import { createClient } from '@/lib/supabase/server'
-import OpenAI from 'openai'
 import { searchDocuments } from '@/lib/services/vector-search'
 import { createMessage, createConversation, getConversation } from '@/lib/database/queries'
 import { chatRequestSchema } from '@/lib/schemas/validation'
 import { fitContextToTokenLimit, estimateTokenCount } from '@/lib/utils/token-counter'
-import { 
-  getConversationState, 
-  createConversationState, 
+import {
+  getConversationState,
+  createConversationState,
   addMessageToConversation,
-  type ConversationMessage 
+  type ConversationMessage,
 } from '@/lib/services/conversation-state'
-import { 
-  createErrorResponse, 
-  createError, 
-  handleSupabaseError, 
-  handleOpenAIError,
+import {
+  createErrorResponse,
+  createError,
+  handleSupabaseError,
   withErrorHandling,
-  logError
+  logError,
 } from '@/lib/utils/error-handler'
+import {
+  initializeLangfuse,
+  traceChatCompletion,
+  logChatGeneration,
+  logLangfuseError,
+  flushLangfuse,
+  isLangfuseEnabled,
+} from '@/lib/services/langfuse'
 
 // =============================================================================
 // Configuration
 // =============================================================================
 
-const openai = new OpenAI({
+const openai = createOpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 })
 
@@ -55,7 +63,7 @@ IMPORTANT INSTRUCTIONS:
 CONTEXT FROM USER'S DOCUMENTS:
 {context}
 
-If no relevant context is provided above, inform the user that you need them to upload relevant documents to answer their question.`
+If no relevant context is provided above, inform the user that you need them to upload relevant documents to answer their question.`,
 }
 
 // =============================================================================
@@ -72,10 +80,11 @@ function formatContextFromResults(results: any[]): string {
   }
 
   return results
-    .map((result) => 
-      `Document: ${result.filename}\n` +
-      `Content: ${result.content}\n` +
-      `Relevance Score: ${result.score.toFixed(3)}`
+    .map(
+      result =>
+        `Document: ${result.filename}\n` +
+        `Content: ${result.content}\n` +
+        `Relevance Score: ${result.score.toFixed(3)}`
     )
     .join('\n\n---\n\n')
 }
@@ -91,7 +100,7 @@ async function getOrCreateConversation(
       if (conversationState && conversationState.userId === userId) {
         return conversationId
       }
-      
+
       // Fallback to database check
       const conversation = await getConversation(conversationId, userId)
       if (conversation) {
@@ -104,7 +113,7 @@ async function getOrCreateConversation(
     // Create new conversation
     const newConversation = await createConversation({
       user_id: userId,
-      title: null // Will be generated from first message
+      title: null, // Will be generated from first message
     })
 
     // Create Redis state for new conversation
@@ -115,7 +124,7 @@ async function getOrCreateConversation(
     logError(error instanceof Error ? error : new Error(String(error)), {
       context: 'get_or_create_conversation',
       conversationId,
-      userId
+      userId,
     })
     throw createError.internal('Failed to get or create conversation')
   }
@@ -126,15 +135,26 @@ async function getOrCreateConversation(
 // =============================================================================
 
 export const POST = withErrorHandling(async (request: NextRequest) => {
+  let traceId: string | undefined
+  const startTime = Date.now()
+
   try {
+    // Initialize Langfuse for observability
+    if (isLangfuseEnabled()) {
+      initializeLangfuse()
+    }
+
     // Check authentication
     const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
     if (authError) {
       throw handleSupabaseError(authError)
     }
-    
+
     if (!user) {
       throw createError.unauthorized('Authentication required')
     }
@@ -171,7 +191,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     // Get conversation state for context
     const conversationState = await getConversationState(activeConversationId, {
       maxMessages: CHAT_CONFIG.conversationHistoryLimit,
-      maxTokens: CHAT_CONFIG.maxContextTokens
+      maxTokens: CHAT_CONFIG.maxContextTokens,
     })
 
     // Use conversation history from Redis state if available, otherwise use provided messages
@@ -179,13 +199,41 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 
     // Search for relevant context
     console.log('Searching for relevant context...')
+    const searchStartTime = Date.now()
     const searchResults = await searchDocuments(lastMessage.content, {
       userId: user.id,
       topK: CHAT_CONFIG.maxContextChunks,
       threshold: CHAT_CONFIG.contextThreshold,
       useCache: true,
-      rerankResults: true
+      rerankResults: true,
     })
+    const searchTimeMs = Date.now() - searchStartTime
+
+    // Create Langfuse trace for this chat completion
+    if (isLangfuseEnabled()) {
+      const trace = await traceChatCompletion({
+        userId: user.id,
+        conversationId: activeConversationId,
+        userMessage: lastMessage.content,
+        systemPrompt: buildSystemPrompt(formatContextFromResults([])),
+        contextSources: searchResults.results
+          .slice(0, CHAT_CONFIG.maxContextChunks)
+          .map(r => ({
+            documentId: r.documentId,
+            filename: r.filename,
+            score: r.score,
+          })),
+        model: CHAT_CONFIG.model,
+        temperature: temperature || CHAT_CONFIG.temperature,
+        maxTokens: maxTokens || CHAT_CONFIG.maxTokens,
+        searchResults: searchResults.results.length,
+        contextUsed: 0, // Will be updated later
+        searchTimeMs,
+      })
+      if (trace) {
+        traceId = trace.id
+      }
+    }
 
     // Apply token limit management to context
     const fittedContext = fitContextToTokenLimit(
@@ -197,17 +245,19 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     // Format context for the system prompt
     const contextString = formatContextFromResults(fittedContext)
     const systemPrompt = buildSystemPrompt(contextString)
-    
+
     // Calculate token usage for monitoring
     const systemPromptTokens = estimateTokenCount(systemPrompt)
     const conversationTokens = conversationHistory.reduce(
-      (total, msg) => total + estimateTokenCount(msg.content), 
+      (total, msg) => total + estimateTokenCount(msg.content),
       0
     )
     const userMessageTokens = estimateTokenCount(lastMessage.content)
     const totalInputTokens = systemPromptTokens + conversationTokens + userMessageTokens
 
-    console.log(`Token usage - System: ${systemPromptTokens}, History: ${conversationTokens}, User: ${userMessageTokens}, Total: ${totalInputTokens}`)
+    console.log(
+      `Token usage - System: ${systemPromptTokens}, History: ${conversationTokens}, User: ${userMessageTokens}, Total: ${totalInputTokens}`
+    )
 
     // Add user message to conversation state
     await addMessageToConversation(activeConversationId, {
@@ -217,9 +267,9 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
         searchResults: searchResults.results.length,
         contextUsed: fittedContext.length,
         tokenUsage: {
-          input: totalInputTokens
-        }
-      }
+          input: totalInputTokens,
+        },
+      },
     })
 
     // Save user message to database as well
@@ -232,9 +282,9 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
         contextUsed: fittedContext.length,
         searchTime: searchResults.searchTime,
         tokenUsage: {
-          input: totalInputTokens
-        }
-      }
+          input: totalInputTokens,
+        },
+      },
     })
 
     // Prepare messages for AI (convert conversation state messages to AI format)
@@ -242,133 +292,155 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       { role: 'system' as const, content: systemPrompt },
       ...conversationHistory.map(msg => ({
         role: msg.role as 'user' | 'assistant',
-        content: msg.content
+        content: msg.content,
       })),
-      { role: 'user' as const, content: lastMessage.content }
+      { role: 'user' as const, content: lastMessage.content },
     ]
 
-    // Generate streaming response
-    let stream
-    try {
-      stream = await openai.chat.completions.create({
-        model: CHAT_CONFIG.model,
-        messages: aiMessages,
-        temperature: temperature || CHAT_CONFIG.temperature,
-        max_tokens: maxTokens || CHAT_CONFIG.maxTokens,
-        stream: true,
-      })
-    } catch (error) {
-      throw handleOpenAIError(error)
-    }
-
-    // Create a readable stream for the response
-    const encoder = new TextEncoder()
-    const readable = new ReadableStream({
-      async start(controller) {
+    // Generate streaming response using AI SDK
+    const result = streamText({
+      model: openai('gpt-4-turbo'),
+      messages: aiMessages,
+      temperature: temperature || CHAT_CONFIG.temperature,
+      maxTokens: maxTokens || CHAT_CONFIG.maxTokens,
+      onFinish: async ({ text, finishReason }) => {
         try {
-          let fullResponse = ''
-          let iterationCount = 0
-          const MAX_ITERATIONS = 1000
-          const STREAM_TIMEOUT = 30000
-          
-          // Create timeout promise
-          const timeoutPromise = new Promise<never>((_, reject) => 
-            setTimeout(() => reject(new Error('Stream timeout after 30 seconds')), STREAM_TIMEOUT)
-          )
-          
-          // Create stream processing promise
-          const streamPromise = (async () => {
-            for await (const chunk of stream) {
-              if (++iterationCount > MAX_ITERATIONS) {
-                throw new Error('Max iterations exceeded (1000)')
-              }
-              
-              const content = chunk.choices[0]?.delta?.content || ''
-              if (content) {
-                fullResponse += content
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content })}\n\n`))
-              }
-            }
-          })()
-          
-          // Race between stream processing and timeout
-          await Promise.race([streamPromise, timeoutPromise])
-          
-          // Save assistant response to database and conversation state
-          try {
-            const responseTokens = estimateTokenCount(fullResponse)
-            
-            // Add to conversation state
-            await addMessageToConversation(activeConversationId, {
-              role: 'assistant',
-              content: fullResponse,
-              metadata: {
-                contextSources: fittedContext
-                  .filter(r => r.documentId) // Filter out items without documentId
-                  .map(r => ({
-                    documentId: r.documentId!,
-                    filename: r.filename,
-                    score: r.score
-                  })),
-                tokenUsage: {
-                  output: responseTokens,
-                  total: totalInputTokens + responseTokens
-                }
-              }
-            })
-            
-            // Save to database
-            await createMessage({
-              conversation_id: activeConversationId,
-              role: 'assistant',
-              content: fullResponse,
-              metadata: {
-                contextSources: fittedContext
-                  .filter(r => r.documentId) // Filter out items without documentId
-                  .map(r => ({
-                    documentId: r.documentId!,
-                    filename: r.filename,
-                    score: r.score
-                  })),
-                tokenUsage: {
-                  output: responseTokens,
-                  total: totalInputTokens + responseTokens
-                }
-              }
-            })
-          } catch (error) {
-            logError(error instanceof Error ? error : new Error(String(error)), {
-              context: 'saving_assistant_message',
-              conversationId: activeConversationId,
-              userId: user.id
+          const responseTokens = estimateTokenCount(text)
+          const latencyMs = Date.now() - startTime
+
+          // Prepare source metadata
+          const contextSources = fittedContext
+            .filter(r => r.documentId)
+            .map(r => ({
+              documentId: r.documentId!,
+              filename: r.filename,
+              score: r.score,
+            }))
+
+          // Add to conversation state
+          await addMessageToConversation(activeConversationId, {
+            role: 'assistant',
+            content: text,
+            metadata: {
+              contextSources,
+              tokenUsage: {
+                output: responseTokens,
+                total: totalInputTokens + responseTokens,
+              },
+              finishReason,
+            },
+          })
+
+          // Save to database
+          await createMessage({
+            conversation_id: activeConversationId,
+            role: 'assistant',
+            content: text,
+            metadata: {
+              contextSources,
+              tokenUsage: {
+                output: responseTokens,
+                total: totalInputTokens + responseTokens,
+              },
+              finishReason,
+            },
+          })
+
+          // Log to Langfuse
+          if (isLangfuseEnabled() && traceId) {
+            await logChatGeneration({
+              traceId,
+              model: CHAT_CONFIG.model,
+              messages: aiMessages,
+              output: text,
+              usage: {
+                inputTokens: totalInputTokens,
+                outputTokens: responseTokens,
+                totalTokens: totalInputTokens + responseTokens,
+              },
+              temperature: temperature || CHAT_CONFIG.temperature,
+              maxTokens: maxTokens || CHAT_CONFIG.maxTokens,
+              finishReason,
+              latencyMs,
             })
           }
-          
-          controller.close()
         } catch (error) {
           logError(error instanceof Error ? error : new Error(String(error)), {
-            context: 'streaming_response',
+            context: 'saving_assistant_message',
             conversationId: activeConversationId,
-            userId: user.id
+            userId: user.id,
           })
-          controller.error(error)
+
+          // Log error to Langfuse
+          if (isLangfuseEnabled()) {
+            await logLangfuseError({
+              traceId,
+              userId: user.id,
+              conversationId: activeConversationId,
+              error: error instanceof Error ? error : new Error(String(error)),
+              context: { phase: 'saving_assistant_message' },
+            })
+          }
         }
-      }
+      },
     })
 
-    return new Response(readable, {
-      headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
-        'X-Conversation-Id': activeConversationId,
-        'X-Context-Results': searchResults.results.length.toString(),
-        'X-Context-Used': fittedContext.length.toString(),
-        'X-Search-Time': searchResults.searchTime.toString(),
-        'X-Token-Usage': totalInputTokens.toString()
-      }
-    })
+    // Convert to data stream response with custom headers
+    const response = result.toDataStreamResponse()
 
+    // Add custom headers for context information
+    response.headers.set('X-Conversation-Id', activeConversationId)
+    response.headers.set('X-Context-Results', searchResults.results.length.toString())
+    response.headers.set('X-Context-Used', fittedContext.length.toString())
+    response.headers.set('X-Search-Time', searchResults.searchTime.toString())
+    response.headers.set('X-Token-Usage', totalInputTokens.toString())
+    response.headers.set(
+      'X-Sources',
+      JSON.stringify(
+        fittedContext
+          .filter(r => r.documentId)
+          .map(r => ({
+            documentId: r.documentId,
+            filename: r.filename,
+            score: r.score,
+          }))
+      )
+    )
+
+    // Ensure Langfuse data is flushed
+    if (isLangfuseEnabled()) {
+      await flushLangfuse()
+    }
+
+    return response
   } catch (error) {
     console.error('Chat API error:', error)
+
+    // Log error to Langfuse with trace info
+    if (isLangfuseEnabled()) {
+      try {
+        const supabase = await createClient()
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+
+        if (user) {
+          await logLangfuseError({
+            traceId,
+            userId: user.id,
+            conversationId: conversationId || 'unknown',
+            error: error instanceof Error ? error : new Error(String(error)),
+            context: { phase: 'chat-api' },
+          })
+
+          // Flush before returning error
+          await flushLangfuse()
+        }
+      } catch (langfuseError) {
+        console.error('Failed to log error to Langfuse:', langfuseError)
+      }
+    }
+
     return createErrorResponse(error instanceof Error ? error : new Error(String(error)))
   }
 })

@@ -1,6 +1,6 @@
 /**
  * API Endpoints Tester
- * 
+ *
  * Tests all API routes for proper functionality
  */
 
@@ -13,7 +13,7 @@ const colors = {
   red: '\x1b[31m',
   yellow: '\x1b[33m',
   blue: '\x1b[34m',
-  reset: '\x1b[0m'
+  reset: '\x1b[0m',
 } as const
 
 interface RequestOptions {
@@ -64,7 +64,7 @@ async function makeRequest(url: string, options: RequestOptions = {}): Promise<A
   return new Promise((resolve, reject) => {
     const urlObj = new URL(url)
     const client = urlObj.protocol === 'https:' ? https : http
-    
+
     const requestOptions: http.RequestOptions = {
       hostname: urlObj.hostname,
       port: urlObj.port,
@@ -73,27 +73,27 @@ async function makeRequest(url: string, options: RequestOptions = {}): Promise<A
       headers: {
         'Content-Type': 'application/json',
         'User-Agent': 'NextJS-RAG-Test-Suite/1.0',
-        ...options.headers
+        ...options.headers,
       },
-      timeout: options.timeout || 10000
+      timeout: options.timeout || 10000,
     }
 
-    const req = client.request(requestOptions, (res) => {
+    const req = client.request(requestOptions, res => {
       let data = ''
-      res.on('data', chunk => data += chunk)
+      res.on('data', chunk => (data += chunk))
       res.on('end', () => {
         try {
           const jsonData = data ? JSON.parse(data) : {}
           resolve({
             statusCode: res.statusCode || 0,
             headers: res.headers,
-            data: jsonData
+            data: jsonData,
           })
         } catch (error) {
           resolve({
             statusCode: res.statusCode || 0,
             headers: res.headers,
-            data: data
+            data: data,
           })
         }
       })
@@ -123,35 +123,35 @@ async function testAPIs(baseUrl: string): Promise<boolean> {
       path: '/api/health',
       method: 'GET',
       expectedStatus: 200,
-      critical: true
+      critical: true,
     },
     {
       name: 'Monitoring Health',
       path: '/api/monitoring/health',
       method: 'GET',
       expectedStatus: 200,
-      critical: false
+      critical: false,
     },
     {
       name: 'Monitoring Metrics',
       path: '/api/monitoring/metrics',
       method: 'GET',
       expectedStatus: 200,
-      critical: false
+      critical: false,
     },
     {
       name: 'Cache Status',
       path: '/api/cache',
       method: 'GET',
       expectedStatus: 200,
-      critical: false
+      critical: false,
     },
     {
       name: 'Documents List',
       path: '/api/documents',
       method: 'GET',
       expectedStatus: [200, 401], // May require auth
-      critical: true
+      critical: true,
     },
     {
       name: 'Search Endpoint',
@@ -159,37 +159,39 @@ async function testAPIs(baseUrl: string): Promise<boolean> {
       method: 'POST',
       body: { query: 'test search' },
       expectedStatus: [200, 400, 401],
-      critical: true
+      critical: true,
     },
     {
       name: 'Conversations List',
       path: '/api/conversations',
       method: 'GET',
       expectedStatus: [200, 401],
-      critical: true
-    }
+      critical: true,
+    },
   ]
 
   // Test each endpoint
   for (const endpoint of endpoints) {
     console.log(`🔍 Testing ${endpoint.name}:`)
-    
+
     try {
       const response = await makeRequest(`${baseUrl}${endpoint.path}`, {
         method: endpoint.method,
         body: endpoint.body,
-        timeout: 15000
+        timeout: 15000,
       })
 
-      const expectedStatuses = Array.isArray(endpoint.expectedStatus) 
-        ? endpoint.expectedStatus 
+      const expectedStatuses = Array.isArray(endpoint.expectedStatus)
+        ? endpoint.expectedStatus
         : [endpoint.expectedStatus]
 
       if (expectedStatuses.includes(response.statusCode)) {
         logSuccess(`${endpoint.name} - Status: ${response.statusCode}`)
         results.push(true)
       } else {
-        logError(`${endpoint.name} - Expected: ${expectedStatuses.join(' or ')}, Got: ${response.statusCode}`)
+        logError(
+          `${endpoint.name} - Expected: ${expectedStatuses.join(' or ')}, Got: ${response.statusCode}`
+        )
         if (endpoint.critical) {
           allPassed = false
         }
@@ -200,7 +202,6 @@ async function testAPIs(baseUrl: string): Promise<boolean> {
       if (endpoint.path === '/api/health' && response.statusCode === 200) {
         validateHealthResponse(response.data)
       }
-
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error)
       logError(`${endpoint.name} - Request failed: ${errorMessage}`)
@@ -228,7 +229,7 @@ async function testAPIs(baseUrl: string): Promise<boolean> {
 
 function validateHealthResponse(data: HealthResponseData): void {
   const requiredFields: (keyof HealthResponseData)[] = ['status', 'timestamp', 'services']
-  
+
   for (const field of requiredFields) {
     if (data[field] !== undefined) {
       logSuccess(`Health response contains ${field}`)
@@ -259,18 +260,18 @@ async function testErrorHandling(baseUrl: string): Promise<void> {
       path: '/api/search',
       method: 'POST',
       body: 'invalid json',
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
     },
     {
       name: 'Non-existent endpoint',
       path: '/api/nonexistent',
-      method: 'GET'
+      method: 'GET',
     },
     {
       name: 'Invalid method',
       path: '/api/health',
-      method: 'DELETE'
-    }
+      method: 'DELETE',
+    },
   ]
 
   for (const test of errorTests) {
@@ -278,7 +279,7 @@ async function testErrorHandling(baseUrl: string): Promise<void> {
       const response = await makeRequest(`${baseUrl}${test.path}`, {
         method: test.method,
         body: test.body,
-        headers: test.headers
+        headers: test.headers,
       })
 
       if (response.statusCode >= 400 && response.statusCode < 500) {
@@ -304,7 +305,7 @@ async function testRateLimiting(baseUrl: string): Promise<void> {
   try {
     const responses = await Promise.all(requests)
     const rateLimited = responses.some(r => r.statusCode === 429)
-    
+
     if (rateLimited) {
       logSuccess('Rate limiting is active')
     } else {
@@ -321,9 +322,9 @@ async function testCORS(baseUrl: string): Promise<void> {
     const response = await makeRequest(`${baseUrl}/api/health`, {
       method: 'OPTIONS',
       headers: {
-        'Origin': 'http://localhost:3000',
-        'Access-Control-Request-Method': 'GET'
-      }
+        Origin: 'http://localhost:3000',
+        'Access-Control-Request-Method': 'GET',
+      },
     })
 
     if (response.headers['access-control-allow-origin']) {

@@ -1,6 +1,6 @@
 /**
  * Cache Configuration
- * 
+ *
  * Centralized configuration for Next.js cache, Redis cache,
  * and application-specific caching strategies
  */
@@ -15,7 +15,7 @@ import { createNextCacheWrapper } from '@/lib/services/cache'
 export const CACHE_CONFIG = {
   // Default TTLs (in seconds)
   defaultTTL: 300, // 5 minutes
-  
+
   // Namespace-specific TTLs
   ttls: {
     embeddings: 3600, // 1 hour
@@ -24,9 +24,9 @@ export const CACHE_CONFIG = {
     conversations: 86400, // 24 hours
     auth: 900, // 15 minutes
     api: 60, // 1 minute
-    static: 86400 * 7 // 1 week for static content
+    static: 86400 * 7, // 1 week for static content
   },
-  
+
   // Next.js cache revalidation times
   revalidate: {
     embeddings: 3600, // 1 hour
@@ -35,9 +35,9 @@ export const CACHE_CONFIG = {
     conversations: 86400, // 24 hours
     auth: 900, // 15 minutes
     api: 60, // 1 minute
-    static: 86400 // 1 day for static content
+    static: 86400, // 1 day for static content
   },
-  
+
   // Cache tags for invalidation
   tags: {
     embeddings: ['embeddings'],
@@ -47,8 +47,8 @@ export const CACHE_CONFIG = {
     auth: ['auth'],
     user: (userId: string) => [`user:${userId}`],
     document: (documentId: string) => [`document:${documentId}`],
-    conversation: (conversationId: string) => [`conversation:${conversationId}`]
-  }
+    conversation: (conversationId: string) => [`conversation:${conversationId}`],
+  },
 }
 
 // =============================================================================
@@ -66,7 +66,7 @@ export const cachedEmbedding = createNextCacheWrapper(
     ttl: CACHE_CONFIG.ttls.embeddings,
     revalidate: CACHE_CONFIG.revalidate.embeddings,
     tags: CACHE_CONFIG.tags.embeddings,
-    keyGenerator: (text: string, model: string) => `embedding:${model}:${text}`
+    keyGenerator: (text: string, model: string) => `embedding:${model}:${text}`,
   }
 )
 
@@ -81,8 +81,7 @@ export const cachedSearch = createNextCacheWrapper(
     ttl: CACHE_CONFIG.ttls.search,
     revalidate: CACHE_CONFIG.revalidate.search,
     tags: CACHE_CONFIG.tags.search,
-    keyGenerator: (query: string, options: any) => 
-      `search:${query}:${JSON.stringify(options)}`
+    keyGenerator: (query: string, options: any) => `search:${query}:${JSON.stringify(options)}`,
   }
 )
 
@@ -97,7 +96,7 @@ export const cachedDocument = createNextCacheWrapper(
     ttl: CACHE_CONFIG.ttls.documents,
     revalidate: CACHE_CONFIG.revalidate.documents,
     tags: CACHE_CONFIG.tags.documents,
-    keyGenerator: (documentId: string) => `document:${documentId}`
+    keyGenerator: (documentId: string) => `document:${documentId}`,
   }
 )
 
@@ -111,7 +110,7 @@ export const cacheInvalidation = {
     const { revalidateTag } = await import('next/cache')
     revalidateTag(`user:${userId}`)
   },
-  
+
   // Invalidate document-related caches
   async invalidateDocument(documentId: string, userId?: string): Promise<void> {
     const { revalidateTag } = await import('next/cache')
@@ -122,7 +121,7 @@ export const cacheInvalidation = {
     revalidateTag('documents')
     revalidateTag('search') // Document changes affect search
   },
-  
+
   // Invalidate conversation-related caches
   async invalidateConversation(conversationId: string, userId?: string): Promise<void> {
     const { revalidateTag } = await import('next/cache')
@@ -132,7 +131,7 @@ export const cacheInvalidation = {
     }
     revalidateTag('conversations')
   },
-  
+
   // Invalidate search caches
   async invalidateSearch(userId?: string): Promise<void> {
     const { revalidateTag } = await import('next/cache')
@@ -141,28 +140,22 @@ export const cacheInvalidation = {
       revalidateTag(`user:${userId}`)
     }
   },
-  
+
   // Invalidate embedding caches
   async invalidateEmbeddings(): Promise<void> {
     const { revalidateTag } = await import('next/cache')
     revalidateTag('embeddings')
   },
-  
+
   // Invalidate all caches
   async invalidateAll(): Promise<void> {
     const { revalidateTag } = await import('next/cache')
-    const allTags = [
-      'embeddings',
-      'search', 
-      'documents',
-      'conversations',
-      'auth'
-    ]
-    
+    const allTags = ['embeddings', 'search', 'documents', 'conversations', 'auth']
+
     for (const tag of allTags) {
       revalidateTag(tag)
     }
-  }
+  },
 }
 
 // =============================================================================
@@ -173,44 +166,44 @@ export const cacheWarming = {
   // Warm user-specific caches
   async warmUserCache(userId: string): Promise<void> {
     console.log(`Warming cache for user: ${userId}`)
-    
+
     // This would implement user-specific cache warming
     // For example:
     // - Pre-load user's documents
     // - Pre-generate embeddings for recent documents
     // - Pre-execute common search queries
-    
+
     // Placeholder implementation
     await new Promise(resolve => setTimeout(resolve, 100))
   },
-  
+
   // Warm global caches
   async warmGlobalCache(): Promise<void> {
     console.log('Warming global cache')
-    
+
     // This would implement global cache warming
     // For example:
     // - Pre-generate embeddings for common queries
     // - Pre-load frequently accessed documents
     // - Pre-execute popular search queries
-    
+
     // Placeholder implementation
     await new Promise(resolve => setTimeout(resolve, 100))
   },
-  
+
   // Warm document-specific caches
   async warmDocumentCache(documentId: string): Promise<void> {
     console.log(`Warming cache for document: ${documentId}`)
-    
+
     // This would implement document-specific cache warming
     // For example:
     // - Pre-generate embeddings for document chunks
     // - Pre-load document metadata
     // - Pre-execute related document searches
-    
+
     // Placeholder implementation
     await new Promise(resolve => setTimeout(resolve, 100))
-  }
+  },
 }
 
 // =============================================================================
@@ -229,10 +222,10 @@ export const cacheMonitoring = {
     return {
       hitRate: 0.75,
       missRate: 0.25,
-      totalRequests: 1000
+      totalRequests: 1000,
     }
   },
-  
+
   // Get cache size information
   async getCacheSizes(): Promise<{
     memory: number
@@ -244,9 +237,9 @@ export const cacheMonitoring = {
     return {
       memory: 1024 * 1024, // 1MB
       redis: 10 * 1024 * 1024, // 10MB
-      nextjs: 5 * 1024 * 1024 // 5MB
+      nextjs: 5 * 1024 * 1024, // 5MB
     }
-  }
+  },
 }
 
 // =============================================================================
@@ -259,7 +252,7 @@ export function generateCacheKey(
   params?: Record<string, any>
 ): string {
   const parts = [namespace, identifier]
-  
+
   if (params) {
     const paramString = Object.keys(params)
       .sort()
@@ -267,7 +260,7 @@ export function generateCacheKey(
       .join('|')
     parts.push(paramString)
   }
-  
+
   return parts.join(':')
 }
 
@@ -278,21 +271,23 @@ export function shouldCache(
 ): boolean {
   // Simple caching decision logic
   // In production, this would be more sophisticated
-  
-  if (size && size > 1024 * 1024) { // Don't cache items > 1MB
+
+  if (size && size > 1024 * 1024) {
+    // Don't cache items > 1MB
     return false
   }
-  
+
   if (complexity === 'low') {
     return false // Don't cache simple operations
   }
-  
+
   return true
 }
 
 export function getCacheTTL(namespace: string, priority?: 'low' | 'medium' | 'high'): number {
-  const baseTTL = CACHE_CONFIG.ttls[namespace as keyof typeof CACHE_CONFIG.ttls] || CACHE_CONFIG.defaultTTL
-  
+  const baseTTL =
+    CACHE_CONFIG.ttls[namespace as keyof typeof CACHE_CONFIG.ttls] || CACHE_CONFIG.defaultTTL
+
   // Adjust TTL based on priority
   switch (priority) {
     case 'high':

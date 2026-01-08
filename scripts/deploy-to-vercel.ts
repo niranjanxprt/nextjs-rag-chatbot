@@ -13,7 +13,7 @@ const colors = {
   yellow: '\x1b[33m',
   blue: '\x1b[34m',
   reset: '\x1b[0m',
-  bold: '\x1b[1m'
+  bold: '\x1b[1m',
 } as const
 
 function log(message: string, color: keyof typeof colors = 'reset'): void {
@@ -51,7 +51,7 @@ async function main(): Promise<void> {
   // Step 1: Run local tests
   logStep(1, 'Running Local Tests')
   const testsPass = await runCommand('npm run test:local', 'Local Testing Suite')
-  
+
   if (!testsPass) {
     logError('Local tests failed. Please fix issues before deploying.')
     process.exit(1)
@@ -85,7 +85,7 @@ async function main(): Promise<void> {
   log('')
 
   const deployed = await runCommand('vercel --prod', 'Vercel Production Deployment')
-  
+
   if (deployed) {
     logSuccess('🎉 Deployment successful!')
     log('\n✅ Your RAG chatbot is now live on Vercel!')

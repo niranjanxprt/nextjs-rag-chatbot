@@ -1,6 +1,6 @@
 /**
  * Property-Based Tests for Document Management Operations
- * 
+ *
  * Property 2: Document Management Operations
  * Validates: Requirements 1.4, 1.5
  */
@@ -25,22 +25,27 @@ class MockDocumentManager {
   private documents: Map<string, MockDocument> = new Map()
   private nextId = 1
 
-  async uploadDocument(filename: string, fileSize: number, mimeType: string, userId: string): Promise<MockDocument> {
+  async uploadDocument(
+    filename: string,
+    fileSize: number,
+    mimeType: string,
+    userId: string
+  ): Promise<MockDocument> {
     if (!filename || filename.trim().length === 0) {
       throw new Error('Filename cannot be empty')
     }
-    
+
     if (fileSize <= 0 || fileSize > 50 * 1024 * 1024) {
       throw new Error('Invalid file size')
     }
-    
+
     if (!userId || userId.trim().length === 0) {
       throw new Error('User ID cannot be empty')
     }
-    
+
     const id = `doc_${this.nextId++}`
     const now = new Date()
-    
+
     const document: MockDocument = {
       id,
       filename: filename.trim(),
@@ -49,9 +54,9 @@ class MockDocumentManager {
       createdAt: now,
       updatedAt: now,
       fileSize,
-      mimeType
+      mimeType,
     }
-    
+
     this.documents.set(id, document)
     return document
   }
@@ -64,31 +69,39 @@ class MockDocumentManager {
     return doc
   }
 
-  async listDocuments(userId: string, limit: number = 10, offset: number = 0): Promise<MockDocument[]> {
+  async listDocuments(
+    userId: string,
+    limit: number = 10,
+    offset: number = 0
+  ): Promise<MockDocument[]> {
     if (limit <= 0 || limit > 100) {
       throw new Error('Invalid limit')
     }
-    
+
     if (offset < 0) {
       throw new Error('Invalid offset')
     }
-    
+
     const userDocs = Array.from(this.documents.values())
       .filter(doc => doc.userId === userId)
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-    
+
     return userDocs.slice(offset, offset + limit)
   }
 
-  async updateDocumentStatus(id: string, status: MockDocument['status'], userId: string): Promise<MockDocument | null> {
+  async updateDocumentStatus(
+    id: string,
+    status: MockDocument['status'],
+    userId: string
+  ): Promise<MockDocument | null> {
     const doc = this.documents.get(id)
     if (!doc || doc.userId !== userId) {
       return null
     }
-    
+
     doc.status = status
     doc.updatedAt = new Date()
-    
+
     return doc
   }
 
@@ -97,13 +110,12 @@ class MockDocumentManager {
     if (!doc || doc.userId !== userId) {
       return false
     }
-    
+
     return this.documents.delete(id)
   }
 
   async getUserDocumentCount(userId: string): Promise<number> {
-    return Array.from(this.documents.values())
-      .filter(doc => doc.userId === userId).length
+    return Array.from(this.documents.values()).filter(doc => doc.userId === userId).length
   }
 
   clear(): void {
@@ -129,22 +141,22 @@ describe('Document Management Operations - Property Tests', () => {
           fc.uuid(), // userId
           async (filename, fileSize, mimeType, userId) => {
             const doc = await manager.uploadDocument(filename, fileSize, mimeType, userId)
-            
+
             // Property: Document should have valid ID
             expect(doc.id).toBeTruthy()
             expect(typeof doc.id).toBe('string')
-            
+
             // Property: Document should preserve input data
             expect(doc.filename).toBe(filename.trim())
             expect(doc.fileSize).toBe(fileSize)
             expect(doc.mimeType).toBe(mimeType)
             expect(doc.userId).toBe(userId)
-            
+
             // Property: Document should have valid timestamps
             expect(doc.createdAt).toBeInstanceOf(Date)
             expect(doc.updatedAt).toBeInstanceOf(Date)
             expect(doc.createdAt.getTime()).toBeLessThanOrEqual(doc.updatedAt.getTime())
-            
+
             // Property: Document should start with pending status
             expect(doc.status).toBe('pending')
           }
@@ -166,8 +178,9 @@ describe('Document Management Operations - Property Tests', () => {
           fc.uuid(),
           async (invalidFilename, fileSize, mimeType, userId) => {
             // Property: Should always reject invalid filenames
-            await expect(manager.uploadDocument(invalidFilename, fileSize, mimeType, userId))
-              .rejects.toThrow('Filename cannot be empty')
+            await expect(
+              manager.uploadDocument(invalidFilename, fileSize, mimeType, userId)
+            ).rejects.toThrow('Filename cannot be empty')
           }
         ),
         { numRuns: 3 }
@@ -179,30 +192,33 @@ describe('Document Management Operations - Property Tests', () => {
     it('should maintain user isolation in document access', async () => {
       await fc.assert(
         fc.asyncProperty(
-          fc.array(fc.tuple(
-            fc.string({ minLength: 1, maxLength: 50 }).filter(s => s.trim().length > 0),
-            fc.integer({ min: 1, max: 1024 }),
-            fc.uuid()
-          ), { minLength: 1, maxLength: 10 }),
-          async (documentSpecs) => {
+          fc.array(
+            fc.tuple(
+              fc.string({ minLength: 1, maxLength: 50 }).filter(s => s.trim().length > 0),
+              fc.integer({ min: 1, max: 1024 }),
+              fc.uuid()
+            ),
+            { minLength: 1, maxLength: 10 }
+          ),
+          async documentSpecs => {
             // Upload documents for different users
             const uploadedDocs = []
             for (const [filename, fileSize, userId] of documentSpecs) {
               const doc = await manager.uploadDocument(filename, fileSize, 'text/plain', userId)
               uploadedDocs.push(doc)
             }
-            
+
             // Property: Users should only access their own documents
             for (const doc of uploadedDocs) {
               const retrieved = await manager.getDocument(doc.id, doc.userId)
               expect(retrieved).not.toBeNull()
               expect(retrieved?.id).toBe(doc.id)
-              
+
               // Try to access with different user ID
               const otherUserIds = documentSpecs
-                .map(([,, userId]) => userId)
+                .map(([, , userId]) => userId)
                 .filter(id => id !== doc.userId)
-              
+
               if (otherUserIds.length > 0) {
                 const otherUserId = otherUserIds[0]
                 const unauthorizedAccess = await manager.getDocument(doc.id, otherUserId)
@@ -226,37 +242,39 @@ describe('Document Management Operations - Property Tests', () => {
             for (let i = 0; i < docCount; i++) {
               await manager.uploadDocument(`doc_${i}.txt`, 1024, 'text/plain', userId)
             }
-            
+
             // Test pagination
             let allDocs: MockDocument[] = []
             let offset = 0
             let page = 0
-            
+
             while (true) {
               const docs = await manager.listDocuments(userId, pageSize, offset)
-              
+
               if (docs.length === 0) break
-              
+
               // Property: Page should not exceed page size
               expect(docs.length).toBeLessThanOrEqual(pageSize)
-              
+
               // Property: Documents should be sorted by creation date (newest first)
               for (let i = 1; i < docs.length; i++) {
-                expect(docs[i - 1].createdAt.getTime()).toBeGreaterThanOrEqual(docs[i].createdAt.getTime())
+                expect(docs[i - 1].createdAt.getTime()).toBeGreaterThanOrEqual(
+                  docs[i].createdAt.getTime()
+                )
               }
-              
+
               allDocs.push(...docs)
               offset += pageSize
               page++
-              
+
               // Prevent infinite loop
               if (page > 10) break
             }
-            
+
             // Property: Should retrieve all documents eventually (allowing for pagination limits)
             expect(allDocs.length).toBeLessThanOrEqual(docCount)
             expect(allDocs.length).toBeGreaterThan(0)
-            
+
             // Property: No duplicate documents
             const ids = allDocs.map(doc => doc.id)
             const uniqueIds = new Set(ids)
@@ -274,30 +292,39 @@ describe('Document Management Operations - Property Tests', () => {
         fc.asyncProperty(
           fc.string({ minLength: 1, maxLength: 50 }).filter(s => s.trim().length > 0),
           fc.uuid(),
-          fc.array(fc.constantFrom('pending', 'processing', 'completed', 'failed'), { minLength: 1, maxLength: 5 }),
+          fc.array(fc.constantFrom('pending', 'processing', 'completed', 'failed'), {
+            minLength: 1,
+            maxLength: 5,
+          }),
           async (filename, userId, statusSequence) => {
             // Upload document
             const doc = await manager.uploadDocument(filename, 1024, 'text/plain', userId)
             let currentDoc = doc
-            
+
             // Apply status changes
             for (const status of statusSequence) {
-              const updatedDoc = await manager.updateDocumentStatus(doc.id, status as DocumentProcessingStatus, userId)
+              const updatedDoc = await manager.updateDocumentStatus(
+                doc.id,
+                status as DocumentProcessingStatus,
+                userId
+              )
               expect(updatedDoc).not.toBeNull()
-              
+
               if (updatedDoc) {
                 // Property: Status should be updated
                 expect(updatedDoc.status).toBe(status)
-                
+
                 // Property: Updated timestamp should advance
-                expect(updatedDoc.updatedAt.getTime()).toBeGreaterThanOrEqual(currentDoc.updatedAt.getTime())
-                
+                expect(updatedDoc.updatedAt.getTime()).toBeGreaterThanOrEqual(
+                  currentDoc.updatedAt.getTime()
+                )
+
                 // Property: Other fields should remain unchanged
                 expect(updatedDoc.id).toBe(doc.id)
                 expect(updatedDoc.filename).toBe(doc.filename)
                 expect(updatedDoc.userId).toBe(doc.userId)
                 expect(updatedDoc.fileSize).toBe(doc.fileSize)
-                
+
                 currentDoc = updatedDoc
               }
             }
@@ -312,38 +339,41 @@ describe('Document Management Operations - Property Tests', () => {
     it('should handle deletion correctly', async () => {
       await fc.assert(
         fc.asyncProperty(
-          fc.array(fc.tuple(
-            fc.string({ minLength: 1, maxLength: 50 }).filter(s => s.trim().length > 0),
-            fc.uuid()
-          ), { minLength: 2, maxLength: 5 }),
-          async (documentSpecs) => {
+          fc.array(
+            fc.tuple(
+              fc.string({ minLength: 1, maxLength: 50 }).filter(s => s.trim().length > 0),
+              fc.uuid()
+            ),
+            { minLength: 2, maxLength: 5 }
+          ),
+          async documentSpecs => {
             // Upload documents
             const uploadedDocs = []
             for (const [filename, userId] of documentSpecs) {
               const doc = await manager.uploadDocument(filename, 1024, 'text/plain', userId)
               uploadedDocs.push(doc)
             }
-            
+
             // Delete some documents
             const toDelete = uploadedDocs.slice(0, Math.floor(uploadedDocs.length / 2))
             const toKeep = uploadedDocs.slice(Math.floor(uploadedDocs.length / 2))
-            
+
             for (const doc of toDelete) {
               const deleted = await manager.deleteDocument(doc.id, doc.userId)
               expect(deleted).toBe(true)
-              
+
               // Property: Deleted document should not be retrievable
               const retrieved = await manager.getDocument(doc.id, doc.userId)
               expect(retrieved).toBeNull()
             }
-            
+
             // Property: Non-deleted documents should still be accessible
             for (const doc of toKeep) {
               const retrieved = await manager.getDocument(doc.id, doc.userId)
               expect(retrieved).not.toBeNull()
               expect(retrieved?.id).toBe(doc.id)
             }
-            
+
             // Property: User document count should be accurate
             for (const userId of new Set(documentSpecs.map(([, uid]) => uid))) {
               const expectedCount = toKeep.filter(doc => doc.userId === userId).length
@@ -366,27 +396,27 @@ describe('Document Management Operations - Property Tests', () => {
           async (userId, operationCount) => {
             // Perform concurrent operations
             const operations = []
-            
+
             for (let i = 0; i < operationCount; i++) {
               operations.push(
                 manager.uploadDocument(`concurrent_${i}.txt`, 1024, 'text/plain', userId)
               )
             }
-            
+
             const results = await Promise.all(operations)
-            
+
             // Property: All operations should succeed
             expect(results).toHaveLength(operationCount)
             results.forEach(doc => {
               expect(doc.id).toBeTruthy()
               expect(doc.userId).toBe(userId)
             })
-            
+
             // Property: All documents should have unique IDs
             const ids = results.map(doc => doc.id)
             const uniqueIds = new Set(ids)
             expect(uniqueIds.size).toBe(ids.length)
-            
+
             // Property: All documents should be retrievable
             for (const doc of results) {
               const retrieved = await manager.getDocument(doc.id, userId)

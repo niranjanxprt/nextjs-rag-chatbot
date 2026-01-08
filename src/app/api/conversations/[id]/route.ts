@@ -1,30 +1,30 @@
 /**
  * Individual Conversation API Route
- * 
+ *
  * Handles operations on specific conversations
  */
 
 import { NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { 
-  getConversationState, 
+import {
+  getConversationState,
   deleteConversation,
-  formatConversationForExport 
+  formatConversationForExport,
 } from '@/lib/services/conversation-state'
 
 // =============================================================================
 // GET - Get conversation details
 // =============================================================================
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Check authentication
     const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
     if (authError || !user) {
       return new Response('Unauthorized', { status: 401 })
     }
@@ -39,7 +39,7 @@ export async function GET(
     const conversation = await getConversationState(conversationId, {
       maxMessages,
       maxTokens,
-      includeMetadata: true
+      includeMetadata: true,
     })
 
     if (!conversation) {
@@ -57,19 +57,17 @@ export async function GET(
       return new Response(textExport, {
         headers: {
           'Content-Type': 'text/plain',
-          'Content-Disposition': `attachment; filename="conversation-${conversationId}.txt"`
-        }
+          'Content-Disposition': `attachment; filename="conversation-${conversationId}.txt"`,
+        },
       })
     }
 
     return Response.json(conversation)
-
   } catch (error) {
     console.error('Conversation GET API error:', error)
-    return new Response(
-      error instanceof Error ? error.message : 'Internal server error',
-      { status: 500 }
-    )
+    return new Response(error instanceof Error ? error.message : 'Internal server error', {
+      status: 500,
+    })
   }
 }
 
@@ -84,8 +82,11 @@ export async function DELETE(
   try {
     // Check authentication
     const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
     if (authError || !user) {
       return new Response('Unauthorized', { status: 401 })
     }
@@ -111,14 +112,12 @@ export async function DELETE(
 
     return Response.json({
       message: 'Conversation deleted successfully',
-      conversationId
+      conversationId,
     })
-
   } catch (error) {
     console.error('Conversation DELETE API error:', error)
-    return new Response(
-      error instanceof Error ? error.message : 'Internal server error',
-      { status: 500 }
-    )
+    return new Response(error instanceof Error ? error.message : 'Internal server error', {
+      status: 500,
+    })
   }
 }
