@@ -4,14 +4,32 @@
  * Main dashboard with overview of documents and quick actions
  */
 
-import React from 'react'
+'use client'
+
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { StatCard } from '@/components/ui/stat-card'
 import { DashboardLayout } from '@/components/layouts/DashboardLayout'
-import { FileText, MessageCircle, Upload, Search } from 'lucide-react'
+import { FileText, MessageCircle, Upload, Search, MessageSquare, Files, Zap } from 'lucide-react'
+import { useConversations } from '@/lib/contexts/conversations-context'
 
 export default function DashboardPage() {
+  const { conversations } = useConversations()
+  const [stats, setStats] = useState({
+    totalConversations: 0,
+    totalDocuments: 0,
+  })
+
+  useEffect(() => {
+    // Set statistics from context
+    setStats({
+      totalConversations: conversations.length,
+      totalDocuments: 0, // Would fetch from documents context/API
+    })
+  }, [conversations])
+
   return (
     <DashboardLayout>
       <div className="container mx-auto py-6 space-y-6">
@@ -21,6 +39,30 @@ export default function DashboardPage() {
           <p className="text-muted-foreground">
             Welcome to your RAG Chatbot. Upload documents and start chatting with your AI assistant.
           </p>
+        </div>
+
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard
+            label="Total Conversations"
+            value={stats.totalConversations}
+            icon={<MessageSquare className="h-5 w-5 text-blue-500" />}
+          />
+          <StatCard
+            label="Documents Uploaded"
+            value={stats.totalDocuments}
+            icon={<Files className="h-5 w-5 text-green-500" />}
+          />
+          <StatCard
+            label="Quick Start"
+            value="3 Steps"
+            icon={<Zap className="h-5 w-5 text-yellow-500" />}
+          />
+          <StatCard
+            label="Features"
+            value="8+"
+            icon={<Upload className="h-5 w-5 text-purple-500" />}
+          />
         </div>
 
         {/* Quick Actions */}
