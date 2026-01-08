@@ -43,6 +43,7 @@ export function PromptCard({
     try {
       await onDelete?.(prompt.id)
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('Failed to delete prompt:', error)
       alert('Failed to delete prompt')
     } finally {
@@ -57,6 +58,7 @@ export function PromptCard({
       onCopy?.(prompt.content)
       setTimeout(() => setIsCopying(false), 2000)
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('Failed to copy:', error)
       setIsCopying(false)
     }
@@ -143,18 +145,22 @@ export function PromptCard({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={onEdit}>
-                <Edit2 className="w-4 h-4 mr-2" />
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={handleDelete}
-                disabled={isDeleting}
-                className="text-destructive focus:text-destructive"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete
-              </DropdownMenuItem>
+              {onEdit && (
+                <DropdownMenuItem onClick={onEdit}>
+                  <Edit2 className="w-4 h-4 mr-2" />
+                  Edit
+                </DropdownMenuItem>
+              )}
+              {onDelete && (
+                <DropdownMenuItem
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
