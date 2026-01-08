@@ -66,3 +66,39 @@ export function LoadingState({
     </div>
   )
 }
+
+interface FullPageLoadingProps {
+  message?: string
+}
+
+export function FullPageLoading({ message = 'Loading...' }: FullPageLoadingProps) {
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-50">
+      <div className="flex flex-col items-center space-y-4">
+        <LoadingSpinner size="lg" />
+        <p className="text-sm text-muted-foreground">{message}</p>
+      </div>
+    </div>
+  )
+}
+
+interface SkeletonLoaderProps {
+  count?: number
+  className?: string
+}
+
+export function SkeletonLoader({
+  count = 3,
+  className,
+}: SkeletonLoaderProps) {
+  return (
+    <div className={cn('space-y-3', className)}>
+      {Array.from({ length: count }).map((_, i) => (
+        <div
+          key={i}
+          className="h-12 bg-muted animate-pulse rounded-md"
+        />
+      ))}
+    </div>
+  )
+}
