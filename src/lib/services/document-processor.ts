@@ -7,7 +7,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import type { Document } from '@/lib/types/database'
-import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter'
+import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters'
 import { generateEmbeddings } from './embeddings'
 import { upsertVectors, type VectorPoint } from './qdrant'
 import { v4 as uuidv4 } from 'uuid'

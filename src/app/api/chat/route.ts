@@ -299,7 +299,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       model: openai('gpt-4-turbo'),
       messages: aiMessages,
       temperature: temperature || CHAT_CONFIG.temperature,
-      maxTokens: maxTokens || CHAT_CONFIG.maxTokens,
+      maxOutputTokens: maxTokens || CHAT_CONFIG.maxTokens,
       onFinish: async ({ text, finishReason }) => {
         try {
           const responseTokens = estimateTokenCount(text)
@@ -381,7 +381,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     })
 
     // Convert to data stream response with custom headers
-    return result.toDataStreamResponse({
+    return result.toTextStreamResponse({
       headers: {
         'X-Conversation-Id': activeConversationId,
         'X-Context-Results': searchResults.results.length.toString(),

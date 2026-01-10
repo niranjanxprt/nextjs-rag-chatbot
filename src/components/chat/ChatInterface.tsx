@@ -7,7 +7,7 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
-import { useChat } from 'ai/react'
+import { useChat } from '@ai-sdk/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -20,18 +20,24 @@ import { useProjects } from '@/lib/contexts/projects-context'
 import { useConversations } from '@/lib/contexts/conversations-context'
 import { cn } from '@/lib/utils'
 import type { Message as DatabaseMessage } from '@/lib/types/database'
-import type { Message as AIMessage } from 'ai'
+import type { UIMessage as AIMessage } from 'ai'
 
 // Helper function to convert AI SDK messages to database message format
 const convertAIMessagesToDatabase = (aiMessages: AIMessage[]): DatabaseMessage[] => {
-  return aiMessages.map((msg, index) => ({
-    id: `temp-${index}`,
-    conversation_id: 'temp',
-    role: msg.role as 'user' | 'assistant' | 'system',
-    content: msg.content,
-    metadata: {},
-    created_at: new Date().toISOString(),
-  }))
+  return aiMessages.map((msg, index) => {
+    // Extract text content from parts array
+    const textParts = msg.parts?.filter(part => part.type === 'text') || []
+    const content = textParts.map(part => part.text).join('') || ''
+    
+    return {
+      id: `temp-${index}`,
+      conversation_id: 'temp',
+      role: msg.role as 'user' | 'assistant' | 'system',
+      content,
+      metadata: {},
+      created_at: new Date().toISOString(),
+    }
+  })
 }
 
 // =============================================================================
@@ -58,27 +64,20 @@ export function ChatInterface({
 
   // Knowledge base toggle state
   const [useKnowledgeBase, setUseKnowledgeBase] = useState(true)
+  
+  // Input state (now managed manually in AI SDK v6)
+  const [input, setInput] = useState('')
 
   // Auto-scroll ref
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  // Use chat hook with AI SDK
-  const { messages, input, handleInputChange, handleSubmit, isLoading, error, stop } = useChat({
-    api: '/api/chat',
+  // Use chat hook with AI SDK v6
+  const { messages, sendMessage, status, error, stop } = useChat({
     id: conversationId,
-    body: {
-      conversationId,
-      projectId: currentProject?.id,
-      useKnowledgeBase,
-    },
-    onResponse: response => {
-      // Extract conversation ID from response headers if it's new
-      const newConversationId = response.headers.get('X-Conversation-Id')
-      if (newConversationId && newConversationId !== conversationId) {
-        onConversationChange?.(newConversationId)
-      }
-    },
   })
+
+  // Derived state
+  const isLoading = status === 'streaming' || status === 'submitted'
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -89,10 +88,18 @@ export function ChatInterface({
   // Event Handlers
   // =============================================================================
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInput(e.target.value)
+  }
+
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (input.trim() && !isLoading) {
-      handleSubmit(e)
+      sendMessage({
+        role: 'user',
+        parts: [{ type: 'text', text: input }],
+      })
+      setInput('') // Clear input after sending
     }
   }
 
