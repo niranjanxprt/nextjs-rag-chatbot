@@ -23,9 +23,13 @@ function log(message: string, color: keyof typeof colors = 'reset'): void {
 async function main(): Promise<void> {
   log('\n🔍 Validating Environment Variables...\n', 'bold')
 
-  // Load .env.local (this is where local overrides go)
+  // Load .env.local only if it exists (for local development)
   const envPath = path.join(process.cwd(), '.env.local')
-  config({ path: envPath })
+  try {
+    config({ path: envPath })
+  } catch (error) {
+    // Ignore if .env.local doesn't exist (e.g., in production)
+  }
 
   const requiredVars = [
     'OPENAI_API_KEY',

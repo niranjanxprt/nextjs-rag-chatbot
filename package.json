@@ -16,7 +16,6 @@
     "dev": "next dev",
     "predev": "npm run validate:env",
     "build": "next build",
-    "prebuild": "npm run validate:env",
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
