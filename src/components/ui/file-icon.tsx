@@ -30,7 +30,7 @@ const sizeMap: Record<FileSize, string> = {
   lg: 'h-8 w-8',
 }
 
-function getFileIcon(filename: string): React.ReactNode {
+function getFileIconComponent(filename: string) {
   const extension = filename.split('.').pop()?.toLowerCase() || ''
 
   // Text files
@@ -78,7 +78,7 @@ function getFileIcon(filename: string): React.ReactNode {
 }
 
 export function FileIcon({ filename, size = 'md', className }: FileIconProps) {
-  const IconComponent = getFileIcon(filename)
+  const IconComponent = getFileIconComponent(filename)
   const sizeClass = sizeMap[size]
 
   return React.createElement(IconComponent, {

@@ -5,7 +5,12 @@
  */
 
 import { Langfuse } from 'langfuse'
-import type { ChatMessage } from 'langfuse'
+
+// Define our own ChatMessage type since it's not exported from langfuse
+interface ChatMessage {
+  role: 'system' | 'user' | 'assistant'
+  content: string
+}
 
 // =============================================================================
 // Configuration
@@ -157,7 +162,18 @@ export async function logChatGeneration(params: {
   }
 
   try {
-    const trace = client.traceWithId(params.traceId)
+    // Create a new trace for the generation since traceWithId might not be available
+    const trace = client.trace({
+      id: params.traceId,
+      name: 'openai-completion',
+      metadata: {
+        model: params.model,
+        temperature: params.temperature,
+        maxTokens: params.maxTokens,
+        finishReason: params.finishReason,
+        latencyMs: params.latencyMs,
+      },
+    })
 
     trace.generation({
       name: 'openai-completion',
@@ -175,10 +191,6 @@ export async function logChatGeneration(params: {
         input: params.usage.inputTokens,
         output: params.usage.outputTokens,
         total: params.usage.totalTokens,
-      },
-      metadata: {
-        finishReason: params.finishReason,
-        latencyMs: params.latencyMs,
       },
     })
   } catch (error) {
@@ -203,12 +215,26 @@ export async function logLangfuseError(params: {
 
   try {
     if (params.traceId) {
-      const trace = client.traceWithId(params.traceId)
+      // Create a new trace for the error since traceWithId might not be available
+      const trace = client.trace({
+        id: params.traceId,
+        userId: params.userId,
+        sessionId: params.conversationId,
+        name: 'chat-error',
+        tags: ['error'],
+        metadata: {
+          error: params.error instanceof Error ? params.error.message : String(params.error),
+          ...params.context,
+        },
+      })
+      
       trace.event({
         name: 'chat-error',
         level: 'ERROR',
-        message: params.error instanceof Error ? params.error.message : String(params.error),
-        metadata: params.context,
+        metadata: {
+          errorMessage: params.error instanceof Error ? params.error.message : String(params.error),
+          ...params.context,
+        },
       })
     } else {
       // Create a new trace for the error
@@ -246,7 +272,19 @@ export async function trackVectorSearch(params: {
 
   try {
     if (params.traceId) {
-      const trace = client.traceWithId(params.traceId)
+      // Create a new trace for the search since traceWithId might not be available
+      const trace = client.trace({
+        id: params.traceId,
+        name: 'vector-search',
+        metadata: {
+          queryLength: params.query.length,
+          resultsCount: params.results,
+          latencyMs: params.latencyMs,
+          threshold: params.threshold,
+          topK: params.topK,
+        },
+      })
+      
       trace.event({
         name: 'vector-search',
         metadata: {

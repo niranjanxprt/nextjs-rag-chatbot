@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { useTheme } from '@/lib/contexts/theme-context'
 import { useAuth } from '@/lib/auth/context'
 import { DashboardLayout } from '@/components/layouts/DashboardLayout'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -16,8 +15,42 @@ import { AlertCircle, Moon, Sun, Monitor } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { cn } from '@/lib/utils'
 
+// Force dynamic rendering to avoid SSR issues
+export const dynamic = 'force-dynamic'
+
+// Theme hook with error handling
+function useThemeWithFallback() {
+  const [themeState, setThemeState] = useState({
+    theme: 'system' as 'light' | 'dark' | 'system',
+    setTheme: (theme: 'light' | 'dark' | 'system') => {
+      setThemeState(prev => ({ ...prev, theme }))
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('theme', theme)
+        // Apply theme immediately
+        const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+        document.documentElement.classList.toggle('dark', isDark)
+      }
+    },
+    resolvedTheme: 'light' as 'light' | 'dark'
+  })
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('theme') as 'light' | 'dark' | 'system' || 'system'
+      const isDark = stored === 'dark' || (stored === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+      setThemeState(prev => ({
+        ...prev,
+        theme: stored,
+        resolvedTheme: isDark ? 'dark' : 'light'
+      }))
+    }
+  }, [])
+
+  return themeState
+}
+
 export default function SettingsPage() {
-  const { theme, setTheme, resolvedTheme } = useTheme()
+  const { theme, setTheme, resolvedTheme } = useThemeWithFallback()
   const { user } = useAuth()
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)

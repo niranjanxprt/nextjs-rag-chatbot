@@ -132,6 +132,7 @@ async function getOrCreateConversation(
 
 export const POST = withErrorHandling(async (request: NextRequest) => {
   let traceId: string | undefined
+  let activeConversationId!: string
   const startTime = Date.now()
 
   try {
@@ -182,7 +183,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     }
 
     // Get or create conversation
-    const activeConversationId = await getOrCreateConversation(conversationId, user.id)
+    activeConversationId = await getOrCreateConversation(conversationId, user.id)
 
     // Get conversation state for context
     const conversationState = await getConversationState(activeConversationId, {

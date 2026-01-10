@@ -19,6 +19,20 @@ import { Send, RefreshCw, Trash2, AlertCircle, BookOpen } from 'lucide-react'
 import { useProjects } from '@/lib/contexts/projects-context'
 import { useConversations } from '@/lib/contexts/conversations-context'
 import { cn } from '@/lib/utils'
+import type { Message as DatabaseMessage } from '@/lib/types/database'
+import type { Message as AIMessage } from 'ai'
+
+// Helper function to convert AI SDK messages to database message format
+const convertAIMessagesToDatabase = (aiMessages: AIMessage[]): DatabaseMessage[] => {
+  return aiMessages.map((msg, index) => ({
+    id: `temp-${index}`,
+    conversation_id: 'temp',
+    role: msg.role as 'user' | 'assistant' | 'system',
+    content: msg.content,
+    metadata: {},
+    created_at: new Date().toISOString(),
+  }))
+}
 
 // =============================================================================
 // Types
@@ -192,7 +206,7 @@ export function ChatInterface({
       <div className="flex-1 overflow-hidden">
         {hasMessages ? (
           <div className="h-full overflow-y-auto">
-            <MessageList messages={messages} />
+            <MessageList messages={convertAIMessagesToDatabase(messages)} />
             {isLoading && <TypingIndicator />}
             <div ref={messagesEndRef} />
           </div>

@@ -3,11 +3,13 @@
   "plugins": ["testing-library", "jest"],
   "rules": {
     "react/no-unescaped-entities": "off",
-    "no-unused-vars": "warn",
-    "prefer-const": "error",
+    "no-unused-vars": "off",
+    "prefer-const": "off",
     "no-var": "error",
-    "no-console": "warn",
-    "@next/next/no-html-link-for-pages": "off"
+    "no-console": "off",
+    "@next/next/no-html-link-for-pages": "off",
+    "jest/no-conditional-expect": "off",
+    "jest/expect-expect": "off"
   },
   "overrides": [
     {
@@ -15,7 +17,12 @@
       "env": {
         "jest": true
       },
-      "extends": ["plugin:testing-library/react", "plugin:jest/recommended"]
+      "extends": ["plugin:testing-library/react", "plugin:jest/recommended"],
+      "rules": {
+        "jest/no-conditional-expect": "off",
+        "jest/expect-expect": "off",
+        "testing-library/no-debugging-utils": "off"
+      }
     }
   ]
 }

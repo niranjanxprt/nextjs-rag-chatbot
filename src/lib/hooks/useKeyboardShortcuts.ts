@@ -78,10 +78,10 @@ export function useKeyboardShortcuts(
       // Custom shortcuts
       shortcuts.forEach((shortcut) => {
         const matchesKey = event.key.toLowerCase() === shortcut.key.toLowerCase()
-        const matchesCtrl = shortcut.ctrl ? modifierKey : !modifierKey || event.ctrlKey === shortcut.ctrl
-        const matchesShift = shortcut.shift ? event.shiftKey : !event.shiftKey || event.shiftKey === shortcut.shift
-        const matchesAlt = shortcut.alt ? event.altKey : !event.altKey || event.altKey === shortcut.alt
-        const matchesMeta = shortcut.meta ? event.metaKey : !event.metaKey || event.metaKey === shortcut.meta
+        const matchesCtrl = shortcut.ctrl ? modifierKey : !modifierKey
+        const matchesShift = shortcut.shift ? event.shiftKey : !event.shiftKey
+        const matchesAlt = shortcut.alt ? event.altKey : !event.altKey
+        const matchesMeta = shortcut.meta ? event.metaKey : !event.metaKey
 
         if (matchesKey && matchesCtrl && matchesShift && matchesAlt && matchesMeta) {
           event.preventDefault()

@@ -15,7 +15,7 @@ import type { PromptUpdate } from '@/lib/types/database'
 // =============================================================================
 
 export const GET = withErrorHandling(
-  async (request: NextRequest, { params }: { params: { id: string } }) => {
+  async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     try {
       // Check authentication
       const supabase = await createClient()
@@ -32,7 +32,7 @@ export const GET = withErrorHandling(
         throw createError.unauthorized('Authentication required')
       }
 
-      const promptId = params.id
+      const { id: promptId } = await params
 
       // Get prompt
       const prompt = await getPrompt(promptId, user.id)
@@ -60,7 +60,7 @@ export const GET = withErrorHandling(
 // =============================================================================
 
 export const PATCH = withErrorHandling(
-  async (request: NextRequest, { params }: { params: { id: string } }) => {
+  async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     try {
       // Check authentication
       const supabase = await createClient()
@@ -77,7 +77,7 @@ export const PATCH = withErrorHandling(
         throw createError.unauthorized('Authentication required')
       }
 
-      const promptId = params.id
+      const { id: promptId } = await params
 
       // Parse request body
       let body
@@ -125,7 +125,7 @@ export const PATCH = withErrorHandling(
 // =============================================================================
 
 export const DELETE = withErrorHandling(
-  async (request: NextRequest, { params }: { params: { id: string } }) => {
+  async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     try {
       // Check authentication
       const supabase = await createClient()
@@ -142,7 +142,7 @@ export const DELETE = withErrorHandling(
         throw createError.unauthorized('Authentication required')
       }
 
-      const promptId = params.id
+      const { id: promptId } = await params
 
       // Verify prompt exists and belongs to user
       const prompt = await getPrompt(promptId, user.id)
@@ -172,7 +172,7 @@ export const DELETE = withErrorHandling(
 // =============================================================================
 
 export const POST = withErrorHandling(
-  async (request: NextRequest, { params }: { params: { id: string } }) => {
+  async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     try {
       // Check if this is a /use endpoint
       const url = new URL(request.url)
@@ -195,7 +195,7 @@ export const POST = withErrorHandling(
         throw createError.unauthorized('Authentication required')
       }
 
-      const promptId = params.id
+      const { id: promptId } = await params
 
       // Get prompt
       const prompt = await getPrompt(promptId, user.id)

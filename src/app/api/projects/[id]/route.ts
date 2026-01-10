@@ -15,7 +15,7 @@ import type { ProjectUpdate } from '@/lib/types/database'
 // =============================================================================
 
 export const GET = withErrorHandling(
-  async (request: NextRequest, { params }: { params: { id: string } }) => {
+  async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     try {
       // Check authentication
       const supabase = await createClient()
@@ -32,7 +32,7 @@ export const GET = withErrorHandling(
         throw createError.unauthorized('Authentication required')
       }
 
-      const projectId = params.id
+      const { id: projectId } = await params
 
       // Get project
       const project = await getProject(projectId, user.id)
@@ -78,7 +78,7 @@ export const GET = withErrorHandling(
 // =============================================================================
 
 export const PATCH = withErrorHandling(
-  async (request: NextRequest, { params }: { params: { id: string } }) => {
+  async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     try {
       // Check authentication
       const supabase = await createClient()
@@ -95,7 +95,7 @@ export const PATCH = withErrorHandling(
         throw createError.unauthorized('Authentication required')
       }
 
-      const projectId = params.id
+      const { id: projectId } = await params
 
       // Parse request body
       let body
@@ -141,7 +141,7 @@ export const PATCH = withErrorHandling(
 // =============================================================================
 
 export const DELETE = withErrorHandling(
-  async (request: NextRequest, { params }: { params: { id: string } }) => {
+  async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     try {
       // Check authentication
       const supabase = await createClient()
@@ -158,7 +158,7 @@ export const DELETE = withErrorHandling(
         throw createError.unauthorized('Authentication required')
       }
 
-      const projectId = params.id
+      const { id: projectId } = await params
 
       // Verify project exists and belongs to user
       const project = await getProject(projectId, user.id)

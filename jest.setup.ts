@@ -6,8 +6,9 @@ global.TextEncoder = TextEncoder as any
 global.TextDecoder = TextDecoder as any
 
 // Polyfill ReadableStream for Node.js environment (needed for langchain)
-import { ReadableStream } from 'web-streams-polyfill'
+import { ReadableStream, TransformStream } from 'web-streams-polyfill'
 global.ReadableStream = ReadableStream as any
+global.TransformStream = TransformStream as any
 
 // Mock fetch for tests
 global.fetch = jest.fn() as any
@@ -23,6 +24,7 @@ Object.defineProperty(global, 'crypto', {
       }
       return arr
     },
+    randomUUID: () => 'test-uuid-' + Math.random().toString(36).substr(2, 9),
     subtle: {
       digest: jest.fn().mockResolvedValue(new ArrayBuffer(32)),
     },

@@ -28,7 +28,7 @@ export function ConversationSidebar({
   const filteredConversations = conversations.filter(
     (conv) =>
       (!currentProject || conv.project_id === currentProject.id) &&
-      (search === '' || conv.title.toLowerCase().includes(search.toLowerCase()))
+      (search === '' || conv.title?.toLowerCase().includes(search.toLowerCase()))
   )
 
   // Separate pinned and recent conversations
@@ -38,11 +38,7 @@ export function ConversationSidebar({
   const handleCreateConversation = async () => {
     setIsCreating(true)
     try {
-      const newConversation = await createConversation({
-        user_id: '', // Will be set by context
-        title: 'New Conversation',
-        project_id: currentProject?.id,
-      })
+      const newConversation = await createConversation()
       onSelectConversation?.(newConversation.id)
     } catch (error) {
       console.error('Failed to create conversation:', error)

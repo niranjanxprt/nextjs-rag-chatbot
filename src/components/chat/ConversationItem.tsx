@@ -34,7 +34,7 @@ export function ConversationItem({
   const [editTitle, setEditTitle] = useState(conversation.title)
 
   const handleRename = () => {
-    if (editTitle.trim() && editTitle !== conversation.title) {
+    if (editTitle?.trim() && editTitle !== conversation.title) {
       onRename?.(editTitle)
     }
     setIsEditing(false)
@@ -58,7 +58,7 @@ export function ConversationItem({
         {isEditing ? (
           <Input
             autoFocus
-            value={editTitle}
+            value={editTitle || ''}
             onChange={(e) => setEditTitle(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleRename()

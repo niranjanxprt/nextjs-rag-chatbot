@@ -18,7 +18,7 @@ import { EditProjectDialog } from './EditProjectDialog'
 interface ProjectCardProps {
   project: Project
   isDefault?: boolean
-  onUpdate?: (id: string, data: any) => Promise<void>
+  onUpdate?: (id: string, data: any) => Promise<Project | void>
   onDelete?: (id: string) => Promise<void>
   onClick?: () => void
   className?: string

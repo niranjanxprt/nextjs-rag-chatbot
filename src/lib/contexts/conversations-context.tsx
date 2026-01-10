@@ -184,7 +184,11 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
   }
 
   async function pinConversation(id: string, pinned: boolean): Promise<Conversation> {
-    return updateConversation(conversations.find(c => c.id === id)?.title || '', pinned)
+    const conversation = conversations.find(c => c.id === id)
+    if (!conversation) {
+      throw new Error('Conversation not found')
+    }
+    return updateConversation(id, conversation.title || 'Untitled', pinned)
   }
 
   async function deleteConversation(id: string): Promise<void> {
