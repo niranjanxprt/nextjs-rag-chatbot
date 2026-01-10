@@ -564,6 +564,13 @@ For issues and questions:
 - Check Qdrant Dashboard for vector search status
 - Verify Supabase RLS policies in Studio
 
+## 📚 Documentation
+
+- **[Documentation Index](./docs/README.md)** - Complete documentation overview
+- **[Development Patterns](./docs/CLAUDE.md)** - Architecture and coding guidelines
+- **[Testing Guide](./docs/TESTING.md)** - Testing strategy and implementation
+- **[Local Testing](./docs/LOCAL_TESTING.md)** - Quick testing setup
+
 ## Resources
 
 - [Next.js Documentation](https://nextjs.org/docs)

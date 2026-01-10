@@ -1,7 +1,7 @@
 /**
  * Chat Page
  *
- * Main chat interface page with conversation management
+ * Main chat interface page - Updated to match original design
  */
 
 'use client'
@@ -19,12 +19,21 @@ export default function ChatPage() {
 
   return (
     <DashboardLayout>
-      <div className="h-[calc(100vh-8rem)] flex flex-col">
-        <ChatInterface
-          conversationId={conversationId}
-          onConversationChange={handleConversationChange}
-          className="flex-1"
-        />
+      <div className="h-full flex flex-col p-6">
+        <div className="mb-4">
+          <h1 className="text-2xl font-semibold text-foreground">Chat</h1>
+          <p className="text-muted-foreground">
+            Ask questions about your documents or have a general conversation
+          </p>
+        </div>
+        
+        <div className="flex-1 min-h-0">
+          <ChatInterface
+            conversationId={conversationId}
+            onConversationChange={handleConversationChange}
+            className="h-full"
+          />
+        </div>
       </div>
     </DashboardLayout>
   )

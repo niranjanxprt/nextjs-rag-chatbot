@@ -8,9 +8,9 @@ import {
   FileText,
   FileJson,
   FileCode,
-  FilePdf,
+  File as FilePdf,
   FileSpreadsheet,
-  FilePresentation,
+  Presentation as FilePresentation,
   Image,
   File,
   Archive,
@@ -81,9 +81,7 @@ export function FileIcon({ filename, size = 'md', className }: FileIconProps) {
   const IconComponent = getFileIcon(filename)
   const sizeClass = sizeMap[size]
 
-  return (
-    <IconComponent
-      className={`${sizeClass} ${className || 'text-muted-foreground'}`}
-    />
-  )
+  return React.createElement(IconComponent, {
+    className: `${sizeClass} ${className || 'text-muted-foreground'}`,
+  })
 }

@@ -8,7 +8,7 @@ export default async function Home() {
   } = await supabase.auth.getUser()
 
   if (user) {
-    redirect('/dashboard')
+    redirect('/chat') // Direct to chat instead of dashboard
   } else {
     redirect('/auth/login')
   }

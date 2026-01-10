@@ -6,7 +6,7 @@
 
 import { NextRequest } from 'next/server'
 import { streamText } from 'ai'
-import { createOpenAI } from '@ai-sdk/openai'
+import { openai } from '@ai-sdk/openai'
 import { createClient } from '@/lib/supabase/server'
 import { searchDocuments } from '@/lib/services/vector-search'
 import { createMessage, createConversation, getConversation } from '@/lib/database/queries'
@@ -37,10 +37,6 @@ import {
 // =============================================================================
 // Configuration
 // =============================================================================
-
-const openai = createOpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
 
 const CHAT_CONFIG = {
   model: 'gpt-4-turbo',
@@ -298,7 +294,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     ]
 
     // Generate streaming response using AI SDK
-    const result = streamText({
+    const result = await streamText({
       model: openai('gpt-4-turbo'),
       messages: aiMessages,
       temperature: temperature || CHAT_CONFIG.temperature,
@@ -327,7 +323,6 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
                 output: responseTokens,
                 total: totalInputTokens + responseTokens,
               },
-              finishReason,
             },
           })
 
@@ -342,7 +337,6 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
                 output: responseTokens,
                 total: totalInputTokens + responseTokens,
               },
-              finishReason,
             },
           })
 
@@ -386,33 +380,24 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     })
 
     // Convert to data stream response with custom headers
-    const response = result.toDataStreamResponse()
-
-    // Add custom headers for context information
-    response.headers.set('X-Conversation-Id', activeConversationId)
-    response.headers.set('X-Context-Results', searchResults.results.length.toString())
-    response.headers.set('X-Context-Used', fittedContext.length.toString())
-    response.headers.set('X-Search-Time', searchResults.searchTime.toString())
-    response.headers.set('X-Token-Usage', totalInputTokens.toString())
-    response.headers.set(
-      'X-Sources',
-      JSON.stringify(
-        fittedContext
-          .filter(r => r.documentId)
-          .map(r => ({
-            documentId: r.documentId,
-            filename: r.filename,
+    return result.toDataStreamResponse({
+      headers: {
+        'X-Conversation-Id': activeConversationId,
+        'X-Context-Results': searchResults.results.length.toString(),
+        'X-Context-Used': fittedContext.length.toString(),
+        'X-Search-Time': searchResults.searchTime.toString(),
+        'X-Token-Usage': totalInputTokens.toString(),
+        'X-Sources': JSON.stringify(
+          fittedContext
+            .filter(r => r.documentId)
+            .map(r => ({
+              documentId: r.documentId,
+              filename: r.filename,
             score: r.score,
           }))
-      )
-    )
-
-    // Ensure Langfuse data is flushed
-    if (isLangfuseEnabled()) {
-      await flushLangfuse()
-    }
-
-    return response
+        ),
+      },
+    })
   } catch (error) {
     console.error('Chat API error:', error)
 
@@ -428,7 +413,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
           await logLangfuseError({
             traceId,
             userId: user.id,
-            conversationId: conversationId || 'unknown',
+            conversationId: activeConversationId || 'unknown',
             error: error instanceof Error ? error : new Error(String(error)),
             context: { phase: 'chat-api' },
           })

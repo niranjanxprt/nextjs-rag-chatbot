@@ -3,6 +3,8 @@
  * Mobile-first responsive design system
  */
 
+import React from 'react'
+
 /**
  * Tailwind CSS Breakpoints
  * Mobile-first approach: start with mobile styles, then enhance for larger screens
@@ -103,6 +105,3 @@ export const responsiveUtils = {
   // Single column mobile, multi-column desktop
   multiColumnMobile: 'grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 lg:gap-6',
 }
-
-// Import React for useEffect
-import React

@@ -1,23 +1,21 @@
 /**
  * Dashboard Layout
  *
- * Layout wrapper for authenticated dashboard pages
+ * Layout wrapper for authenticated dashboard pages - Updated to match original design
  */
 
 'use client'
 
 import React from 'react'
-import { Navigation } from '@/components/ui/navigation'
-import { Breadcrumb } from '@/components/ui/breadcrumb'
+import { SidebarLayout } from './SidebarLayout'
 import { useAuth } from '@/lib/auth/context'
 import { redirect } from 'next/navigation'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
-  showBreadcrumbs?: boolean
 }
 
-export function DashboardLayout({ children, showBreadcrumbs = true }: DashboardLayoutProps) {
+export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user, loading } = useAuth()
 
   // Show loading state while checking authentication
@@ -34,20 +32,5 @@ export function DashboardLayout({ children, showBreadcrumbs = true }: DashboardL
     redirect('/auth/login')
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <Navigation />
-
-      {/* Breadcrumbs */}
-      {showBreadcrumbs && (
-        <div className="bg-white border-b border-gray-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-            <Breadcrumb />
-          </div>
-        </div>
-      )}
-
-      <main className="py-6">{children}</main>
-    </div>
-  )
+  return <SidebarLayout>{children}</SidebarLayout>
 }

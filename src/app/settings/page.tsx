@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useTheme } from '@/lib/contexts/theme-context'
-import { useAuth } from '@/lib/auth/hooks'
+import { useAuth } from '@/lib/auth/context'
 import { DashboardLayout } from '@/components/layouts/DashboardLayout'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
