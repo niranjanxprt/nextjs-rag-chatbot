@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import { AuthProvider } from '@/lib/auth/context'
 import { ToastProvider } from '@/components/ui/toast'
@@ -26,10 +26,11 @@ export const metadata: Metadata = {
     index: false,
     follow: false,
   },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-  },
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

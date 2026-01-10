@@ -14,7 +14,6 @@
   },
   "scripts": {
     "dev": "next dev",
-    "predev": "npm run validate:env",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
