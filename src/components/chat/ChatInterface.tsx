@@ -1,44 +1,14 @@
 /**
- * Enhanced Chat Interface Component
- *
- * Uses Vercel AI SDK useChat hook for streaming with RAG context
+ * Simplified Chat Interface Component for Vercel Deployment
  */
 
 'use client'
 
-import React, { useState, useRef, useEffect } from 'react'
-import { useChat } from '@ai-sdk/react'
+import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Switch } from '@/components/ui/switch'
-import { MessageList } from './MessageList'
-import { TypingIndicator } from './TypingIndicator'
-import { Send, RefreshCw, Trash2, AlertCircle, BookOpen } from 'lucide-react'
-import { useProjects } from '@/lib/contexts/projects-context'
-import { useConversations } from '@/lib/contexts/conversations-context'
-import { cn } from '@/lib/utils'
-import type { Message as DatabaseMessage } from '@/lib/types/database'
-import type { UIMessage as AIMessage } from 'ai'
-
-// Helper function to convert AI SDK messages to database message format
-const convertAIMessagesToDatabase = (aiMessages: AIMessage[]): DatabaseMessage[] => {
-  return aiMessages.map((msg, index) => {
-    // Extract text content from parts array
-    const textParts = msg.parts?.filter(part => part.type === 'text') || []
-    const content = textParts.map(part => part.text).join('') || ''
-    
-    return {
-      id: `temp-${index}`,
-      conversation_id: 'temp',
-      role: msg.role as 'user' | 'assistant' | 'system',
-      content,
-      metadata: {},
-      created_at: new Date().toISOString(),
-    }
-  })
-}
+import { Send } from 'lucide-react'
 
 // =============================================================================
 // Types
@@ -59,228 +29,112 @@ export function ChatInterface({
   onConversationChange,
   className,
 }: ChatInterfaceProps) {
-  const { currentProject } = useProjects()
-  const { currentConversation } = useConversations()
-
-  // Knowledge base toggle state
-  const [useKnowledgeBase, setUseKnowledgeBase] = useState(true)
-  
-  // Input state (now managed manually in AI SDK v6)
   const [input, setInput] = useState('')
+  const [messages, setMessages] = useState<Array<{id: string, role: string, content: string}>>([])
+  const [isLoading, setIsLoading] = useState(false)
 
-  // Auto-scroll ref
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-
-  // Use chat hook with AI SDK v6
-  const { messages, sendMessage, status, error, stop } = useChat({
-    id: conversationId,
-  })
-
-  // Derived state
-  const isLoading = status === 'streaming' || status === 'submitted'
-
-  // Auto-scroll to bottom when new messages arrive
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
-
-  // =============================================================================
-  // Event Handlers
-  // =============================================================================
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInput(e.target.value)
-  }
-
-  const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (input.trim() && !isLoading) {
-      sendMessage({
-        role: 'user',
-        parts: [{ type: 'text', text: input }],
+    if (!input.trim() || isLoading) return
+
+    const userMessage = { id: Date.now().toString(), role: 'user', content: input }
+    setMessages(prev => [...prev, userMessage])
+    setInput('')
+    setIsLoading(true)
+
+    try {
+      // Simple fetch to chat API
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: input }),
       })
-      setInput('') // Clear input after sending
-    }
-  }
 
-  const handleClearChat = () => {
-    if (confirm('Are you sure you want to clear this conversation?')) {
-      // In a real app, you might want to clear the conversation
-      // For now, just clear the message display
-      window.location.reload()
-    }
-  }
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      const form = e.currentTarget.form
-      if (form) {
-        handleFormSubmit({ preventDefault: () => {} } as React.FormEvent<HTMLFormElement>)
+      if (response.ok) {
+        const data = await response.json()
+        const assistantMessage = { 
+          id: (Date.now() + 1).toString(), 
+          role: 'assistant', 
+          content: data.message || 'Hello! This is a simplified chat interface.' 
+        }
+        setMessages(prev => [...prev, assistantMessage])
       }
+    } catch (error) {
+      console.error('Chat error:', error)
+      const errorMessage = { 
+        id: (Date.now() + 1).toString(), 
+        role: 'assistant', 
+        content: 'Sorry, there was an error processing your message.' 
+      }
+      setMessages(prev => [...prev, errorMessage])
+    } finally {
+      setIsLoading(false)
     }
   }
-
-  // =============================================================================
-  // Render Helpers
-  // =============================================================================
-
-  const hasMessages = messages.length > 0
-  const canSend = input.trim().length > 0 && !isLoading
-
-  // =============================================================================
-  // Render
-  // =============================================================================
 
   return (
-    <div className={cn('flex flex-col h-full', className)}>
-      {/* Header with KB Toggle */}
+    <div className={`flex flex-col h-full ${className}`}>
       <Card className="border-b rounded-none">
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <CardTitle className="text-lg">RAG Chatbot</CardTitle>
-              {currentProject && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Project: {currentProject.name}
-                </p>
-              )}
-            </div>
-
-            {/* Knowledge Base Toggle */}
-            <div className="flex items-center gap-3 pr-2">
-              <div className="flex items-center gap-2">
-                <BookOpen className={cn('w-4 h-4', useKnowledgeBase ? 'text-primary' : 'text-muted')} />
-                <Switch
-                  checked={useKnowledgeBase}
-                  onCheckedChange={setUseKnowledgeBase}
-                  disabled={isLoading}
-                  aria-label="Toggle Knowledge Base"
-                />
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-2">
-                {error && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.location.reload()}
-                    disabled={isLoading}
-                    title="Reload conversation"
-                  >
-                    <RefreshCw className="w-4 h-4" />
-                  </Button>
-                )}
-                {hasMessages && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleClearChat}
-                    disabled={isLoading}
-                    title="Clear conversation"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                )}
-                {isLoading && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={stop}
-                    title="Stop generation"
-                  >
-                    <span className="w-4 h-4">⏹</span>
-                  </Button>
-                )}
-              </div>
-            </div>
-          </div>
+          <CardTitle className="text-lg">RAG Chatbot</CardTitle>
         </CardHeader>
       </Card>
 
-      {/* Error Alert */}
-      {error && (
-        <Alert variant="destructive" className="m-4">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            {error instanceof Error ? error.message : 'An error occurred while processing your message.'}
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Messages Area */}
-      <div className="flex-1 overflow-hidden">
-        {hasMessages ? (
-          <div className="h-full overflow-y-auto">
-            <MessageList messages={convertAIMessagesToDatabase(messages)} />
-            {isLoading && <TypingIndicator />}
-            <div ref={messagesEndRef} />
-          </div>
-        ) : (
+      <div className="flex-1 overflow-y-auto p-4">
+        {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
-            <Card className="max-w-md mx-4">
+            <Card className="max-w-md">
               <CardContent className="pt-6 text-center">
-                <div className="w-16 h-16 mx-auto mb-4 bg-primary/10 rounded-full flex items-center justify-center">
-                  <Send className="w-8 h-8 text-primary" />
-                </div>
                 <h3 className="text-lg font-semibold mb-2">Welcome to RAG Chatbot</h3>
-                <p className="text-muted-foreground mb-4">
-                  Ask questions about your uploaded documents. I'll search through your knowledge
-                  base to provide accurate answers.
+                <p className="text-muted-foreground">
+                  Start a conversation by typing a message below.
                 </p>
-                <div className="text-sm text-muted-foreground">
-                  <p className="mb-1">Try asking:</p>
-                  <ul className="text-left space-y-1">
-                    <li>• "What is the main topic of my documents?"</li>
-                    <li>• "Summarize the key findings"</li>
-                    <li>• "What are the recommendations?"</li>
-                  </ul>
-                </div>
               </CardContent>
             </Card>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div
+                  className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                    message.role === 'user'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted'
+                  }`}
+                >
+                  {message.content}
+                </div>
+              </div>
+            ))}
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="bg-muted px-4 py-2 rounded-lg">
+                  Thinking...
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      {/* Input Area */}
       <Card className="border-t rounded-none">
         <CardContent className="p-4">
-          <form onSubmit={handleFormSubmit} className="flex gap-2">
-            <div className="flex-1">
-              <Input
-                value={input}
-                onChange={handleInputChange}
-                onKeyDown={handleKeyDown}
-                placeholder={
-                  isLoading ? 'AI is thinking...' : 'Ask a question about your documents...'
-                }
-                disabled={isLoading}
-                className="min-h-[44px]"
-                aria-label="Chat message input"
-              />
-            </div>
-            <Button
-              type="submit"
-              disabled={!canSend}
-              size="lg"
-              className="px-6"
-              title={canSend ? 'Send message' : 'Enter a message to send'}
-            >
-              {isLoading ? (
-                <RefreshCw className="w-4 h-4 animate-spin" />
-              ) : (
-                <Send className="w-4 h-4" />
-              )}
+          <form onSubmit={handleSubmit} className="flex gap-2">
+            <Input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Type your message..."
+              disabled={isLoading}
+              className="flex-1"
+            />
+            <Button type="submit" disabled={!input.trim() || isLoading}>
+              <Send className="w-4 h-4" />
             </Button>
           </form>
-
-          {/* Status Info */}
-          <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
-            <span>{messages.length > 0 && `${messages.length} messages`}</span>
-            <span>{useKnowledgeBase ? 'Using Knowledge Base' : 'Free mode'}</span>
-            <span>Enter to send, Shift+Enter for new line</span>
-          </div>
         </CardContent>
       </Card>
     </div>
