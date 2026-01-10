@@ -47,12 +47,12 @@ export const GET = withErrorHandling(
           .from('documents')
           .select('*', { count: 'exact', head: true })
           .eq('project_id', projectId)
-          .then(res => res.count || 0),
+          .then((res: any) => res.count || 0),
         supabase
           .from('conversations')
           .select('*', { count: 'exact', head: true })
           .eq('project_id', projectId)
-          .then(res => res.count || 0),
+          .then((res: any) => res.count || 0),
       ])
 
       return NextResponse.json(
