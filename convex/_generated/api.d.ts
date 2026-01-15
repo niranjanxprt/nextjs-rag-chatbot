@@ -23,6 +23,8 @@ import type * as queries_preferences from "../queries/preferences.js";
 import type * as queries_projects from "../queries/projects.js";
 import type * as queries_prompts from "../queries/prompts.js";
 import type * as queries_users from "../queries/users.js";
+import type * as storage_retrieve from "../storage/retrieve.js";
+import type * as storage_upload from "../storage/upload.js";
 
 import type {
   ApiFromModules,
@@ -46,6 +48,8 @@ declare const fullApi: ApiFromModules<{
   "queries/projects": typeof queries_projects;
   "queries/prompts": typeof queries_prompts;
   "queries/users": typeof queries_users;
+  "storage/retrieve": typeof storage_retrieve;
+  "storage/upload": typeof storage_upload;
 }>;
 
 /**
