@@ -1,12 +1,13 @@
 'use client'
 
 import React, { useState, useMemo } from 'react'
-import { usePrompts } from '@/lib/contexts/prompts-context'
-import { DashboardLayout } from '@/components/layouts/DashboardLayout'
+import dynamic from 'next/dynamic'
+import { usePrompts, useCreatePrompt, useUpdatePrompt, useDeletePrompt } from '@/lib/hooks/usePrompts'
 import { PromptCard } from '@/components/prompts/PromptCard'
 import { PromptEditor } from '@/components/prompts/PromptEditor'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   Select,
   SelectContent,
@@ -14,8 +15,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Plus, Search, BookOpen } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { Plus, Search, BookOpen, Loader2 } from 'lucide-react'
+
+// Dynamically import AppLayout to avoid SSR issues
+const AppLayout = dynamic(() => import('@/components/layouts/AppLayout').then(mod => ({ default: mod.AppLayout })), {
+  ssr: false,
+  loading: () => <div className="min-h-screen bg-gray-50 flex items-center justify-center">Loading...</div>
+})
 
 const CATEGORIES = [
   { value: 'all', label: 'All Categories' },
@@ -28,7 +34,11 @@ const CATEGORIES = [
 ]
 
 export default function PromptsPage() {
-  const { prompts, createPrompt, updatePrompt, deletePrompt, isLoading } = usePrompts()
+  const { data: prompts = [], isLoading, error } = usePrompts()
+  const createPromptMutation = useCreatePrompt()
+  const updatePromptMutation = useUpdatePrompt()
+  const deletePromptMutation = useDeletePrompt()
+  
   const [showEditor, setShowEditor] = useState(false)
   const [editingPrompt, setEditingPrompt] = useState<any>(null)
   const [search, setSearch] = useState('')
@@ -36,7 +46,7 @@ export default function PromptsPage() {
 
   // Filter prompts
   const filteredPrompts = useMemo(() => {
-    return prompts.filter((prompt) => {
+    return prompts.filter((prompt: any) => {
       const matchesSearch =
         search === '' ||
         prompt.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -50,15 +60,12 @@ export default function PromptsPage() {
   }, [prompts, search, selectedCategory])
 
   // Separate favorite and other prompts
-  const favorites = filteredPrompts.filter((p) => p.is_favorite)
-  const others = filteredPrompts.filter((p) => !p.is_favorite)
+  const favorites = filteredPrompts.filter((p: any) => p.is_favorite)
+  const others = filteredPrompts.filter((p: any) => !p.is_favorite)
 
   const handleCreatePrompt = async (data: any) => {
     try {
-      await createPrompt({
-        user_id: '', // Will be set by context
-        ...data,
-      })
+      await createPromptMutation.mutateAsync(data)
       setShowEditor(false)
       setEditingPrompt(null)
     } catch (error) {
@@ -70,7 +77,7 @@ export default function PromptsPage() {
   const handleUpdatePrompt = async (data: any) => {
     try {
       if (editingPrompt?.id) {
-        await updatePrompt(editingPrompt.id, data)
+        await updatePromptMutation.mutateAsync({ id: editingPrompt.id, data })
         setShowEditor(false)
         setEditingPrompt(null)
       }
@@ -80,13 +87,81 @@ export default function PromptsPage() {
     }
   }
 
+  const handleDeletePrompt = async (id: string) => {
+    try {
+      await deletePromptMutation.mutateAsync(id)
+    } catch (error) {
+      console.error('Failed to delete prompt:', error)
+      throw error
+    }
+  }
+
   const handleOpenEditor = (prompt?: any) => {
     setEditingPrompt(prompt || null)
     setShowEditor(true)
   }
 
+  // Loading state
+  if (isLoading) {
+    return (
+      <AppLayout>
+        <div className="flex-1 flex flex-col">
+          <div className="border-b p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold flex items-center gap-2">
+                  <BookOpen className="w-8 h-8" />
+                  Prompts Library
+                </h1>
+                <p className="text-muted-foreground mt-1">
+                  Create and manage reusable prompt templates
+                </p>
+              </div>
+              <Button disabled size="lg">
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Loading...
+              </Button>
+            </div>
+          </div>
+          
+          <div className="flex-1 overflow-auto p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="space-y-3">
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-20 w-full" />
+                  <div className="flex gap-2">
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-4 w-16" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </AppLayout>
+    )
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <AppLayout>
+        <div className="flex-1 flex flex-col items-center justify-center p-6">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold text-red-600 mb-2">Error Loading Prompts</h2>
+            <p className="text-muted-foreground mb-4">{error.message}</p>
+            <Button onClick={() => window.location.reload()}>
+              Try Again
+            </Button>
+          </div>
+        </div>
+      </AppLayout>
+    )
+  }
+
   return (
-    <DashboardLayout>
+    <AppLayout>
       <div className="flex-1 flex flex-col">
         {/* Header */}
         <div className="border-b p-6">
@@ -147,12 +222,12 @@ export default function PromptsPage() {
                   ⭐ Favorites ({favorites.length})
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {favorites.map((prompt) => (
+                  {favorites.map((prompt: any) => (
                     <PromptCard
                       key={prompt.id}
                       prompt={prompt}
                       onEdit={() => handleOpenEditor(prompt)}
-                      onDelete={() => deletePrompt(prompt.id)}
+                      onDelete={() => handleDeletePrompt(prompt.id)}
                     />
                   ))}
                 </div>
@@ -166,12 +241,12 @@ export default function PromptsPage() {
                   All Prompts ({others.length})
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {others.map((prompt) => (
+                  {others.map((prompt: any) => (
                     <PromptCard
                       key={prompt.id}
                       prompt={prompt}
                       onEdit={() => handleOpenEditor(prompt)}
-                      onDelete={() => deletePrompt(prompt.id)}
+                      onDelete={() => handleDeletePrompt(prompt.id)}
                     />
                   ))}
                 </div>
@@ -195,9 +270,14 @@ export default function PromptsPage() {
             )}
 
             {/* Loading State */}
-            {isLoading && (
-              <div className="flex items-center justify-center py-12">
-                <div className="text-muted-foreground">Loading prompts...</div>
+            {(createPromptMutation.isPending || updatePromptMutation.isPending) && (
+              <div className="flex items-center justify-center py-4">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>
+                    {createPromptMutation.isPending ? 'Creating prompt...' : 'Updating prompt...'}
+                  </span>
+                </div>
               </div>
             )}
           </div>
@@ -211,6 +291,6 @@ export default function PromptsPage() {
         prompt={editingPrompt}
         onSubmit={editingPrompt ? handleUpdatePrompt : handleCreatePrompt}
       />
-    </DashboardLayout>
+    </AppLayout>
   )
 }

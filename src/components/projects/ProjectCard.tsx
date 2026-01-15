@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { FileText, MessageSquare, MoreVertical, Edit2, Trash2, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { Project } from '@/lib/types/database'
+import type { Project } from '@/lib/hooks/useProjects'
 import { EditProjectDialog } from './EditProjectDialog'
 
 interface ProjectCardProps {

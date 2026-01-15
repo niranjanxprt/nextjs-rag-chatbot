@@ -1,27 +1,32 @@
 /**
- * Main Application Layout
- * Layout with sidebar and header for the main app
+ * App Layout - EXACT React Frontend Replica
+ *
+ * Replicating the professional design from localhost:8081
  */
 
 'use client'
 
-import { AppSidebar } from "./AppSidebar";
-import { AppHeader } from "./AppHeader";
+import React from 'react'
+import { SidebarProvider } from '@/components/ui/sidebar-simple'
+import { AppSidebar } from './AppSidebar'
+import { AppHeader } from './AppHeader'
 
 interface AppLayoutProps {
-  children: React.ReactNode;
+  children: React.ReactNode
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
   return (
-    <div className="min-h-screen flex w-full bg-background">
-      <AppSidebar />
-      <div className="flex-1 flex flex-col">
-        <AppHeader />
-        <main className="flex-1 overflow-auto">
-          {children}
-        </main>
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-gray-50">
+        <AppSidebar />
+        <div className="flex-1 flex flex-col">
+          <AppHeader />
+          <main className="flex-1 overflow-auto bg-white">
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
-  );
+    </SidebarProvider>
+  )
 }

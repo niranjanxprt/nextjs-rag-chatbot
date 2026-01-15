@@ -1,189 +1,304 @@
 /**
- * Dynamic Project API Routes
- *
- * Handles operations for a specific project
+ * Individual Project API Route
+ * 
+ * Handles CRUD operations for individual projects with proper
+ * access control and member management.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getProject, updateProject, deleteProject } from '@/lib/database/queries'
-import { createError, createErrorResponse, withErrorHandling } from '@/lib/utils/error-handler'
-import type { ProjectUpdate } from '@/lib/types/database'
+import { z } from 'zod'
 
-// =============================================================================
-// GET /api/projects/[id] - Get a specific project
-// =============================================================================
+// Validation schemas
+const updateProjectSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  description: z.string().max(500).optional(),
+  is_public: z.boolean().optional(),
+  allow_member_invite: z.boolean().optional(),
+  max_members: z.number().int().min(1).max(100).optional(),
+})
 
-export const GET = withErrorHandling(
-  async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-    try {
-      // Check authentication
-      const supabase = await createClient()
-      const {
-        data: { user },
-        error: authError,
-      } = await supabase.auth.getUser()
+// Helper function to check project access
+async function checkProjectAccess(
+  supabase: any,
+  projectId: string,
+  userId: string,
+  requiredRole?: string[]
+) {
+  // Check if user is project member
+  const { data: member, error } = await supabase
+    .from('project_members')
+    .select('role, permissions')
+    .eq('project_id', projectId)
+    .eq('user_id', userId)
+    .single()
 
-      if (authError) {
-        throw createError.unauthorized('Authentication required')
-      }
-
-      if (!user) {
-        throw createError.unauthorized('Authentication required')
-      }
-
-      const { id: projectId } = await params
-
-      // Get project
-      const project = await getProject(projectId, user.id)
-
-      if (!project) {
-        throw createError.notFound('Project not found')
-      }
-
-      // Get project statistics (document and conversation counts)
-      const [docCount, convCount] = await Promise.all([
-        supabase
-          .from('documents')
-          .select('*', { count: 'exact', head: true })
-          .eq('project_id', projectId)
-          .then((res: any) => res.count || 0),
-        supabase
-          .from('conversations')
-          .select('*', { count: 'exact', head: true })
-          .eq('project_id', projectId)
-          .then((res: any) => res.count || 0),
-      ])
-
-      return NextResponse.json(
-        {
-          project,
-          stats: {
-            documentCount: docCount,
-            conversationCount: convCount,
-          },
-          success: true,
-        },
-        { status: 200 }
-      )
-    } catch (error) {
-      console.error('GET /api/projects/[id] error:', error)
-      return createErrorResponse(error instanceof Error ? error : new Error(String(error)))
-    }
+  if (error && error.code !== 'PGRST116') {
+    throw new Error('Failed to check project access')
   }
-)
 
-// =============================================================================
-// PATCH /api/projects/[id] - Update a project
-// =============================================================================
+  if (!member) {
+    // Check if project is public
+    const { data: project } = await supabase
+      .from('projects')
+      .select('is_public')
+      .eq('id', projectId)
+      .single()
 
-export const PATCH = withErrorHandling(
-  async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-    try {
-      // Check authentication
-      const supabase = await createClient()
-      const {
-        data: { user },
-        error: authError,
-      } = await supabase.auth.getUser()
-
-      if (authError) {
-        throw createError.unauthorized('Authentication required')
-      }
-
-      if (!user) {
-        throw createError.unauthorized('Authentication required')
-      }
-
-      const { id: projectId } = await params
-
-      // Parse request body
-      let body
-      try {
-        body = await request.json()
-      } catch (error) {
-        throw createError.validation('Invalid JSON in request body')
-      }
-
-      const { name, description, color, icon } = body
-
-      // Validate at least one field is provided
-      if (!name && !description && !color && !icon) {
-        throw createError.validation('At least one field must be provided for update')
-      }
-
-      // Build update object
-      const updates: ProjectUpdate = {}
-      if (name !== undefined) updates.name = name
-      if (description !== undefined) updates.description = description
-      if (color !== undefined) updates.color = color
-      if (icon !== undefined) updates.icon = icon
-
-      // Update project
-      const project = await updateProject(projectId, user.id, updates)
-
-      return NextResponse.json(
-        {
-          project,
-          success: true,
-        },
-        { status: 200 }
-      )
-    } catch (error) {
-      console.error('PATCH /api/projects/[id] error:', error)
-      return createErrorResponse(error instanceof Error ? error : new Error(String(error)))
+    if (project?.is_public) {
+      return { role: 'viewer', permissions: { read: true, write: false, admin: false } }
     }
+
+    return null
   }
-)
 
-// =============================================================================
-// DELETE /api/projects/[id] - Delete a project
-// =============================================================================
+  // Check role requirements
+  if (requiredRole && !requiredRole.includes(member.role)) {
+    return null
+  }
 
-export const DELETE = withErrorHandling(
-  async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-    try {
-      // Check authentication
-      const supabase = await createClient()
-      const {
-        data: { user },
-        error: authError,
-      } = await supabase.auth.getUser()
+  return member
+}
 
-      if (authError) {
-        throw createError.unauthorized('Authentication required')
-      }
-
-      if (!user) {
-        throw createError.unauthorized('Authentication required')
-      }
-
-      const { id: projectId } = await params
-
-      // Verify project exists and belongs to user
-      const project = await getProject(projectId, user.id)
-      if (!project) {
-        throw createError.notFound('Project not found')
-      }
-
-      // Prevent deletion of default project
-      if (project.is_default) {
-        throw createError.validation('Cannot delete the default project')
-      }
-
-      // Delete project (cascades to documents and conversations via database)
-      await deleteProject(projectId, user.id)
-
+// GET /api/projects/[id] - Get single project
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id: projectId } = await params
+    const supabase = await createClient()
+    
+    // Get authenticated user
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
       return NextResponse.json(
-        {
-          success: true,
-          message: 'Project deleted successfully',
-        },
-        { status: 200 }
+        { error: 'Unauthorized' },
+        { status: 401 }
       )
-    } catch (error) {
-      console.error('DELETE /api/projects/[id] error:', error)
-      return createErrorResponse(error instanceof Error ? error : new Error(String(error)))
     }
+
+    // Check project access
+    const access = await checkProjectAccess(supabase, projectId, user.id)
+    if (!access) {
+      return NextResponse.json(
+        { error: 'Project not found or access denied' },
+        { status: 404 }
+      )
+    }
+
+    // Get project details
+    const { data: project, error } = await supabase
+      .from('projects')
+      .select(`
+        id,
+        name,
+        description,
+        user_id,
+        is_public,
+        allow_member_invite,
+        max_members,
+        created_at,
+        updated_at
+      `)
+      .eq('id', projectId)
+      .single()
+
+    if (error) {
+      console.error('Database error:', error)
+      return NextResponse.json(
+        { error: 'Failed to fetch project' },
+        { status: 500 }
+      )
+    }
+
+    // Get project stats
+    const [
+      { count: memberCount },
+      { count: documentCount },
+      { count: conversationCount }
+    ] = await Promise.all([
+      supabase
+        .from('project_members')
+        .select('*', { count: 'exact', head: true })
+        .eq('project_id', projectId),
+      supabase
+        .from('documents')
+        .select('*', { count: 'exact', head: true })
+        .eq('project_id', projectId),
+      supabase
+        .from('conversations')
+        .select('*', { count: 'exact', head: true })
+        .eq('project_id', projectId)
+    ])
+
+    const projectWithStats = {
+      ...project,
+      _count: {
+        members: memberCount || 0,
+        documents: documentCount || 0,
+        conversations: conversationCount || 0,
+      },
+      _user_role: access.role,
+      _user_permissions: access.permissions,
+    }
+
+    return NextResponse.json(projectWithStats)
+
+  } catch (error) {
+    console.error('API error:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
   }
-)
+}
+
+// PUT /api/projects/[id] - Update project
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id: projectId } = await params
+    const supabase = await createClient()
+    
+    // Get authenticated user
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    // Check project access (admin or owner required)
+    const access = await checkProjectAccess(supabase, projectId, user.id, ['owner', 'admin'])
+    if (!access) {
+      return NextResponse.json(
+        { error: 'Access denied' },
+        { status: 403 }
+      )
+    }
+
+    // Parse and validate request body
+    const body = await request.json()
+    const validatedData = updateProjectSchema.parse(body)
+
+    // Update project
+    const { data: project, error } = await supabase
+      .from('projects')
+      .update({
+        ...validatedData,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', projectId)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Database error:', error)
+      return NextResponse.json(
+        { error: 'Failed to update project' },
+        { status: 500 }
+      )
+    }
+
+    // Log activity
+    await supabase.rpc('log_activity', {
+      p_user_id: user.id,
+      p_project_id: projectId,
+      p_action: 'updated',
+      p_resource_type: 'project',
+      p_resource_id: projectId,
+      p_metadata: { name: project.name }
+    })
+
+    return NextResponse.json(project)
+
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: 'Invalid request data', details: error.errors },
+        { status: 400 }
+      )
+    }
+
+    console.error('API error:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
+// DELETE /api/projects/[id] - Delete project
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id: projectId } = await params
+    const supabase = await createClient()
+    
+    // Get authenticated user
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    // Check project access (owner only)
+    const access = await checkProjectAccess(supabase, projectId, user.id, ['owner'])
+    if (!access) {
+      return NextResponse.json(
+        { error: 'Access denied' },
+        { status: 403 }
+      )
+    }
+
+    // Get project name for logging
+    const { data: project } = await supabase
+      .from('projects')
+      .select('name')
+      .eq('id', projectId)
+      .single()
+
+    // Delete project (cascade will handle related records)
+    const { error } = await supabase
+      .from('projects')
+      .delete()
+      .eq('id', projectId)
+
+    if (error) {
+      console.error('Database error:', error)
+      return NextResponse.json(
+        { error: 'Failed to delete project' },
+        { status: 500 }
+      )
+    }
+
+    // Log activity
+    await supabase.rpc('log_activity', {
+      p_user_id: user.id,
+      p_project_id: null,
+      p_action: 'deleted',
+      p_resource_type: 'project',
+      p_resource_id: projectId,
+      p_metadata: { name: project?.name }
+    })
+
+    return NextResponse.json({
+      message: 'Project deleted successfully'
+    })
+
+  } catch (error) {
+    console.error('API error:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}

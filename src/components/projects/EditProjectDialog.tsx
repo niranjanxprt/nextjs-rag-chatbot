@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/select'
 import { AlertCircle } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import type { Project } from '@/lib/types/database'
+import type { Project } from '@/lib/hooks/useProjects'
 
 const PROJECT_COLORS = [
   '#3b82f6', // blue

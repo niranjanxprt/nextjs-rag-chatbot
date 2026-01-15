@@ -1,8 +1,8 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import dynamicImport from 'next/dynamic'
 import { useAuth } from '@/lib/auth/context'
-import { DashboardLayout } from '@/components/layouts/DashboardLayout'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -14,6 +14,12 @@ import { Switch } from '@/components/ui/switch'
 import { AlertCircle, Moon, Sun, Monitor } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { cn } from '@/lib/utils'
+
+// Dynamically import AppLayout to avoid SSR issues
+const AppLayout = dynamicImport(() => import('@/components/layouts/AppLayout').then(mod => ({ default: mod.AppLayout })), {
+  ssr: false,
+  loading: () => <div className="min-h-screen bg-gray-50 flex items-center justify-center">Loading...</div>
+})
 
 // Force dynamic rendering to avoid SSR issues
 export const dynamic = 'force-dynamic'
@@ -114,7 +120,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <DashboardLayout>
+    <AppLayout>
       <div className="flex-1 flex flex-col">
         {/* Header */}
         <div className="border-b p-6">
@@ -344,6 +350,6 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </AppLayout>
   )
 }

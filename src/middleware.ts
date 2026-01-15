@@ -7,6 +7,11 @@ export async function middleware(request: NextRequest) {
     return
   }
   
+  // Skip middleware in development to avoid edge runtime issues
+  if (process.env.NODE_ENV === 'development') {
+    return
+  }
+  
   return await updateSession(request)
 }
 

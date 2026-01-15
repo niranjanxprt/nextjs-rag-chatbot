@@ -7,6 +7,7 @@ import { ThemeProvider } from '@/lib/contexts/theme-context'
 import { ProjectsProvider } from '@/lib/contexts/projects-context'
 import { PromptsProvider } from '@/lib/contexts/prompts-context'
 import { ConversationsProvider } from '@/lib/contexts/conversations-context'
+import { QueryProvider } from '@/lib/react-query/QueryProvider'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -38,19 +39,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={inter.className}>
       <body className="antialiased">
         <ErrorBoundary>
-          <ToastProvider>
-            <ThemeProvider>
-              <AuthProvider>
-                <ProjectsProvider>
-                  <PromptsProvider>
-                    <ConversationsProvider>
-                      {children}
-                    </ConversationsProvider>
-                  </PromptsProvider>
-                </ProjectsProvider>
-              </AuthProvider>
-            </ThemeProvider>
-          </ToastProvider>
+          <QueryProvider>
+            <ToastProvider>
+              <ThemeProvider>
+                <AuthProvider>
+                  <ProjectsProvider>
+                    <PromptsProvider>
+                      <ConversationsProvider>
+                        {children}
+                      </ConversationsProvider>
+                    </PromptsProvider>
+                  </ProjectsProvider>
+                </AuthProvider>
+              </ThemeProvider>
+            </ToastProvider>
+          </QueryProvider>
         </ErrorBoundary>
       </body>
     </html>
