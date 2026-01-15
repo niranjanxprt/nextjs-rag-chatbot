@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
+import { ConvexClientProvider } from './ConvexClientProvider'
 import { AuthProvider } from '@/lib/auth/context'
 import { ToastProvider } from '@/components/ui/toast'
 import { ErrorBoundary } from '@/components/ui/error-boundary'
@@ -39,21 +40,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={inter.className}>
       <body className="antialiased">
         <ErrorBoundary>
-          <QueryProvider>
-            <ToastProvider>
-              <ThemeProvider>
-                <AuthProvider>
-                  <ProjectsProvider>
-                    <PromptsProvider>
-                      <ConversationsProvider>
-                        {children}
-                      </ConversationsProvider>
-                    </PromptsProvider>
-                  </ProjectsProvider>
-                </AuthProvider>
-              </ThemeProvider>
-            </ToastProvider>
-          </QueryProvider>
+          <ConvexClientProvider>
+            <QueryProvider>
+              <ToastProvider>
+                <ThemeProvider>
+                  <AuthProvider>
+                    <ProjectsProvider>
+                      <PromptsProvider>
+                        <ConversationsProvider>
+                          {children}
+                        </ConversationsProvider>
+                      </PromptsProvider>
+                    </ProjectsProvider>
+                  </AuthProvider>
+                </ThemeProvider>
+              </ToastProvider>
+            </QueryProvider>
+          </ConvexClientProvider>
         </ErrorBoundary>
       </body>
     </html>
