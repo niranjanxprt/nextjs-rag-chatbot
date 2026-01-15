@@ -1,12 +1,21 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState } from 'react'
-import { User, Session } from '@supabase/supabase-js'
-import { createClient } from '@/lib/supabase/client'
+import { useQuery } from 'convex/react'
+import { api } from '../../../convex/_generated/api'
+
+interface User {
+  _id: string
+  email: string
+  name?: string
+  full_name?: string
+  avatar_url?: string
+  bio?: string
+}
 
 interface AuthContextType {
   user: User | null
-  session: Session | null
+  session: string | null
   loading: boolean
   signOut: () => Promise<void>
 }
@@ -14,40 +23,42 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [session, setSession] = useState<Session | null>(null)
+  const [session, setSession] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
-
+  
+  // Get current user from Convex
+  const currentUser = useQuery(api.queries.users.current)
+  
   useEffect(() => {
-    const getSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-      setSession(session)
-      setUser(session?.user ?? null)
-      setLoading(false)
-    }
-
-    getSession()
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event: any, session: any) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      setLoading(false)
-    })
-
-    return () => subscription.unsubscribe()
-  }, [supabase.auth])
-
+    // Check for session token in localStorage
+    const token = localStorage.getItem('convex_token')
+    setSession(token)
+    setLoading(false)
+  }, [])
+  
   const signOut = async () => {
-    await supabase.auth.signOut()
+    try {
+      // Call signout API
+      await fetch('/api/auth/signout', { method: 'POST' })
+      
+      // Clear local storage
+      localStorage.removeItem('convex_token')
+      setSession(null)
+      
+      // Reload page to clear Convex client state
+      window.location.href = '/auth/login'
+    } catch (error) {
+      console.error('Sign out error:', error)
+    }
   }
-
+  
   return (
-    <AuthContext.Provider value={{ user, session, loading, signOut }}>
+    <AuthContext.Provider value={{ 
+      user: currentUser || null, 
+      session, 
+      loading: loading || currentUser === undefined, 
+      signOut 
+    }}>
       {children}
     </AuthContext.Provider>
   )
