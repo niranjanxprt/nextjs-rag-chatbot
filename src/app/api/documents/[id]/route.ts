@@ -5,14 +5,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import {
-  getDocument,
-  updateDocument,
-  deleteDocument,
-  getDocumentWithChunks,
-  deleteDocumentChunks,
-} from '@/lib/database/queries'
+import { extractSessionToken, getAuthenticatedConvexClient } from '@/lib/convex/client'
+import { api } from '../../../../../convex/_generated/api'
+import { Id } from '../../../../../convex/_generated/dataModel'
 import { documentUpdateSchema } from '@/lib/schemas/validation'
 
 // =============================================================================
@@ -22,33 +17,26 @@ import { documentUpdateSchema } from '@/lib/schemas/validation'
 export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   const params = await context.params
   try {
-    // Check authentication
-    const supabase = await createClient()
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    // Extract session token
+    const token = extractSessionToken(request)
+    if (!token) {
       return NextResponse.json(
         { error: 'Unauthorized', message: 'Authentication required' },
         { status: 401 }
       )
     }
 
-    const documentId = params.id
+    // Get authenticated Convex client
+    const convex = getAuthenticatedConvexClient(token)
+
+    const documentId = params.id as Id<"documents">
 
     // Parse query parameters
     const { searchParams } = new URL(request.url)
     const includeChunks = searchParams.get('includeChunks') === 'true'
 
-    // Get document
-    let document
-    if (includeChunks) {
-      document = await getDocumentWithChunks(documentId, user.id)
-    } else {
-      document = await getDocument(documentId, user.id)
-    }
+    // Get document from Convex
+    const document = await convex.query(api.queries.documents.get, { id: documentId })
 
     if (!document) {
       return NextResponse.json(
@@ -57,9 +45,16 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
       )
     }
 
+    // Get chunks if requested
+    let responseData = document
+    if (includeChunks) {
+      const chunks = await convex.query(api.queries.documents.getChunks, { documentId })
+      responseData = { ...document, chunks }
+    }
+
     return NextResponse.json({
       success: true,
-      data: document,
+      data: responseData,
     })
   } catch (error) {
     console.error('Document GET API error:', error)
@@ -81,21 +76,19 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
 export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   const params = await context.params
   try {
-    // Check authentication
-    const supabase = await createClient()
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    // Extract session token
+    const token = extractSessionToken(request)
+    if (!token) {
       return NextResponse.json(
         { error: 'Unauthorized', message: 'Authentication required' },
         { status: 401 }
       )
     }
 
-    const documentId = params.id
+    // Get authenticated Convex client
+    const convex = getAuthenticatedConvexClient(token)
+
+    const documentId = params.id as Id<"documents">
 
     // Parse request body
     const body = await request.json()
@@ -103,17 +96,16 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
     // Validate update data
     const validatedUpdates = documentUpdateSchema.parse(body)
 
-    // Check if document exists and belongs to user
-    const existingDocument = await getDocument(documentId, user.id)
-    if (!existingDocument) {
-      return NextResponse.json(
-        { error: 'Not Found', message: 'Document not found' },
-        { status: 404 }
-      )
-    }
+    // Update document status via Convex mutation
+    await convex.mutation(api.mutations.documents.updateStatus, {
+      id: documentId,
+      status: validatedUpdates.status,
+      error_message: validatedUpdates.error_message,
+      chunk_count: validatedUpdates.chunk_count,
+    })
 
-    // Update document
-    const updatedDocument = await updateDocument(documentId, user.id, validatedUpdates)
+    // Get updated document
+    const updatedDocument = await convex.query(api.queries.documents.get, { id: documentId })
 
     return NextResponse.json({
       success: true,
@@ -151,46 +143,36 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
 export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   const params = await context.params
   try {
-    // Check authentication
-    const supabase = await createClient()
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    // Extract session token
+    const token = extractSessionToken(request)
+    if (!token) {
       return NextResponse.json(
         { error: 'Unauthorized', message: 'Authentication required' },
         { status: 401 }
       )
     }
 
-    const documentId = params.id
+    // Get authenticated Convex client
+    const convex = getAuthenticatedConvexClient(token)
 
-    // Check if document exists and belongs to user
-    const existingDocument = await getDocument(documentId, user.id)
-    if (!existingDocument) {
+    const documentId = params.id as Id<"documents">
+
+    // Get document to check storage_id
+    const document = await convex.query(api.queries.documents.get, { id: documentId })
+    
+    if (!document) {
       return NextResponse.json(
         { error: 'Not Found', message: 'Document not found' },
         { status: 404 }
       )
     }
 
-    // Delete from Supabase Storage
-    const { error: storageError } = await supabase.storage
-      .from('documents')
-      .remove([existingDocument.storage_path])
+    // Delete from Convex storage
+    // Note: Convex storage deletion will be handled in the mutation
+    // The mutation will delete the document and all associated chunks
 
-    if (storageError) {
-      console.error('Storage deletion error:', storageError)
-      // Continue with database deletion even if storage deletion fails
-    }
-
-    // Delete document chunks first (due to foreign key constraint)
-    await deleteDocumentChunks(documentId)
-
-    // Delete document record
-    await deleteDocument(documentId, user.id)
+    // Delete document (cascades to chunks)
+    await convex.mutation(api.mutations.documents.remove, { id: documentId })
 
     return NextResponse.json({
       success: true,

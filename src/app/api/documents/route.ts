@@ -5,15 +5,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import {
-  getDocuments,
-  getDocument,
-  updateDocument,
-  deleteDocument,
-  getUserDocumentCount,
-} from '@/lib/database/queries'
-import { paginationSchema, documentUpdateSchema } from '@/lib/schemas/validation'
+import { extractSessionToken, getAuthenticatedConvexClient } from '@/lib/convex/client'
+import { api } from '../../../../convex/_generated/api'
+import { paginationSchema } from '@/lib/schemas/validation'
 
 // =============================================================================
 // GET - List user documents with pagination
@@ -21,19 +15,17 @@ import { paginationSchema, documentUpdateSchema } from '@/lib/schemas/validation
 
 export async function GET(request: NextRequest) {
   try {
-    // Check authentication
-    const supabase = await createClient()
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    // Extract session token
+    const token = extractSessionToken(request)
+    if (!token) {
       return NextResponse.json(
         { error: 'Unauthorized', message: 'Authentication required' },
         { status: 401 }
       )
     }
+
+    // Get authenticated Convex client
+    const convex = getAuthenticatedConvexClient(token)
 
     // Parse query parameters
     const { searchParams } = new URL(request.url)
@@ -47,18 +39,33 @@ export async function GET(request: NextRequest) {
     // Validate pagination parameters
     const validatedParams = paginationSchema.parse(paginationParams)
 
-    // Get documents
-    const result = await getDocuments(user.id, validatedParams)
+    // Get documents from Convex
+    const documents = await convex.query(api.queries.documents.list)
 
-    // Get total document count for user
-    const totalDocuments = await getUserDocumentCount(user.id)
+    // Apply client-side pagination and sorting
+    // Note: In production, this should be done server-side in Convex
+    const sortedDocs = [...documents].sort((a, b) => {
+      const aVal = a[validatedParams.sortBy as keyof typeof a]
+      const bVal = b[validatedParams.sortBy as keyof typeof b]
+      const order = validatedParams.sortOrder === 'asc' ? 1 : -1
+      return aVal > bVal ? order : -order
+    })
+
+    const startIndex = (validatedParams.page - 1) * validatedParams.limit
+    const endIndex = startIndex + validatedParams.limit
+    const paginatedDocs = sortedDocs.slice(startIndex, endIndex)
 
     return NextResponse.json({
       success: true,
-      data: result.data,
-      pagination: result.pagination,
+      data: paginatedDocs,
+      pagination: {
+        page: validatedParams.page,
+        limit: validatedParams.limit,
+        total: documents.length,
+        totalPages: Math.ceil(documents.length / validatedParams.limit),
+      },
       meta: {
-        totalDocuments,
+        totalDocuments: documents.length,
       },
     })
   } catch (error) {
@@ -80,14 +87,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // Check authentication
-    const supabase = await createClient()
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    // Extract session token
+    const token = extractSessionToken(request)
+    if (!token) {
       return NextResponse.json(
         { error: 'Unauthorized', message: 'Authentication required' },
         { status: 401 }
