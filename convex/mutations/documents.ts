@@ -37,11 +37,13 @@ export const create = mutation({
     const documentId = await ctx.db.insert("documents", {
       user_id: user._id,
       title: args.title,
+      filename: args.file_name,
       file_name: args.file_name,
       file_size: args.file_size,
       mime_type: args.mime_type,
       storage_id: args.storage_id,
       status: "pending",
+      processing_status: "pending",
       created_at: now,
       updated_at: now,
     });
@@ -173,6 +175,7 @@ export const createChunk = mutation({
       document_id: args.document_id,
       content: args.content,
       chunk_index: args.chunk_index,
+      token_count: Math.ceil(args.content.length / 4), // Rough estimate: 1 token ≈ 4 chars
       embedding: args.embedding,
       metadata: args.metadata,
       created_at: Date.now(),

@@ -172,7 +172,7 @@ export const getInvitations = query({
     }
     
     // Get all pending invitations
-    const allInvitations = await ctx.db.query("invitations").collect();
+    const allInvitations = await ctx.db.query("project_invitations").collect();
     return allInvitations.filter(
       (inv) => inv.project_id === args.projectId && inv.status === "pending"
     );

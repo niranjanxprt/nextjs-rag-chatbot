@@ -21,6 +21,7 @@ export default defineSchema({
 
   users: defineTable({
     email: v.string(),
+    name: v.optional(v.string()), // Display name
     full_name: v.optional(v.string()),
     avatar_url: v.optional(v.string()),
     bio: v.optional(v.string()),
@@ -38,7 +39,9 @@ export default defineSchema({
   documents: defineTable({
     user_id: v.id("users"),
     project_id: v.optional(v.id("projects")),
+    title: v.optional(v.string()), // Document title
     filename: v.string(),
+    file_name: v.optional(v.string()), // Alias for filename
     file_size: v.number(),
     mime_type: v.string(),
     storage_id: v.optional(v.id("_storage")), // Convex file storage reference
@@ -48,6 +51,12 @@ export default defineSchema({
       v.literal("completed"),
       v.literal("failed")
     ),
+    status: v.optional(v.union( // Alias for processing_status
+      v.literal("pending"),
+      v.literal("processing"),
+      v.literal("completed"),
+      v.literal("failed")
+    )),
     chunk_count: v.optional(v.number()),
     error_message: v.optional(v.string()),
     created_at: v.number(),
@@ -63,6 +72,8 @@ export default defineSchema({
     chunk_index: v.number(),
     content: v.string(),
     token_count: v.number(),
+    embedding: v.optional(v.array(v.float64())), // Vector embedding
+    metadata: v.optional(v.any()), // JSONB
     qdrant_point_id: v.optional(v.string()), // UUID as string
     created_at: v.number(),
   })
@@ -98,6 +109,11 @@ export default defineSchema({
       v.literal("system")
     ),
     content: v.string(),
+    sources: v.optional(v.array(v.object({
+      document_id: v.id("documents"),
+      chunk_index: v.number(),
+      similarity: v.float64(),
+    }))),
     metadata: v.optional(v.any()), // JSONB equivalent
     created_at: v.number(),
   })
@@ -154,6 +170,12 @@ export default defineSchema({
     permissions: v.optional(v.any()), // JSONB equivalent
     token: v.string(),
     invited_by: v.id("users"),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("accepted"),
+      v.literal("declined"),
+      v.literal("expired")
+    ),
     expires_at: v.number(),
     accepted_at: v.optional(v.number()),
     accepted_by: v.optional(v.id("users")),
@@ -162,6 +184,7 @@ export default defineSchema({
     .index("by_project", ["project_id"])
     .index("by_email", ["email"])
     .index("by_token", ["token"])
+    .index("by_status", ["status"])
     .index("by_project_email", ["project_id", "email"]),
 
   // ==========================================================================
@@ -171,18 +194,23 @@ export default defineSchema({
   prompts: defineTable({
     user_id: v.id("users"),
     name: v.string(),
+    title: v.optional(v.string()), // Alias for name
     content: v.string(),
     description: v.optional(v.string()),
     variables: v.optional(v.any()), // JSONB array
     category: v.optional(v.string()),
+    tags: v.optional(v.array(v.string())), // Array of tags
     is_favorite: v.optional(v.boolean()),
+    is_public: v.optional(v.boolean()), // Public prompts visible to all users
     usage_count: v.optional(v.number()),
+    metadata: v.optional(v.any()), // JSONB
     created_at: v.number(),
     updated_at: v.number(),
   })
     .index("by_user", ["user_id"])
     .index("by_category", ["user_id", "category"])
-    .index("by_favorite", ["user_id", "is_favorite"]),
+    .index("by_favorite", ["user_id", "is_favorite"])
+    .index("by_public", ["is_public"]),
 
   user_preferences: defineTable({
     user_id: v.id("users"),
@@ -191,6 +219,8 @@ export default defineSchema({
       v.literal("dark"),
       v.literal("system")
     ),
+    language: v.optional(v.string()),
+    notifications_enabled: v.optional(v.boolean()),
     default_project_id: v.optional(v.id("projects")),
     chat_settings: v.optional(v.any()), // JSONB
     ui_settings: v.optional(v.any()), // JSONB

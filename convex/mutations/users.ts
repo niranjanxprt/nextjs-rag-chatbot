@@ -44,6 +44,7 @@ export const createOrUpdate = mutation({
         email: args.email,
         name: args.name,
         avatar_url: args.avatar_url,
+        last_active: now,
         created_at: now,
         updated_at: now,
       });

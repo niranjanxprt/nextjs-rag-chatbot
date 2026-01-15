@@ -33,7 +33,7 @@ export const update = mutation({
     
     // Check if preferences exist
     const existingPreferences = await ctx.db
-      .query("preferences")
+      .query("user_preferences")
       .withIndex("by_user", (q) => q.eq("user_id", user._id))
       .first();
     
@@ -50,7 +50,7 @@ export const update = mutation({
       return existingPreferences._id;
     } else {
       // Create new preferences with defaults
-      const preferencesId = await ctx.db.insert("preferences", {
+      const preferencesId = await ctx.db.insert("user_preferences", {
         user_id: user._id,
         theme: args.theme ?? "system",
         language: args.language ?? "en",

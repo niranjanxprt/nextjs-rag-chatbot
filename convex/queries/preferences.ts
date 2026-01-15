@@ -27,7 +27,7 @@ export const get = query({
     }
     
     const preferences = await ctx.db
-      .query("preferences")
+      .query("user_preferences")
       .withIndex("by_user", (q) => q.eq("user_id", user._id))
       .first();
     

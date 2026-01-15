@@ -34,7 +34,7 @@ export const create = mutation({
     const projectId = await ctx.db.insert("projects", {
       name: args.name,
       description: args.description,
-      owner_id: user._id,
+      user_id: user._id,
       created_at: now,
       updated_at: now,
     });
@@ -44,7 +44,9 @@ export const create = mutation({
       project_id: projectId,
       user_id: user._id,
       role: "owner",
+      joined_at: now,
       created_at: now,
+      updated_at: now,
     });
     
     return projectId;
@@ -120,7 +122,7 @@ export const remove = mutation({
       .withIndex("by_email", (q) => q.eq("email", identity.email!))
       .first();
     
-    if (!user || project.owner_id !== user._id) {
+    if (!user || project.user_id !== user._id) {
       throw new Error("Unauthorized: Only owner can delete project");
     }
     
@@ -135,7 +137,7 @@ export const remove = mutation({
     }
     
     // Delete all invitations
-    const allInvitations = await ctx.db.query("invitations").collect();
+    const allInvitations = await ctx.db.query("project_invitations").collect();
     const projectInvitations = allInvitations.filter(inv => inv.project_id === args.id);
     
     for (const invitation of projectInvitations) {
@@ -193,11 +195,14 @@ export const addMember = mutation({
       throw new Error("User is already a member of this project");
     }
     
+    const now = Date.now();
     const memberId = await ctx.db.insert("project_members", {
       project_id: args.project_id,
       user_id: args.user_id,
       role: args.role,
-      created_at: Date.now(),
+      joined_at: now,
+      created_at: now,
+      updated_at: now,
     });
     
     return memberId;
@@ -244,7 +249,7 @@ export const removeMember = mutation({
     }
     
     // Cannot remove the owner
-    if (args.user_id === project.owner_id) {
+    if (args.user_id === project.user_id) {
       throw new Error("Cannot remove project owner");
     }
     
@@ -303,7 +308,7 @@ export const createInvitation = mutation({
     const now = Date.now();
     const expiresAt = now + 7 * 24 * 60 * 60 * 1000; // 7 days
     
-    const invitationId = await ctx.db.insert("invitations", {
+    const invitationId = await ctx.db.insert("project_invitations", {
       project_id: args.project_id,
       email: args.email,
       role: args.role,

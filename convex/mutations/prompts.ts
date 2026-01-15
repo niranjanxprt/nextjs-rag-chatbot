@@ -35,6 +35,7 @@ export const create = mutation({
     const now = Date.now();
     const promptId = await ctx.db.insert("prompts", {
       user_id: user._id,
+      name: args.title,
       title: args.title,
       content: args.content,
       category: args.category,
