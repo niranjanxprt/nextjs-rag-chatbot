@@ -1,119 +1,93 @@
 /**
- * Prompts API Routes
- *
- * Handles CRUD operations for prompt templates
+ * Prompts API Route with Convex Backend
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { createPrompt, getPrompts } from '@/lib/database/queries'
-import { createError, createErrorResponse, withErrorHandling } from '@/lib/utils/error-handler'
-import type { PromptInsert } from '@/lib/types/database'
+import { extractSessionToken, getAuthenticatedConvexClient } from '@/lib/convex/client'
+import { api } from '../../../../convex/_generated/api'
+import { z } from 'zod'
 
-// =============================================================================
-// GET /api/prompts - List user's prompts with optional filtering
-// =============================================================================
-
-export const GET = withErrorHandling(async (request: NextRequest) => {
-  try {
-    // Check authentication
-    const supabase = await createClient()
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError) {
-      throw createError.unauthorized('Authentication required')
-    }
-
-    if (!user) {
-      throw createError.unauthorized('Authentication required')
-    }
-
-    // Get query parameters
-    const { searchParams } = new URL(request.url)
-    const category = searchParams.get('category') || null
-
-    // Get prompts
-    const prompts = await getPrompts(user.id, category)
-
-    return NextResponse.json(
-      {
-        prompts,
-        count: prompts.length,
-        success: true,
-      },
-      { status: 200 }
-    )
-  } catch (error) {
-    console.error('GET /api/prompts error:', error)
-    return createErrorResponse(error instanceof Error ? error : new Error(String(error)))
-  }
+// Validation schemas
+const createPromptSchema = z.object({
+  title: z.string().min(1).max(200),
+  content: z.string().min(1),
+  category: z.string().optional(),
+  is_public: z.boolean().default(false),
 })
 
-// =============================================================================
-// POST /api/prompts - Create a new prompt template
-// =============================================================================
-
-export const POST = withErrorHandling(async (request: NextRequest) => {
+// GET /api/prompts - List prompts
+export async function GET(request: NextRequest) {
   try {
-    // Check authentication
-    const supabase = await createClient()
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError) {
-      throw createError.unauthorized('Authentication required')
+    // Extract session token
+    const token = extractSessionToken(request)
+    if (!token) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
     }
 
-    if (!user) {
-      throw createError.unauthorized('Authentication required')
-    }
+    // Get authenticated Convex client
+    const convex = getAuthenticatedConvexClient(token)
 
-    // Parse request body
-    let body
-    try {
-      body = await request.json()
-    } catch (error) {
-      throw createError.validation('Invalid JSON in request body')
-    }
+    // Get prompts from Convex
+    const prompts = await convex.query(api.queries.prompts.list)
 
-    const { name, content, description, variables, category, is_favorite } = body
+    return NextResponse.json({ prompts })
 
-    // Validate required fields
-    if (!name || typeof name !== 'string' || name.trim().length === 0) {
-      throw createError.validation('Prompt name is required')
-    }
-
-    if (!content || typeof content !== 'string' || content.trim().length === 0) {
-      throw createError.validation('Prompt content is required')
-    }
-
-    // Create prompt
-    const promptData: PromptInsert = {
-      user_id: user.id,
-      name: name.trim(),
-      content: content.trim(),
-      description: description || null,
-      variables: Array.isArray(variables) ? variables : [],
-      category: category || null,
-      is_favorite: is_favorite || false,
-    }
-
-    const prompt = await createPrompt(promptData)
-
-    return NextResponse.json(
-      {
-        prompt,
-        success: true,
-      },
-      { status: 201 }
-    )
   } catch (error) {
-    console.error('POST /api/prompts error:', error)
-    return createErrorResponse(error instanceof Error ? error : new Error(String(error)))
+    console.error('API error:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
   }
-})
+}
+
+// POST /api/prompts - Create new prompt
+export async function POST(request: NextRequest) {
+  try {
+    // Extract session token
+    const token = extractSessionToken(request)
+    if (!token) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    // Get authenticated Convex client
+    const convex = getAuthenticatedConvexClient(token)
+
+    // Parse and validate request body
+    const body = await request.json()
+    const validatedData = createPromptSchema.parse(body)
+
+    // Create prompt via Convex mutation
+    const promptId = await convex.mutation(api.mutations.prompts.create, {
+      title: validatedData.title,
+      content: validatedData.content,
+      category: validatedData.category,
+      is_public: validatedData.is_public,
+    })
+
+    // Get created prompt
+    const prompt = await convex.query(api.queries.prompts.get, { id: promptId })
+
+    return NextResponse.json(prompt, { status: 201 })
+
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: 'Invalid request data', details: error.errors },
+        { status: 400 }
+      )
+    }
+
+    console.error('API error:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
