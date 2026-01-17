@@ -1,9 +1,33 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  // Skip middleware for API routes that don't need auth
-  if (request.nextUrl.pathname.startsWith('/api/health')) {
-    return NextResponse.next()
+  // Handle CORS for API routes (for Vite frontend)
+  if (request.nextUrl.pathname.startsWith('/api/')) {
+    // Handle preflight requests
+    if (request.method === 'OPTIONS') {
+      return new NextResponse(null, {
+        status: 204,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-User-ID',
+          'Access-Control-Max-Age': '86400',
+        },
+      })
+    }
+    
+    // Add CORS headers to API responses
+    const response = NextResponse.next()
+    response.headers.set('Access-Control-Allow-Origin', '*')
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS')
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-User-ID')
+    
+    // Skip auth check for health endpoint
+    if (request.nextUrl.pathname.startsWith('/api/health')) {
+      return response
+    }
+    
+    return response
   }
   
   // Check for Convex session token

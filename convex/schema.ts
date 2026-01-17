@@ -1,5 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { authTables } from "@convex-dev/auth/server";
 
 /**
  * Convex Database Schema for Next.js RAG Chatbot
@@ -15,6 +16,11 @@ import { v } from "convex/values";
  */
 
 export default defineSchema({
+  // ==========================================================================
+  // AUTHENTICATION TABLES (Convex Auth)
+  // ==========================================================================
+  ...authTables,
+
   // ==========================================================================
   // USERS AND PROFILES
   // ==========================================================================

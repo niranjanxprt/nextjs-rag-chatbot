@@ -1,0 +1,17 @@
+node_modules
+.git
+.env.local
+.env.*.local
+logs/
+dist/
+.DS_Store
+build/
+coverage/
+.pytest_cache
+playwright-report/
+test-results/
+.mypy_cache
+.hypothesis/
+.vscode
+.cursor
+# Deployment trigger

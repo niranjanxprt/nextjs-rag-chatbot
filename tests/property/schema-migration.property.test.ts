@@ -12,6 +12,11 @@ import fc from 'fast-check'
 import { defineSchema, defineTable } from "convex/server"
 import { v } from "convex/values"
 
+// Mock the auth tables import before importing the schema
+jest.mock('@convex-dev/auth/server', () => ({
+  authTables: {}
+}))
+
 // Import the actual Convex schema
 import convexSchema from '../../convex/schema'
 
