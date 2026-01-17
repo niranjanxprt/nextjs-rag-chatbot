@@ -19,8 +19,8 @@ export const metadata: Metadata = {
     template: '%s | RAG Chatbot',
   },
   description:
-    'A Next.js RAG chatbot powered by OpenAI and Supabase. Upload documents and chat with your personalized AI assistant.',
-  keywords: ['RAG', 'chatbot', 'AI', 'OpenAI', 'Supabase', 'document', 'search', 'Next.js'],
+    'A Next.js RAG chatbot powered by OpenAI and Convex. Upload documents and chat with your personalized AI assistant.',
+  keywords: ['RAG', 'chatbot', 'AI', 'OpenAI', 'Convex', 'document', 'search', 'Next.js'],
   authors: [{ name: 'RAG Chatbot Team' }],
   creator: 'RAG Chatbot',
   publisher: 'RAG Chatbot',
@@ -47,9 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <AuthProvider>
                     <ProjectsProvider>
                       <PromptsProvider>
-                        <ConversationsProvider>
-                          {children}
-                        </ConversationsProvider>
+                        <ConversationsProvider>{children}</ConversationsProvider>
                       </PromptsProvider>
                     </ProjectsProvider>
                   </AuthProvider>

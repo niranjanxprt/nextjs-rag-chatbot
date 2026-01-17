@@ -8,9 +8,9 @@ export async function GET() {
       environment: process.env.NODE_ENV || 'development',
       version: process.env.npm_package_version || '0.1.0',
       services: {
-        supabase: {
-          configured: !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
-          url: process.env.NEXT_PUBLIC_SUPABASE_URL ? 'configured' : 'missing',
+        convex: {
+          configured: !!process.env.CONVEX_DEPLOYMENT,
+          deployment: process.env.CONVEX_DEPLOYMENT ? 'configured' : 'missing',
         },
         openai: {
           configured: !!process.env.OPENAI_API_KEY,

@@ -30,7 +30,7 @@ export enum ErrorCode {
   // External service errors
   EXTERNAL_SERVICE_ERROR = 'EXTERNAL_SERVICE_ERROR',
   OPENAI_ERROR = 'OPENAI_ERROR',
-  SUPABASE_ERROR = 'SUPABASE_ERROR',
+  CONVEX_ERROR = 'CONVEX_ERROR',
   QDRANT_ERROR = 'QDRANT_ERROR',
   REDIS_ERROR = 'REDIS_ERROR',
 
@@ -175,26 +175,25 @@ export function handleZodError(error: ZodError): AppErrorClass {
   return createError.validation('Invalid request data', details)
 }
 
-export function handleSupabaseError(error: any): AppErrorClass {
-  console.error('Supabase error:', error)
+export function handleConvexError(error: any): AppErrorClass {
+  console.error('Convex error:', error)
 
-  // Map common Supabase error codes
-  if (error.code === 'PGRST116') {
+  // Map common Convex error patterns
+  if (error.message?.includes('not found')) {
     return createError.notFound('Resource')
   }
 
-  if (error.code === '23505') {
-    return createError.alreadyExists('Resource')
+  if (error.message?.includes('unauthorized')) {
+    return createError.unauthorized('Authentication required')
   }
 
-  if (error.code === '42501') {
-    return createError.forbidden('Insufficient permissions')
+  if (error.message?.includes('forbidden')) {
+    return createError.forbidden('Access denied')
   }
 
-  return createError.externalService('Supabase', error.message, {
+  return createError.externalService('Convex', error.message, {
     code: error.code,
     details: error.details,
-    hint: error.hint,
   })
 }
 
