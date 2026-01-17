@@ -82,7 +82,7 @@ function MessageItem({ message, isLast }: MessageItemProps) {
           <span className="text-sm font-medium">{isUser ? 'You' : 'AI Assistant'}</span>
           <span className="text-xs text-muted-foreground flex items-center gap-1">
             <Clock className="w-3 h-3" />
-            {formatTimestamp(message.created_at || new Date())}
+            {formatTimestamp(new Date(message.created_at || Date.now()))}
           </span>
         </div>
 
@@ -136,7 +136,7 @@ export function MessageList({ messages, className }: MessageListProps) {
     <div className={cn('divide-y', className)}>
       {messages.map((message, index) => (
         <MessageItem
-          key={message.id || index}
+          key={message._id || index}
           message={message}
           isLast={index === messages.length - 1}
         />

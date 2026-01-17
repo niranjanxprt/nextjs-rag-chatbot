@@ -25,6 +25,9 @@ export default function TestReactQueryPage() {
   const { data: prompts, isLoading: promptsLoading, error: promptsError } = usePrompts()
   const { data: knowledgeBases, isLoading: kbLoading, error: kbError } = useKnowledgeBases()
 
+  // Helper to format error messages
+  const formatError = (error: any) => typeof error === 'string' ? error : 'An error occurred'
+
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="max-w-4xl mx-auto space-y-6">
@@ -102,7 +105,7 @@ export default function TestReactQueryPage() {
             </CardHeader>
             <CardContent>
               {userLoading && <div className="text-sm text-muted-foreground">Loading...</div>}
-              {userError && <div className="text-sm text-red-600">Error: {userError.message}</div>}
+              {userError && <div className="text-sm text-red-600">Error: {formatError(userError)}</div>}
               {user && (
                 <div className="space-y-1 text-sm">
                   <div><strong>Email:</strong> {user.email}</div>
@@ -131,7 +134,7 @@ export default function TestReactQueryPage() {
             </CardHeader>
             <CardContent>
               {projectsLoading && <div className="text-sm text-muted-foreground">Loading...</div>}
-              {projectsError && <div className="text-sm text-red-600">Error: {projectsError.message}</div>}
+              {projectsError && <div className="text-sm text-red-600">Error: {formatError(projectsError)}</div>}
               {projects && (
                 <div className="space-y-1 text-sm">
                   <div><strong>Count:</strong> {projects.length}</div>
@@ -159,7 +162,7 @@ export default function TestReactQueryPage() {
             </CardHeader>
             <CardContent>
               {documentsLoading && <div className="text-sm text-muted-foreground">Loading...</div>}
-              {documentsError && <div className="text-sm text-red-600">Error: {documentsError.message}</div>}
+              {documentsError && <div className="text-sm text-red-600">Error: {formatError(documentsError)}</div>}
               {documents && (
                 <div className="space-y-1 text-sm">
                   <div><strong>Count:</strong> {documents.documents?.length || 0}</div>
@@ -188,7 +191,7 @@ export default function TestReactQueryPage() {
             </CardHeader>
             <CardContent>
               {conversationsLoading && <div className="text-sm text-muted-foreground">Loading...</div>}
-              {conversationsError && <div className="text-sm text-red-600">Error: {conversationsError.message}</div>}
+              {conversationsError && <div className="text-sm text-red-600">Error: {formatError(conversationsError)}</div>}
               {conversations && (
                 <div className="space-y-1 text-sm">
                   <div><strong>Count:</strong> {conversations.conversations?.length || 0}</div>
@@ -217,7 +220,7 @@ export default function TestReactQueryPage() {
             </CardHeader>
             <CardContent>
               {promptsLoading && <div className="text-sm text-muted-foreground">Loading...</div>}
-              {promptsError && <div className="text-sm text-red-600">Error: {promptsError.message}</div>}
+              {promptsError && <div className="text-sm text-red-600">Error: {formatError(promptsError)}</div>}
               {prompts && (
                 <div className="space-y-1 text-sm">
                   <div><strong>Count:</strong> {prompts.length}</div>
@@ -245,7 +248,7 @@ export default function TestReactQueryPage() {
             </CardHeader>
             <CardContent>
               {kbLoading && <div className="text-sm text-muted-foreground">Loading...</div>}
-              {kbError && <div className="text-sm text-red-600">Error: {kbError.message}</div>}
+              {kbError && <div className="text-sm text-red-600">Error: {formatError(kbError)}</div>}
               {knowledgeBases && (
                 <div className="space-y-1 text-sm">
                   <div><strong>Count:</strong> {knowledgeBases.length}</div>

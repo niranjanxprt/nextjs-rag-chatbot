@@ -23,12 +23,12 @@ export async function GET(request: NextRequest) {
     const convex = getConvexClient();
     
     // Verify magic link token
-    const result = await convex.mutation(api.auth.signIn, {
+    const result = await convex.action(api.auth.signIn, {
       provider: "resend-magic-link",
       params: { email, token },
     });
     
-    if (!result || !result.token) {
+    if (!result || !result.tokens) {
       return NextResponse.redirect(
         new URL("/auth/login?error=invalid_token", request.url)
       );
@@ -39,14 +39,17 @@ export async function GET(request: NextRequest) {
       new URL("/dashboard", request.url)
     );
     
-    // Set session token in cookie
-    response.cookies.set("convex_token", result.token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 30, // 30 days
-      path: "/",
-    });
+    // Set session token in cookie (use the token from Convex Auth)
+    const sessionToken = (result.tokens as any).token;
+    if (sessionToken) {
+      response.cookies.set("convex_token", sessionToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 30, // 30 days
+        path: "/",
+      });
+    }
     
     return response;
   } catch (error) {

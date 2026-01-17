@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { POST } from '@/app/api/chat/route'
-import { createClient } from '@/lib/supabase/server'
+// Mock Convex client for tests
 
 // Mock external dependencies
 jest.mock('@/lib/supabase/server')

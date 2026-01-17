@@ -46,7 +46,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     }
 
     // Get chunks if requested
-    let responseData = document
+    let responseData: any = document
     if (includeChunks) {
       const chunks = await convex.query(api.queries.documents.getChunks, { documentId })
       responseData = { ...document, chunks }
@@ -99,8 +99,8 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
     // Update document status via Convex mutation
     await convex.mutation(api.mutations.documents.updateStatus, {
       id: documentId,
-      status: validatedUpdates.status,
-      error_message: validatedUpdates.error_message,
+      status: validatedUpdates.processing_status || 'completed',
+      error_message: validatedUpdates.error_message || undefined,
       chunk_count: validatedUpdates.chunk_count,
     })
 

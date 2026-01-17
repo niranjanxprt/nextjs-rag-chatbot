@@ -1,14 +1,19 @@
-import { createClient } from '@/lib/supabase/server'
+/**
+ * Home Page
+ * 
+ * Redirects to chat if authenticated, otherwise to login
+ */
+
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 
 export default async function Home() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  // Check if user has a Convex auth token
+  const cookieStore = await cookies()
+  const token = cookieStore.get('convexToken')
 
-  if (user) {
-    redirect('/chat') // Direct to chat instead of dashboard
+  if (token) {
+    redirect('/chat') // Direct to chat if authenticated
   } else {
     redirect('/auth/login')
   }

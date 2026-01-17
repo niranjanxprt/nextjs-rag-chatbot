@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+// Mock Convex client for tests
 import { generateEmbeddings } from '@/lib/services/embeddings'
 import { searchSimilarChunks } from '@/lib/services/vector-search'
 import { processDocument } from '@/lib/services/document-processor'

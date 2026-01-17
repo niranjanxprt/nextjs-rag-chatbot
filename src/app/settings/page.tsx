@@ -318,7 +318,7 @@ export default function SettingsPage() {
                     <div className="space-y-2">
                       <Label>User ID</Label>
                       <Input
-                        value={user?.id || ''}
+                        value={user?._id || ''}
                         disabled
                         className="bg-muted font-mono text-xs"
                       />
@@ -328,8 +328,8 @@ export default function SettingsPage() {
                     <div className="space-y-2">
                       <Label>Account Created</Label>
                       <Input
-                        value={user?.created_at
-                          ? new Date(user.created_at).toLocaleDateString()
+                        value={(user as any)?.created_at
+                          ? new Date((user as any).created_at).toLocaleDateString()
                           : 'Unknown'}
                         disabled
                         className="bg-muted"

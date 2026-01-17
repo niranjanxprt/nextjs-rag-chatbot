@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     const convex = getConvexClient();
     
     // Call Convex auth to send OTP
-    await convex.mutation(api.auth.signIn, {
+    await convex.action(api.auth.signIn, {
       provider: "resend-otp",
       params: { email },
     });

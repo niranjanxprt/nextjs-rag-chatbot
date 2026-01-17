@@ -23,6 +23,7 @@ const AppLayout = dynamic(() => import('@/components/layouts/AppLayout').then(mo
 
 export default function ChatPage() {
   const [conversationId, setConversationId] = useState<string | undefined>()
+  const [isCreating, setIsCreating] = useState(false)
   const { data: conversationsData, isLoading, error } = useConversations()
   const createConversationMutation = useCreateConversation()
 
@@ -34,13 +35,16 @@ export default function ChatPage() {
 
   const handleNewConversation = async () => {
     try {
-      const newConversation = await createConversationMutation.mutateAsync({
+      setIsCreating(true)
+      const newConversationId = await createConversationMutation.mutateAsync({
         title: 'New Conversation',
         project_id: undefined, // Default to personal conversation
       })
-      setConversationId(newConversation.id)
+      setConversationId(newConversationId)
     } catch (error) {
       console.error('Failed to create conversation:', error)
+    } finally {
+      setIsCreating(false)
     }
   }
 
@@ -82,12 +86,13 @@ export default function ChatPage() {
 
   // Error state
   if (error) {
+    const errorMessage = typeof error === 'string' ? error : 'An error occurred'
     return (
       <AppLayout>
         <div className="h-full flex items-center justify-center">
           <div className="text-center">
             <h2 className="text-xl font-semibold text-red-600 mb-2">Error Loading Conversations</h2>
-            <p className="text-muted-foreground mb-4">{error.message}</p>
+            <p className="text-muted-foreground mb-4">{errorMessage}</p>
             <Button onClick={() => window.location.reload()}>
               Try Again
             </Button>
@@ -111,9 +116,9 @@ export default function ChatPage() {
               <Button 
                 size="sm" 
                 onClick={handleNewConversation}
-                disabled={createConversationMutation.isPending}
+                disabled={isCreating}
               >
-                {createConversationMutation.isPending ? (
+                {isCreating ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
                   <Plus className="w-4 h-4" />

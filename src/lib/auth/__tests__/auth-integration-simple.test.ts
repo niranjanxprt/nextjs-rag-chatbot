@@ -3,7 +3,7 @@
  * Tests Supabase connection and basic authentication flows
  */
 
-import { createClient } from '@/lib/supabase/client'
+// Convex client is used via hooks
 
 // Mock fetch responses for Supabase
 const mockFetch = global.fetch as jest.MockedFunction<typeof fetch>

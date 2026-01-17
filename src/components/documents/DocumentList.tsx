@@ -191,7 +191,7 @@ export function DocumentList({ className, onDocumentSelect, onDocumentDelete }: 
         }
 
         // Remove document from local state
-        setDocuments(prev => prev.filter(doc => doc.id !== documentId))
+        setDocuments(prev => prev.filter(doc => doc._id !== documentId))
         setTotalDocuments(prev => prev - 1)
 
         onDocumentDelete?.(documentId)
@@ -220,8 +220,8 @@ export function DocumentList({ className, onDocumentSelect, onDocumentDelete }: 
       // Update document status in local state
       setDocuments(prev =>
         prev.map(doc =>
-          doc.id === documentId
-            ? { ...doc, processing_status: 'processing', error_message: null }
+          doc._id === documentId
+            ? { ...doc, processing_status: 'processing', error_message: undefined }
             : doc
         )
       )
@@ -270,7 +270,7 @@ export function DocumentList({ className, onDocumentSelect, onDocumentDelete }: 
           `Are you sure you want to delete "${document.filename}"? This action cannot be undone.`
         )
       ) {
-        deleteDocument(document.id)
+        deleteDocument(document._id)
       }
     },
     [deleteDocument]
@@ -285,7 +285,7 @@ export function DocumentList({ className, onDocumentSelect, onDocumentDelete }: 
           `Reprocess "${document.filename}"? This will regenerate embeddings and may take a few minutes.`
         )
       ) {
-        reprocessDocument(document.id)
+        reprocessDocument(document._id)
       }
     },
     [reprocessDocument]
@@ -376,7 +376,7 @@ export function DocumentList({ className, onDocumentSelect, onDocumentDelete }: 
         <div className="space-y-3">
           {documents.map(document => (
             <Card
-              key={document.id}
+              key={document._id}
               className="cursor-pointer hover:shadow-md transition-shadow"
               onClick={() => handleDocumentClick(document)}
             >
@@ -389,8 +389,8 @@ export function DocumentList({ className, onDocumentSelect, onDocumentDelete }: 
                       <h3 className="font-medium truncate">{document.filename}</h3>
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <span>{formatFileSize(document.file_size)}</span>
-                        <span>{formatDate(document.created_at)}</span>
-                        {document.chunk_count > 0 && <span>{document.chunk_count} chunks</span>}
+                        <span>{formatDate(new Date(document.created_at).toISOString())}</span>
+                        {(document.chunk_count || 0) > 0 && <span>{document.chunk_count} chunks</span>}
                       </div>
                       {document.error_message && (
                         <p className="text-sm text-red-600 mt-1">{document.error_message}</p>

@@ -9,7 +9,7 @@ import { NextRequest } from 'next/server'
 import { POST as uploadHandler } from '../upload/route'
 import { POST as processHandler, GET as statusHandler } from '../[id]/process/route'
 import { DocumentProcessingStatus } from '@/lib/types/database'
-import { createClient } from '@/lib/supabase/server'
+import { extractSessionToken, getAuthenticatedConvexClient } from '@/lib/convex/client'
 import { getDocument, updateDocument, createDocumentChunks } from '@/lib/database/queries'
 import { processDocument } from '@/lib/services/document-processor'
 

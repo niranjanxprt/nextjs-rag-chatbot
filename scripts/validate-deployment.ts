@@ -299,7 +299,7 @@ class PreDeploymentValidator {
     Logger.step(5, 'Validating External Service Connections')
 
     const services = [
-      { name: 'Supabase', test: () => this.testSupabaseConnection() },
+      { name: 'Convex', test: () => this.testConvexConnection() },
       { name: 'OpenAI', test: () => this.testOpenAIConnection() },
       { name: 'Qdrant', test: () => this.testQdrantConnection() },
       { name: 'Upstash Redis', test: () => this.testRedisConnection() },
@@ -326,18 +326,13 @@ class PreDeploymentValidator {
     return allConnected
   }
 
-  async testSupabaseConnection(): Promise<boolean> {
-    const { createClient } = await import('@supabase/supabase-js')
-
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
-
+  async testConvexConnection(): Promise<boolean> {
     try {
-      const { error } = await supabase.from('profiles').select('count').limit(1)
-      // PGRST116 is "relation does not exist" which is OK for empty DB
-      return !error || error.code === 'PGRST116'
+      const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL
+      if (!convexUrl) return false
+      
+      const response = await fetch(convexUrl)
+      return response.ok || response.status === 404
     } catch (error) {
       return false
     }

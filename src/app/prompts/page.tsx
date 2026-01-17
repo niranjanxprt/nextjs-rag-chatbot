@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Plus, Search, BookOpen, Loader2 } from 'lucide-react'
+import { Id } from '../../../convex/_generated/dataModel'
 
 // Dynamically import AppLayout to avoid SSR issues
 const AppLayout = dynamic(() => import('@/components/layouts/AppLayout').then(mod => ({ default: mod.AppLayout })), {
@@ -43,6 +44,7 @@ export default function PromptsPage() {
   const [editingPrompt, setEditingPrompt] = useState<any>(null)
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
+  const [isSaving, setIsSaving] = useState(false)
 
   // Filter prompts
   const filteredPrompts = useMemo(() => {
@@ -65,17 +67,21 @@ export default function PromptsPage() {
 
   const handleCreatePrompt = async (data: any) => {
     try {
+      setIsSaving(true)
       await createPromptMutation.mutateAsync(data)
       setShowEditor(false)
       setEditingPrompt(null)
     } catch (error) {
       console.error('Failed to create prompt:', error)
       throw error
+    } finally {
+      setIsSaving(false)
     }
   }
 
   const handleUpdatePrompt = async (data: any) => {
     try {
+      setIsSaving(true)
       if (editingPrompt?.id) {
         await updatePromptMutation.mutateAsync({ id: editingPrompt.id, data })
         setShowEditor(false)
@@ -84,12 +90,14 @@ export default function PromptsPage() {
     } catch (error) {
       console.error('Failed to update prompt:', error)
       throw error
+    } finally {
+      setIsSaving(false)
     }
   }
 
   const handleDeletePrompt = async (id: string) => {
     try {
-      await deletePromptMutation.mutateAsync(id)
+      await deletePromptMutation.mutateAsync(id as Id<"prompts">)
     } catch (error) {
       console.error('Failed to delete prompt:', error)
       throw error
@@ -145,12 +153,13 @@ export default function PromptsPage() {
 
   // Error state
   if (error) {
+    const errorMessage = typeof error === 'string' ? error : 'An error occurred'
     return (
       <AppLayout>
         <div className="flex-1 flex flex-col items-center justify-center p-6">
           <div className="text-center">
             <h2 className="text-xl font-semibold text-red-600 mb-2">Error Loading Prompts</h2>
-            <p className="text-muted-foreground mb-4">{error.message}</p>
+            <p className="text-muted-foreground mb-4">{errorMessage}</p>
             <Button onClick={() => window.location.reload()}>
               Try Again
             </Button>
@@ -270,12 +279,12 @@ export default function PromptsPage() {
             )}
 
             {/* Loading State */}
-            {(createPromptMutation.isPending || updatePromptMutation.isPending) && (
+            {isSaving && (
               <div className="flex items-center justify-center py-4">
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Loader2 className="w-4 h-4 animate-spin" />
                   <span>
-                    {createPromptMutation.isPending ? 'Creating prompt...' : 'Updating prompt...'}
+                    {editingPrompt ? 'Updating prompt...' : 'Creating prompt...'}
                   </span>
                 </div>
               </div>

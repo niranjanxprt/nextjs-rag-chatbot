@@ -45,8 +45,8 @@ export async function GET(request: NextRequest) {
     // Apply client-side pagination and sorting
     // Note: In production, this should be done server-side in Convex
     const sortedDocs = [...documents].sort((a, b) => {
-      const aVal = a[validatedParams.sortBy as keyof typeof a]
-      const bVal = b[validatedParams.sortBy as keyof typeof b]
+      const aVal = a[validatedParams.sortBy as keyof typeof a] || ''
+      const bVal = b[validatedParams.sortBy as keyof typeof b] || ''
       const order = validatedParams.sortOrder === 'asc' ? 1 : -1
       return aVal > bVal ? order : -order
     })

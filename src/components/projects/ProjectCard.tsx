@@ -42,7 +42,7 @@ export function ProjectCard({
 
     setIsDeleting(true)
     try {
-      await onDelete?.(project.id)
+      await onDelete?.(project._id)
     } catch (error) {
       console.error('Failed to delete project:', error)
       alert('Failed to delete project')
@@ -162,7 +162,7 @@ export function ProjectCard({
         onOpenChange={setShowEditDialog}
         project={project}
         onSubmit={async (data) => {
-          await onUpdate?.(project.id, data)
+          await onUpdate?.(project._id, data)
           setShowEditDialog(false)
         }}
       />

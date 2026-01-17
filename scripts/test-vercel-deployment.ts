@@ -193,9 +193,9 @@ async function testEnvironmentVariables(): Promise<void> {
 
   // Check required environment variables
   const requiredVars = [
-    'NEXT_PUBLIC_SUPABASE_URL',
-    'NEXT_PUBLIC_SUPABASE_ANON_KEY',
-    'SUPABASE_SERVICE_ROLE_KEY',
+    'NEXT_PUBLIC_CONVEX_URL',
+    'CONVEX_DEPLOYMENT',
+    'CONVEX_TOKEN',
     'OPENAI_API_KEY',
     'QDRANT_URL',
     'QDRANT_API_KEY',
@@ -219,8 +219,8 @@ async function testEnvironmentVariables(): Promise<void> {
   }
 }
 
-async function testSupabaseConnection(): Promise<void> {
-  console.log('\n🗄️  Testing Supabase Connection...')
+async function testConvexConnection(): Promise<void> {
+  console.log('\n🗄️  Testing Convex Connection...')
 
   // Read environment variables from .env.local
   const envFile = path.join(process.cwd(), '.env.local')
@@ -241,9 +241,9 @@ async function testSupabaseConnection(): Promise<void> {
 
   // Create a simple test to verify Supabase connection
   const testScript = `
-    const { createClient } = require('@supabase/supabase-js');
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const { createClient } = require('convex/browser');
+    const url = process.env.NEXT_PUBLIC_CONVEX_URL;
+    const key = process.env.CONVEX_DEPLOYMENT;
     
     if (!url || !key) {
       console.error('Missing Supabase credentials');
@@ -314,7 +314,7 @@ async function runTests(): Promise<void> {
   try {
     await testVercelCLIInstallation()
     await testEnvironmentVariables()
-    await testSupabaseConnection()
+    await testConvexConnection()
     await testLocalBuild()
     await testVercelDevServer()
     await testProductionDeployment()
@@ -350,6 +350,6 @@ export {
   testVercelDevServer,
   testAuthenticationEndpoints,
   testEnvironmentVariables,
-  testSupabaseConnection,
+  testConvexConnection,
   testProductionDeployment,
 }

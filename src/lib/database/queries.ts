@@ -5,7 +5,7 @@
  * type safety, and performance optimizations
  */
 
-import { createClient } from '@/lib/supabase/server'
+import { getConvexClient } from '@/lib/convex/client'
 import type {
   Database,
   Profile,

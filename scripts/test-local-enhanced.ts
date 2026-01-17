@@ -83,18 +83,16 @@ async function main(): Promise<void> {
   // Step 6: External service connections
   log('\n🔌 Testing External Services...', 'bold')
 
-  // Test Supabase
+  // Test Convex
   results.push(
-    await testServiceConnection('Supabase', async () => {
+    await testServiceConnection('Convex', async () => {
       try {
-        const { createClient } = await import('@supabase/supabase-js')
-        const supabase = createClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        )
-        // Just try to list tables to verify connection
-        const { error } = await (supabase as any).from('profiles').select('count').limit(1)
-        return !error
+        const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL
+        if (!convexUrl) return false
+        
+        // Simple fetch test to verify Convex is accessible
+        const response = await fetch(convexUrl)
+        return response.ok || response.status === 404 // 404 is ok, means server is up
       } catch (error) {
         return false
       }

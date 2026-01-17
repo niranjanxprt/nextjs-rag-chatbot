@@ -27,7 +27,7 @@ export function ConversationSidebar({
   // Filter conversations by current project
   const filteredConversations = conversations.filter(
     (conv) =>
-      (!currentProject || conv.project_id === currentProject.id) &&
+      (!currentProject || conv.project_id === currentProject._id) &&
       (search === '' || conv.title?.toLowerCase().includes(search.toLowerCase()))
   )
 
@@ -39,7 +39,7 @@ export function ConversationSidebar({
     setIsCreating(true)
     try {
       const newConversation = await createConversation()
-      onSelectConversation?.(newConversation.id)
+      onSelectConversation?.(newConversation._id)
     } catch (error) {
       console.error('Failed to create conversation:', error)
     } finally {
@@ -84,12 +84,12 @@ export function ConversationSidebar({
               <div className="space-y-1">
                 {pinnedConversations.map((conversation) => (
                   <ConversationItem
-                    key={conversation.id}
+                    key={conversation._id}
                     conversation={conversation}
-                    isActive={currentConversation?.id === conversation.id}
-                    onSelect={() => onSelectConversation?.(conversation.id)}
-                    onPin={() => pinConversation(conversation.id, false)}
-                    onDelete={() => deleteConversation(conversation.id)}
+                    isActive={currentConversation?._id === conversation._id}
+                    onSelect={() => onSelectConversation?.(conversation._id)}
+                    onPin={() => pinConversation(conversation._id, false)}
+                    onDelete={() => deleteConversation(conversation._id)}
                   />
                 ))}
               </div>
@@ -105,12 +105,12 @@ export function ConversationSidebar({
               <div className="space-y-1">
                 {recentConversations.map((conversation) => (
                   <ConversationItem
-                    key={conversation.id}
+                    key={conversation._id}
                     conversation={conversation}
-                    isActive={currentConversation?.id === conversation.id}
-                    onSelect={() => onSelectConversation?.(conversation.id)}
-                    onPin={() => pinConversation(conversation.id, true)}
-                    onDelete={() => deleteConversation(conversation.id)}
+                    isActive={currentConversation?._id === conversation._id}
+                    onSelect={() => onSelectConversation?.(conversation._id)}
+                    onPin={() => pinConversation(conversation._id, true)}
+                    onDelete={() => deleteConversation(conversation._id)}
                   />
                 ))}
               </div>

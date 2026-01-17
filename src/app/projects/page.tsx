@@ -8,6 +8,7 @@ import { CreateProjectDialog } from '@/components/projects/CreateProjectDialog'
 import { Button } from '@/components/ui/button'
 import { Plus, Folder, Loader2 } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Id } from '../../../convex/_generated/dataModel'
 
 // Dynamically import AppLayout to avoid SSR issues
 const AppLayout = dynamic(() => import('@/components/layouts/AppLayout').then(mod => ({ default: mod.AppLayout })), {
@@ -40,7 +41,7 @@ export default function ProjectsPage() {
 
   const handleUpdateProject = async (id: string, data: any) => {
     try {
-      await updateProjectMutation.mutateAsync({ id, data })
+      await updateProjectMutation.mutateAsync({ id: id as Id<"projects">, data })
     } catch (error) {
       console.error('Failed to update project:', error)
       throw error
@@ -49,7 +50,7 @@ export default function ProjectsPage() {
 
   const handleDeleteProject = async (id: string) => {
     try {
-      await deleteProjectMutation.mutateAsync(id)
+      await deleteProjectMutation.mutateAsync(id as Id<"projects">)
     } catch (error) {
       console.error('Failed to delete project:', error)
       throw error
@@ -99,12 +100,13 @@ export default function ProjectsPage() {
 
   // Error state
   if (error) {
+    const errorMessage = typeof error === 'string' ? error : 'An error occurred'
     return (
       <AppLayout>
         <div className="flex-1 flex flex-col items-center justify-center p-6">
           <div className="text-center">
             <h2 className="text-xl font-semibold text-red-600 mb-2">Error Loading Projects</h2>
-            <p className="text-muted-foreground mb-4">{error.message}</p>
+            <p className="text-muted-foreground mb-4">{errorMessage}</p>
             <Button onClick={() => window.location.reload()}>
               Try Again
             </Button>
@@ -148,7 +150,7 @@ export default function ProjectsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {projects.map((project) => (
                     <ProjectCard
-                      key={project.id}
+                      key={project._id}
                       project={project}
                       onUpdate={handleUpdateProject}
                       onDelete={handleDeleteProject}

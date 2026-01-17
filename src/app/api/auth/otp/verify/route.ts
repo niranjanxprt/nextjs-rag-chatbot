@@ -38,33 +38,37 @@ export async function POST(request: NextRequest) {
     const convex = getConvexClient();
     
     // Verify OTP and get session token
-    const result = await convex.mutation(api.auth.signIn, {
+    const result = await convex.action(api.auth.signIn, {
       provider: "resend-otp",
       params: { email, code },
     });
     
-    if (!result || !result.token) {
+    if (!result || !result.tokens) {
       return NextResponse.json(
         { error: "Invalid or expired verification code" },
         { status: 401 }
       );
     }
     
+    // Extract token from result
+    const sessionToken = (result.tokens as any)?.token;
+    
     // Create response with session token
     const response = NextResponse.json({
       success: true,
-      token: result.token,
-      user: result.user,
+      token: sessionToken,
     });
     
     // Set session token in cookie
-    response.cookies.set("convex_token", result.token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 30, // 30 days
-      path: "/",
-    });
+    if (sessionToken) {
+      response.cookies.set("convex_token", sessionToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 30, // 30 days
+        path: "/",
+      });
+    }
     
     return response;
   } catch (error) {

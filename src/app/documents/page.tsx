@@ -23,7 +23,7 @@ const AppLayout = dynamic(() => import('@/components/layouts/AppLayout').then(mo
 })
 
 export default function DocumentsPage() {
-  const { data: documentsData, isLoading, error, refetch } = useDocuments()
+  const { data: documentsData, isLoading, error } = useDocuments()
   const [activeTab, setActiveTab] = useState('list')
 
   const documents = documentsData?.documents || []
@@ -31,8 +31,7 @@ export default function DocumentsPage() {
 
   const handleUploadComplete = (documentId: string) => {
     console.log('Document uploaded:', documentId)
-    // Refetch documents and switch to list tab
-    refetch()
+    // Convex queries are reactive and will automatically update
     setActiveTab('list')
   }
 
@@ -77,14 +76,15 @@ export default function DocumentsPage() {
 
   // Error state
   if (error) {
+    const errorMessage = typeof error === 'string' ? error : 'An error occurred'
     return (
       <AppLayout>
         <div className="container mx-auto py-6 px-6">
           <div className="flex flex-col items-center justify-center py-12">
             <div className="text-center">
               <h2 className="text-xl font-semibold text-red-600 mb-2">Error Loading Documents</h2>
-              <p className="text-muted-foreground mb-4">{error.message}</p>
-              <Button onClick={() => refetch()}>
+              <p className="text-muted-foreground mb-4">{errorMessage}</p>
+              <Button onClick={() => window.location.reload()}>
                 Try Again
               </Button>
             </div>

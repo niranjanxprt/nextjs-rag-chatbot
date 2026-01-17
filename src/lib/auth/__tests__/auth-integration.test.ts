@@ -8,7 +8,7 @@
  * **Validates: Requirements 2.1, 2.4, 2.5, 9.5**
  */
 
-import { createClient } from '@/lib/supabase/client'
+// Convex client is used via hooks
 
 describe('Authentication Integration Tests', () => {
   let supabaseClient: ReturnType<typeof createClient>
