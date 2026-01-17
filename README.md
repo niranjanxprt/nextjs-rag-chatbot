@@ -83,7 +83,29 @@ npx convex dev
 
 # Start Next.js frontend (in another terminal)
 npm run dev
+
+# Code quality checks
+npm run lint        # ESLint
+npm run knip        # Dead code analysis
+npm test            # Run tests
 ```
+
+## Code Quality
+
+This project maintains high code quality standards:
+
+- ✅ **Zero ESLint warnings/errors**
+- ✅ **Zero security vulnerabilities** (npm audit)
+- ✅ **Knip analysis** - No unused files, minimal unused exports
+- ✅ **TypeScript strict mode** - Full type safety
+- ✅ **Optimized bundle** - 318 kB First Load JS
+
+### Recent Refactoring (Jan 2026)
+
+- Removed 44 unused files (~8,000+ lines)
+- Cleaned up all Supabase migration artifacts
+- 9% bundle size reduction
+- See [KNIP_FINAL_ANALYSIS.md](./KNIP_FINAL_ANALYSIS.md) for details
 
 ## Deployment
 
