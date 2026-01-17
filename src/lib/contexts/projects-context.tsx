@@ -7,11 +7,14 @@
 'use client'
 
 import React, { createContext, useContext, useState, useEffect } from 'react'
-import type { Project, ProjectInsert, ProjectUpdate } from '@/lib/types/database'
+import type { Project } from '@/lib/types/database'
 
 // =============================================================================
 // Types
 // =============================================================================
+
+type ProjectInsert = Omit<Project, '_id' | '_creationTime' | 'user_id' | 'created_at' | 'updated_at'>
+type ProjectUpdate = Partial<ProjectInsert>
 
 interface ProjectsContextType {
   projects: Project[]
@@ -59,7 +62,7 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
 
       // Restore current project from localStorage or use default
       const storedId = localStorage.getItem('currentProjectId')
-      const currentFromStorage = fetchedProjects.find((p: Project) => p.id === storedId)
+      const currentFromStorage = fetchedProjects.find((p: Project) => p._id === storedId)
       const defaultProject = fetchedProjects.find((p: Project) => p.is_default)
       const fallback = fetchedProjects[0] || null
 
@@ -79,7 +82,7 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
   }
 
   function setCurrentProject(id: string) {
-    const project = projects.find(p => p.id === id)
+    const project = projects.find(p => p._id === id)
     if (project) {
       setCurrentProjectState(project)
       localStorage.setItem('currentProjectId', id)
@@ -136,10 +139,10 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
       const result = await response.json()
       const updated = result.project
 
-      setProjects(prev => prev.map(p => (p.id === id ? updated : p)))
+      setProjects(prev => prev.map(p => (p._id === id ? updated : p)))
 
       // Update current project if it was modified
-      if (currentProject?.id === id) {
+      if (currentProject?._id === id) {
         setCurrentProjectState(updated)
       }
 
@@ -156,7 +159,7 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
       setError(null)
 
       // Prevent deleting default project
-      const projectToDelete = projects.find(p => p.id === id)
+      const projectToDelete = projects.find(p => p._id === id)
       if (projectToDelete?.is_default) {
         throw new Error('Cannot delete the default project')
       }
@@ -170,16 +173,16 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
         throw new Error(errorData.message || `Failed to delete project`)
       }
 
-      setProjects(prev => prev.filter(p => p.id !== id))
+      setProjects(prev => prev.filter(p => p._id !== id))
 
       // Switch to another project if current was deleted
-      if (currentProject?.id === id) {
-        const defaultProject = projects.find(p => p.is_default && p.id !== id)
-        const fallback = projects.find(p => p.id !== id)
+      if (currentProject?._id === id) {
+        const defaultProject = projects.find(p => p.is_default && p._id !== id)
+        const fallback = projects.find(p => p._id !== id)
         const toSet = defaultProject || fallback || null
         setCurrentProjectState(toSet)
         if (toSet) {
-          localStorage.setItem('currentProjectId', toSet.id)
+          localStorage.setItem('currentProjectId', toSet._id)
         }
       }
     } catch (err) {

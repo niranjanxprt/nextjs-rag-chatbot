@@ -91,7 +91,7 @@ export function useCreatePrompt() {
           title: data.name,
           content: data.content,
           category: data.category,
-          is_public: data.is_public,
+          is_public: data.is_public ?? false,
         })
         toast.success('Prompt created successfully')
         return id
@@ -105,7 +105,7 @@ export function useCreatePrompt() {
         title: data.name,
         content: data.content,
         category: data.category,
-        is_public: data.is_public,
+        is_public: data.is_public ?? false,
       })
       toast.success('Prompt created successfully')
       return id

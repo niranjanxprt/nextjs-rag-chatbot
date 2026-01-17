@@ -41,7 +41,7 @@ export function PromptCard({
 
     setIsDeleting(true)
     try {
-      await onDelete?.(prompt.id)
+      await onDelete?.(prompt._id)
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Failed to delete prompt:', error)
@@ -82,7 +82,7 @@ export function PromptCard({
             variant="ghost"
             size="sm"
             className="h-8 w-8 p-0"
-            onClick={() => onFavorite?.(prompt.id, !prompt.is_favorite)}
+            onClick={() => onFavorite?.(prompt._id, !prompt.is_favorite)}
             title={prompt.is_favorite ? 'Remove from favorites' : 'Add to favorites'}
           >
             <Star
@@ -109,7 +109,7 @@ export function PromptCard({
           <div className="text-xs space-y-1">
             <p className="font-semibold text-muted-foreground">Variables:</p>
             <div className="flex flex-wrap gap-1">
-              {prompt.variables.map((variable, idx) => (
+              {prompt.variables.map((variable: string, idx: number) => (
                 <Badge key={idx} variant="secondary" className="text-xs">
                   {variable}
                 </Badge>

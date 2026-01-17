@@ -233,11 +233,10 @@ export function useKnowledgeBases(params: {
   return useQuery({
     queryKey: queryKeys.knowledgeBases,
     queryFn: () => knowledgeBaseApi.getKnowledgeBases(params),
-    enabled: !!user?.id,
+    enabled: !!user?._id,
     staleTime: 5 * 60 * 1000, // 5 minutes
   })
 }
-
 export function useKnowledgeBase(id: string) {
   return useQuery({
     queryKey: queryKeys.knowledgeBase(id),

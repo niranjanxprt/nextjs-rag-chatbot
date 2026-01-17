@@ -299,9 +299,9 @@ export function useUserInvitations() {
   const { user } = useAuth()
   
   return useQuery({
-    queryKey: queryKeys.userInvitations(user?.id || ''),
+    queryKey: queryKeys.userInvitations(user?._id || ''),
     queryFn: membersApi.getUserInvitations,
-    enabled: !!user?.id,
+    enabled: !!user?._id,
     staleTime: 1 * 60 * 1000,
   })
 }
@@ -330,7 +330,7 @@ export function useAcceptInvitation() {
       
       // Remove from user invitations
       queryClient.setQueryData<ProjectInvitation[]>(
-        queryKeys.userInvitations(user!.id),
+        queryKeys.userInvitations(user!._id),
         (old) => {
           if (!old) return old
           return old.filter(inv => inv.project_id !== result.project.id)
@@ -354,7 +354,7 @@ export function useDeclineInvitation() {
     onSuccess: (_, token) => {
       // Remove from user invitations
       queryClient.setQueryData<ProjectInvitation[]>(
-        queryKeys.userInvitations(user!.id),
+        queryKeys.userInvitations(user!._id),
         (old) => {
           if (!old) return old
           return old.filter(inv => inv.token !== token)
@@ -398,7 +398,7 @@ export function useCurrentUserRole(projectId: string) {
   const { user } = useAuth()
   const { data: members } = useProjectMembers(projectId)
   
-  const currentMember = members?.find(member => member.user_id === user?.id)
+  const currentMember = members?.find(member => member.user_id === user?._id)
   
   return {
     role: currentMember?.role,

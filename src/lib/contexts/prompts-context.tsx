@@ -7,12 +7,14 @@
 'use client'
 
 import React, { createContext, useContext, useState, useEffect } from 'react'
-import type { Prompt, PromptInsert, PromptUpdate } from '@/lib/types/database'
+import type { Prompt } from '@/lib/types/database'
 
 // =============================================================================
 // Types
 // =============================================================================
 
+type PromptInsert = Omit<Prompt, '_id' | '_creationTime' | 'user_id' | 'created_at' | 'updated_at' | 'usage_count'>
+type PromptUpdate = Partial<PromptInsert>
 interface PromptsContextType {
   prompts: Prompt[]
   isLoading: boolean
@@ -114,7 +116,7 @@ export function PromptsProvider({ children }: { children: React.ReactNode }) {
       const result = await response.json()
       const updated = result.prompt
 
-      setPrompts(prev => prev.map(p => (p.id === id ? updated : p)))
+      setPrompts(prev => prev.map(p => (p._id === id ? updated : p)))
 
       return updated
     } catch (err) {
@@ -137,7 +139,7 @@ export function PromptsProvider({ children }: { children: React.ReactNode }) {
         throw new Error(errorData.message || 'Failed to delete prompt')
       }
 
-      setPrompts(prev => prev.filter(p => p.id !== id))
+      setPrompts(prev => prev.filter(p => p._id !== id))
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to delete prompt'
       setError(message)
@@ -146,7 +148,7 @@ export function PromptsProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function toggleFavorite(id: string): Promise<Prompt> {
-    const prompt = prompts.find(p => p.id === id)
+    const prompt = prompts.find(p => p._id === id)
     if (!prompt) throw new Error('Prompt not found')
 
     return updatePrompt(id, {
@@ -155,7 +157,7 @@ export function PromptsProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function usePrompt(id: string): Promise<Prompt> {
-    const prompt = prompts.find(p => p.id === id)
+    const prompt = prompts.find(p => p._id === id)
     if (!prompt) throw new Error('Prompt not found')
 
     // Increment usage counter via the /use endpoint
@@ -173,7 +175,7 @@ export function PromptsProvider({ children }: { children: React.ReactNode }) {
       const result = await response.json()
       const updated = result.prompt
 
-      setPrompts(prev => prev.map(p => (p.id === id ? updated : p)))
+      setPrompts(prev => prev.map(p => (p._id === id ? updated : p)))
 
       return updated
     } catch (err) {

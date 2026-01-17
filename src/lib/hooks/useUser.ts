@@ -50,9 +50,8 @@ export function useUpdateProfile() {
     mutate: async (updates: UpdateProfileData) => {
       try {
         await updateMutation({
-          full_name: updates.full_name,
+          name: updates.full_name,
           avatar_url: updates.avatar_url,
-          bio: updates.bio,
         })
         toast.success('Profile updated successfully')
       } catch (error: any) {
@@ -62,9 +61,8 @@ export function useUpdateProfile() {
     },
     mutateAsync: async (updates: UpdateProfileData) => {
       await updateMutation({
-        full_name: updates.full_name,
+        name: updates.full_name,
         avatar_url: updates.avatar_url,
-        bio: updates.bio,
       })
       toast.success('Profile updated successfully')
     },

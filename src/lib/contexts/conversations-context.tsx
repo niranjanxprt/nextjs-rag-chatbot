@@ -71,7 +71,7 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
 
       // Restore current conversation from localStorage or use first
       const storedId = localStorage.getItem('currentConversationId')
-      const currentFromStorage = sorted.find((c: Conversation) => c.id === storedId)
+      const currentFromStorage = sorted.find((c: Conversation) => c._id === storedId)
       const toSet = currentFromStorage || sorted[0] || null
 
       setCurrentConversationState(toSet)
@@ -89,7 +89,7 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
   }
 
   function setCurrentConversation(id: string) {
-    const conversation = conversations.find(c => c.id === id)
+    const conversation = conversations.find(c => c._id === id)
     if (conversation) {
       setCurrentConversationState(conversation)
       localStorage.setItem('currentConversationId', id)
@@ -159,7 +159,7 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
 
       // Re-sort conversations
       setConversations(prev => {
-        const filtered = prev.filter(c => c.id !== id)
+        const filtered = prev.filter(c => c._id !== id)
         const newList = [...filtered, updated]
         return newList.sort((a, b) => {
           if (a.is_pinned && !b.is_pinned) return -1
@@ -171,7 +171,7 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
       })
 
       // Update current conversation if it was modified
-      if (currentConversation?.id === id) {
+      if (currentConversation?._id === id) {
         setCurrentConversationState(updated)
       }
 
@@ -184,7 +184,7 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
   }
 
   async function pinConversation(id: string, pinned: boolean): Promise<Conversation> {
-    const conversation = conversations.find(c => c.id === id)
+    const conversation = conversations.find(c => c._id === id)
     if (!conversation) {
       throw new Error('Conversation not found')
     }
@@ -204,14 +204,14 @@ export function ConversationsProvider({ children }: { children: React.ReactNode 
         throw new Error(errorData.message || 'Failed to delete conversation')
       }
 
-      setConversations(prev => prev.filter(c => c.id !== id))
+      setConversations(prev => prev.filter(c => c._id !== id))
 
       // Switch to another conversation if current was deleted
-      if (currentConversation?.id === id) {
-        const next = conversations.find(c => c.id !== id)
+      if (currentConversation?._id === id) {
+        const next = conversations.find(c => c._id !== id)
         setCurrentConversationState(next || null)
         if (next) {
-          localStorage.setItem('currentConversationId', next.id)
+          localStorage.setItem('currentConversationId', next._id)
         } else {
           localStorage.removeItem('currentConversationId')
         }

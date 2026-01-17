@@ -42,10 +42,17 @@ export function useDocuments(params: {
   project_id?: Id<"projects">
   status?: string
 } = {}) {
-  const documents = useQuery(api.queries.documents.list, params.project_id ? { projectId: params.project_id } : {})
+  const documents = useQuery(api.queries.documents.list)
+  
+  // Filter client-side if needed
+  const filteredDocuments = documents?.filter(doc => {
+    if (params.project_id && doc.project_id !== params.project_id) return false
+    if (params.status && doc.processing_status !== params.status) return false
+    return true
+  })
   
   return {
-    data: documents ? { documents, total: documents.length } : undefined,
+    data: filteredDocuments ? { documents: filteredDocuments, total: filteredDocuments.length } : undefined,
     isLoading: documents === undefined,
     error: null,
   }
