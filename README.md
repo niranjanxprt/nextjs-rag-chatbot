@@ -2,7 +2,7 @@
 
 🏆 **Dynamous Kiro Hackathon 2026 Submission**
 
-A production-grade retrieval-augmented generation (RAG) chatbot built with Next.js 15, Supabase, OpenAI, and Qdrant. Upload documents, perform semantic search, and chat with AI using your own data.
+A production-grade retrieval-augmented generation (RAG) chatbot built with Next.js 15, Convex, OpenAI, and Qdrant. Upload documents, perform semantic search, and chat with AI using your own data.
 
 ## Quick Start
 
@@ -12,7 +12,8 @@ cd nextjs-rag-chatbot
 npm install
 cp .env.example .env.local
 # Add your API keys to .env.local
-npm run dev
+npx convex dev  # Start Convex backend
+npm run dev     # Start Next.js frontend
 ```
 
 ## Key Features
@@ -20,17 +21,36 @@ npm run dev
 - 📄 **Document Management** - Upload PDF, TXT, Markdown files
 - 🔍 **Semantic Search** - Vector similarity search with Qdrant
 - 💬 **RAG Chat** - AI responses using document context
-- 🔐 **Authentication** - Passwordless magic link login
-- ⚡ **Real-time Streaming** - Live chat responses
+- 🔐 **Authentication** - Passwordless magic link and OTP login
+- ⚡ **Real-time Updates** - Live data synchronization with Convex
 - 🎨 **Modern UI** - Shadcn components with Tailwind CSS
 
 ## Tech Stack
 
 - **Frontend**: Next.js 15, React 19, TypeScript
-- **Backend**: Supabase PostgreSQL, OpenAI GPT-4
+- **Backend**: Convex (Database + Auth + Storage)
+- **AI**: OpenAI GPT-4 + Embeddings
 - **Vector DB**: Qdrant Cloud
-- **Caching**: Upstash Redis
-- **Deployment**: Vercel
+- **Email**: Resend
+- **Deployment**: Vercel + Convex Cloud
+
+## Environment Variables
+
+```bash
+# Convex
+CONVEX_DEPLOYMENT=your-convex-deployment-url
+NEXT_PUBLIC_CONVEX_URL=your-convex-url
+
+# Authentication
+AUTH_RESEND_KEY=your-resend-api-key
+
+# OpenAI
+OPENAI_API_KEY=your-openai-api-key
+
+# Qdrant (optional - for vector search)
+QDRANT_URL=your-qdrant-url
+QDRANT_API_KEY=your-qdrant-api-key
+```
 
 ## Documentation
 
@@ -44,9 +64,32 @@ npm run dev
 ## Architecture
 
 ```
-Document Upload → PDF Parsing → Text Chunking → Embeddings → Vector Storage
+Document Upload → PDF Parsing → Text Chunking → Embeddings → Convex Storage
 User Query → Semantic Search → Context Retrieval → AI Chat → Streaming Response
 ```
+
+## Convex Setup
+
+1. **Install Convex CLI**: `npm install -g convex`
+2. **Initialize Convex**: `npx convex dev`
+3. **Deploy Functions**: Functions auto-deploy on save
+4. **Configure Auth**: Set up Resend for magic links and OTP
+
+## Development
+
+```bash
+# Start Convex backend (in one terminal)
+npx convex dev
+
+# Start Next.js frontend (in another terminal)
+npm run dev
+```
+
+## Deployment
+
+1. **Deploy Convex**: `npx convex deploy`
+2. **Deploy to Vercel**: Connect your GitHub repo
+3. **Set Environment Variables**: Add Convex URLs and API keys
 
 ## License
 
