@@ -3,24 +3,17 @@ import { z } from 'zod'
 // Client-side environment variables (available in browser)
 const clientEnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  // Convex (new backend)
+  // Convex
   NEXT_PUBLIC_CONVEX_URL: z.string().url('Invalid Convex URL'),
-  // Supabase (deprecated - will be removed after migration)
-  NEXT_PUBLIC_SUPABASE_URL: z.string().url('Invalid Supabase URL').optional(),
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1, 'Supabase anon key is required').optional(),
 })
 
 // Server-side environment variables (only available on server)
 const serverEnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  // Convex (new backend)
+  // Convex
   NEXT_PUBLIC_CONVEX_URL: z.string().url('Invalid Convex URL'),
   CONVEX_DEPLOYMENT: z.string().min(1, 'Convex deployment is required'),
   CONVEX_TOKEN: z.string().optional(), // Optional - for server-side operations
-  // Supabase (deprecated - will be removed after migration)
-  NEXT_PUBLIC_SUPABASE_URL: z.string().url('Invalid Supabase URL').optional(),
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1, 'Supabase anon key is required').optional(),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'Supabase service role key is required').optional(),
   // OpenAI
   OPENAI_API_KEY: z.string().min(1, 'OpenAI API key is required'),
   // Qdrant
@@ -31,7 +24,7 @@ const serverEnvSchema = z.object({
   UPSTASH_REDIS_REST_URL: z.string().url('Invalid Upstash Redis URL'),
   UPSTASH_REDIS_REST_TOKEN: z.string().min(1, 'Upstash Redis token is required'),
   // Resend (for Convex Auth)
-  AUTH_RESEND_KEY: z.string().optional(), // Will be required once auth is implemented
+  AUTH_RESEND_KEY: z.string().min(1, 'Resend API key is required for authentication'),
   // Langfuse (optional)
   LANGFUSE_PUBLIC_KEY: z.string().optional(),
   LANGFUSE_SECRET_KEY: z.string().optional(),
@@ -46,8 +39,6 @@ function validateClientEnv(): ClientEnv {
     return clientEnvSchema.parse({
       NODE_ENV: process.env.NODE_ENV,
       NEXT_PUBLIC_CONVEX_URL: process.env.NEXT_PUBLIC_CONVEX_URL,
-      NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     })
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -67,9 +58,6 @@ function validateServerEnv(): ServerEnv {
       NEXT_PUBLIC_CONVEX_URL: process.env.NEXT_PUBLIC_CONVEX_URL,
       CONVEX_DEPLOYMENT: process.env.CONVEX_DEPLOYMENT,
       CONVEX_TOKEN: process.env.CONVEX_TOKEN,
-      NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-      SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
       OPENAI_API_KEY: process.env.OPENAI_API_KEY,
       QDRANT_URL: process.env.QDRANT_URL,
       QDRANT_API_KEY: process.env.QDRANT_API_KEY,
@@ -102,8 +90,6 @@ export function getClientEnv(): ClientEnv {
   return {
     NODE_ENV: (process.env.NODE_ENV as 'development' | 'production' | 'test') || 'development',
     NEXT_PUBLIC_CONVEX_URL: process.env.NEXT_PUBLIC_CONVEX_URL || '',
-    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   }
 }
 
