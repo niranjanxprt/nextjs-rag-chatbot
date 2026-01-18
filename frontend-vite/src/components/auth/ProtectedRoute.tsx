@@ -1,11 +1,15 @@
-import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import { Navigate, useLocation } from 'react-router-dom'
+import { useAuth } from '@/contexts/AuthContext'
 
 interface ProtectedRouteProps {
-  children: React.ReactNode;
+  children: React.ReactNode
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
+  // AUTH DISABLED - Allow access to all routes without authentication
+  return <>{children}</>
+
+  /* ORIGINAL AUTH CODE - DISABLED
   const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
 
@@ -23,4 +27,5 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   }
 
   return <>{children}</>;
+  */
 }

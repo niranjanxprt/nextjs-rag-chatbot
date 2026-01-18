@@ -48,8 +48,8 @@ class MockConvexContext {
           const table = this.mockDatabase.get(tableName)
           if (!table) return null
 
-          // For by_email index, find user by email
-          if (indexName === 'by_email' && this.authenticatedUser) {
+          // For email index, find user by email
+          if (indexName === 'email' && this.authenticatedUser) {
             for (const record of table.values()) {
               if (record.email === this.authenticatedUser.email) {
                 return record
@@ -341,7 +341,7 @@ class MockMutationFunctions {
         throw new Error('Unauthorized: Authentication required')
       }
 
-      const user = await this.ctx.db.query('users').withIndex('by_email').first()
+      const user = await this.ctx.db.query('users').withIndex('email').first()
       if (!user) {
         throw new Error('User not found')
       }
@@ -371,7 +371,7 @@ class MockMutationFunctions {
         throw new Error('Document not found')
       }
 
-      const user = await this.ctx.db.query('users').withIndex('by_email').first()
+      const user = await this.ctx.db.query('users').withIndex('email').first()
       if (!user || document.user_id !== user._id) {
         throw new Error('Unauthorized: Access denied')
       }
@@ -395,7 +395,7 @@ class MockMutationFunctions {
         throw new Error('Document not found')
       }
 
-      const user = await this.ctx.db.query('users').withIndex('by_email').first()
+      const user = await this.ctx.db.query('users').withIndex('email').first()
       if (!user || document.user_id !== user._id) {
         throw new Error('Unauthorized: Access denied')
       }
@@ -412,7 +412,7 @@ class MockMutationFunctions {
         throw new Error('Unauthorized: Authentication required')
       }
 
-      const user = await this.ctx.db.query('users').withIndex('by_email').first()
+      const user = await this.ctx.db.query('users').withIndex('email').first()
       if (!user) {
         throw new Error('User not found')
       }
@@ -437,7 +437,7 @@ class MockMutationFunctions {
         throw new Error('Conversation not found')
       }
 
-      const user = await this.ctx.db.query('users').withIndex('by_email').first()
+      const user = await this.ctx.db.query('users').withIndex('email').first()
       if (!user || conversation.user_id !== user._id) {
         throw new Error('Unauthorized: Access denied')
       }
@@ -459,7 +459,7 @@ class MockMutationFunctions {
         throw new Error('Conversation not found')
       }
 
-      const user = await this.ctx.db.query('users').withIndex('by_email').first()
+      const user = await this.ctx.db.query('users').withIndex('email').first()
       if (!user || conversation.user_id !== user._id) {
         throw new Error('Unauthorized: Access denied')
       }
@@ -476,7 +476,7 @@ class MockMutationFunctions {
         throw new Error('Unauthorized: Authentication required')
       }
 
-      const user = await this.ctx.db.query('users').withIndex('by_email').first()
+      const user = await this.ctx.db.query('users').withIndex('email').first()
       if (!user) {
         throw new Error('User not found')
       }
@@ -512,7 +512,7 @@ class MockMutationFunctions {
         throw new Error('Project not found')
       }
 
-      const user = await this.ctx.db.query('users').withIndex('by_email').first()
+      const user = await this.ctx.db.query('users').withIndex('email').first()
       if (!user) {
         throw new Error('User not found')
       }
@@ -548,7 +548,7 @@ class MockMutationFunctions {
         throw new Error('Project not found')
       }
 
-      const user = await this.ctx.db.query('users').withIndex('by_email').first()
+      const user = await this.ctx.db.query('users').withIndex('email').first()
       if (!user || project.user_id !== user._id) {
         throw new Error('Unauthorized: Only owner can delete project')
       }
@@ -565,7 +565,7 @@ class MockMutationFunctions {
         throw new Error('Unauthorized: Authentication required')
       }
 
-      const user = await this.ctx.db.query('users').withIndex('by_email').first()
+      const user = await this.ctx.db.query('users').withIndex('email').first()
       if (!user) {
         throw new Error('User not found')
       }
@@ -593,7 +593,7 @@ class MockMutationFunctions {
         throw new Error('Prompt not found')
       }
 
-      const user = await this.ctx.db.query('users').withIndex('by_email').first()
+      const user = await this.ctx.db.query('users').withIndex('email').first()
       if (!user || prompt.user_id !== user._id) {
         throw new Error('Unauthorized: Access denied')
       }
@@ -618,7 +618,7 @@ class MockMutationFunctions {
         throw new Error('Prompt not found')
       }
 
-      const user = await this.ctx.db.query('users').withIndex('by_email').first()
+      const user = await this.ctx.db.query('users').withIndex('email').first()
       if (!user || prompt.user_id !== user._id) {
         throw new Error('Unauthorized: Access denied')
       }
@@ -636,7 +636,7 @@ class MockMutationFunctions {
       }
 
       // Check if user exists
-      const existingUser = await this.ctx.db.query('users').withIndex('by_email').first()
+      const existingUser = await this.ctx.db.query('users').withIndex('email').first()
 
       const now = Date.now()
 
@@ -666,7 +666,7 @@ class MockMutationFunctions {
         throw new Error('Unauthorized: Authentication required')
       }
 
-      const user = await this.ctx.db.query('users').withIndex('by_email').first()
+      const user = await this.ctx.db.query('users').withIndex('email').first()
       if (!user) {
         throw new Error('User not found')
       }
@@ -687,7 +687,7 @@ class MockMutationFunctions {
         throw new Error('Unauthorized: Authentication required')
       }
 
-      const user = await this.ctx.db.query('users').withIndex('by_email').first()
+      const user = await this.ctx.db.query('users').withIndex('email').first()
       if (!user) {
         throw new Error('User not found')
       }

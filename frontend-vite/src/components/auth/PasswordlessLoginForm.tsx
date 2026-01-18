@@ -1,136 +1,141 @@
 /**
  * Passwordless Login Form Component
- * 
+ *
  * Provides email input form with magic link/OTP method selection.
- * Includes proper loading states and user feedback.
+ * Uses Convex Auth for direct authentication.
  */
 
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Mail, Shield, ArrowLeft } from 'lucide-react';
-import { authApi } from '@/services/api/auth';
-import { OtpVerificationForm } from './OtpVerificationForm';
-import type { ApiResponse } from '@/services/api/types';
+import React, { useState } from 'react'
+import { useAuthActions } from '@convex-dev/auth/react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Loader2, Mail, Shield, ArrowLeft } from 'lucide-react'
+import { OtpVerificationForm } from './OtpVerificationForm'
 
 export interface PasswordlessLoginFormProps {
-  onSuccess?: (message: string) => void;
-  onError?: (error: string) => void;
-  onBack?: () => void;
-  className?: string;
+  onSuccess?: (message: string) => void
+  onError?: (error: string) => void
+  onBack?: () => void
+  className?: string
 }
 
-type AuthMethod = 'magic_link' | 'otp';
+type AuthMethod = 'magic_link' | 'otp'
 
 interface FormState {
-  email: string;
-  method: AuthMethod;
-  isLoading: boolean;
-  message: string;
-  error: string;
+  email: string
+  method: AuthMethod
+  isLoading: boolean
+  message: string
+  error: string
 }
 
 export const PasswordlessLoginForm: React.FC<PasswordlessLoginFormProps> = ({
   onSuccess,
   onError,
   onBack,
-  className = ''
+  className = '',
 }) => {
+  const { signIn } = useAuthActions()
   const [formState, setFormState] = useState<FormState>({
     email: '',
     method: 'magic_link',
     isLoading: false,
     message: '',
-    error: ''
-  });
-  const [showOtpVerification, setShowOtpVerification] = useState(false);
+    error: '',
+  })
+  const [showOtpVerification, setShowOtpVerification] = useState(false)
 
   const updateFormState = (updates: Partial<FormState>) => {
-    setFormState(prev => ({ ...prev, ...updates }));
-  };
+    setFormState(prev => ({ ...prev, ...updates }))
+  }
 
   const validateEmail = (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
+  }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleSubmit = async (e: React.FormEvent, retryCount = 0) => {
+    e.preventDefault()
+
     // Clear previous messages
-    updateFormState({ message: '', error: '' });
+    updateFormState({ message: '', error: '' })
 
     // Validate email
     if (!formState.email.trim()) {
-      const error = 'Email address is required';
-      updateFormState({ error });
-      onError?.(error);
-      return;
+      const error = 'Email address is required'
+      updateFormState({ error })
+      onError?.(error)
+      return
     }
 
     if (!validateEmail(formState.email)) {
-      const error = 'Please enter a valid email address';
-      updateFormState({ error });
-      onError?.(error);
-      return;
+      const error = 'Please enter a valid email address'
+      updateFormState({ error })
+      onError?.(error)
+      return
     }
 
-    // Check if passwordless auth is available
-    if (!authApi.isPasswordlessAvailable()) {
-      const error = 'Passwordless authentication is not available. Please contact support.';
-      updateFormState({ error });
-      onError?.(error);
-      return;
-    }
-
-    updateFormState({ isLoading: true });
+    updateFormState({ isLoading: true })
 
     try {
-      let result: ApiResponse<{ message: string }>;
+      // Determine provider based on method
+      const provider = formState.method === 'magic_link' ? 'resend-magic-link' : 'resend-otp'
 
+      // Store email in sessionStorage for magic link callback
       if (formState.method === 'magic_link') {
-        result = await authApi.sendMagicLink(
-          formState.email,
-          `${window.location.origin}/auth/callback`
-        );
-      } else {
-        result = await authApi.sendOTP(formState.email);
+        sessionStorage.setItem('auth_email', formState.email)
       }
 
-      if (result.success) {
-        const message = result.data.message;
-        updateFormState({ message, isLoading: false });
+      // Call Convex Auth signIn directly
+      await signIn(provider, { email: formState.email })
 
-        // For OTP method, show the verification form
-        if (formState.method === 'otp') {
-          setShowOtpVerification(true);
-        } else {
-          // For magic link, show success message
-          onSuccess?.(message);
-        }
+      const message =
+        formState.method === 'magic_link'
+          ? 'Magic link sent! Check your email to sign in.'
+          : 'Verification code sent! Check your email.'
+
+      updateFormState({ message, isLoading: false })
+
+      // For OTP method, show the verification form
+      if (formState.method === 'otp') {
+        setShowOtpVerification(true)
       } else {
-        const error = result.message || 'Failed to send authentication request';
-        updateFormState({ error, isLoading: false });
-        onError?.(error);
+        // For magic link, show success message
+        onSuccess?.(message)
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
-      updateFormState({ error: errorMessage, isLoading: false });
-      onError?.(errorMessage);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to send authentication request'
+
+      // Check if it's a connection error and retry
+      const isConnectionError =
+        errorMessage.includes('Connection lost') ||
+        errorMessage.includes('network') ||
+        errorMessage.includes('timeout')
+
+      if (isConnectionError && retryCount < 2) {
+        console.log(`🔄 Connection error detected, retrying... (attempt ${retryCount + 1}/2)`)
+        // Wait 1 second before retrying
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        return handleSubmit(e, retryCount + 1)
+      }
+
+      updateFormState({ error: errorMessage, isLoading: false })
+      onError?.(errorMessage)
     }
-  };
+  }
 
   const handleMethodChange = (method: AuthMethod) => {
-    updateFormState({ method, message: '', error: '' });
-  };
+    updateFormState({ method, message: '', error: '' })
+  }
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    updateFormState({ email: e.target.value, message: '', error: '' });
-  };
+    updateFormState({ email: e.target.value, message: '', error: '' })
+  }
 
   // Show OTP verification form if OTP was sent
   if (showOtpVerification) {
@@ -140,15 +145,15 @@ export const PasswordlessLoginForm: React.FC<PasswordlessLoginFormProps> = ({
         onSuccess={onSuccess}
         onError={onError}
         onBack={() => {
-          setShowOtpVerification(false);
-          updateFormState({ message: '', error: '' });
+          setShowOtpVerification(false)
+          updateFormState({ message: '', error: '' })
         }}
         onResend={() => {
-          updateFormState({ message: 'Code resent to your email' });
+          updateFormState({ message: 'Code resent to your email' })
         }}
         className={className}
       />
-    );
+    )
   }
 
   return (
@@ -168,9 +173,7 @@ export const PasswordlessLoginForm: React.FC<PasswordlessLoginFormProps> = ({
             </Button>
           )}
         </div>
-        <CardDescription>
-          Enter your email to receive a secure sign-in link or code
-        </CardDescription>
+        <CardDescription>Enter your email to receive a secure sign-in link or code</CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-4">
@@ -240,9 +243,7 @@ export const PasswordlessLoginForm: React.FC<PasswordlessLoginFormProps> = ({
           {/* Success Message */}
           {formState.message && (
             <Alert>
-              <AlertDescription className="text-green-700">
-                {formState.message}
-              </AlertDescription>
+              <AlertDescription className="text-green-700">{formState.message}</AlertDescription>
             </Alert>
           )}
 
@@ -278,15 +279,14 @@ export const PasswordlessLoginForm: React.FC<PasswordlessLoginFormProps> = ({
         {/* Help Text */}
         <div className="text-center text-sm text-muted-foreground">
           <p>
-            {formState.method === 'magic_link' 
+            {formState.method === 'magic_link'
               ? "We'll send you a secure link that will sign you in automatically"
-              : "We'll send you a 6-digit code to verify your identity"
-            }
+              : "We'll send you a 6-digit code to verify your identity"}
           </p>
         </div>
       </CardContent>
     </Card>
-  );
-};
+  )
+}
 
-export default PasswordlessLoginForm;
+export default PasswordlessLoginForm

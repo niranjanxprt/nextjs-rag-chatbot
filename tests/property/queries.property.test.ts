@@ -47,8 +47,8 @@ class MockConvexContext {
           const table = this.mockDatabase.get(tableName)
           if (!table) return null
 
-          // For by_email index, find user by email
-          if (indexName === 'by_email' && this.authenticatedUser) {
+          // For email index, find user by email
+          if (indexName === 'email' && this.authenticatedUser) {
             for (const record of table.values()) {
               if (record.email === this.authenticatedUser.email) {
                 return record
@@ -285,7 +285,7 @@ class MockQueryFunctions {
 
       const user = await this.ctx.db
         .query('users')
-        .withIndex('by_email', (q: any) => q.eq('email', identity.email))
+        .withIndex('email', (q: any) => q.eq('email', identity.email))
         .first()
       if (!user) {
         throw new Error('User not found')
@@ -311,7 +311,7 @@ class MockQueryFunctions {
 
       const user = await this.ctx.db
         .query('users')
-        .withIndex('by_email', (q: any) => q.eq('email', identity.email))
+        .withIndex('email', (q: any) => q.eq('email', identity.email))
         .first()
       if (!user || document.user_id !== user._id) {
         throw new Error('Unauthorized: Access denied')
@@ -331,7 +331,7 @@ class MockQueryFunctions {
 
       const user = await this.ctx.db
         .query('users')
-        .withIndex('by_email', (q: any) => q.eq('email', identity.email))
+        .withIndex('email', (q: any) => q.eq('email', identity.email))
         .first()
       if (!user) {
         throw new Error('User not found')
@@ -357,7 +357,7 @@ class MockQueryFunctions {
 
       const user = await this.ctx.db
         .query('users')
-        .withIndex('by_email', (q: any) => q.eq('email', identity.email))
+        .withIndex('email', (q: any) => q.eq('email', identity.email))
         .first()
       if (!user || conversation.user_id !== user._id) {
         throw new Error('Unauthorized: Access denied')
@@ -377,7 +377,7 @@ class MockQueryFunctions {
 
       const user = await this.ctx.db
         .query('users')
-        .withIndex('by_email', (q: any) => q.eq('email', identity.email))
+        .withIndex('email', (q: any) => q.eq('email', identity.email))
         .first()
       if (!user) {
         throw new Error('User not found')
@@ -402,7 +402,7 @@ class MockQueryFunctions {
 
       const user = await this.ctx.db
         .query('users')
-        .withIndex('by_email', (q: any) => q.eq('email', identity.email))
+        .withIndex('email', (q: any) => q.eq('email', identity.email))
         .first()
       if (!user) {
         throw new Error('User not found')
@@ -430,7 +430,7 @@ class MockQueryFunctions {
 
       return await this.ctx.db
         .query('users')
-        .withIndex('by_email', (q: any) => q.eq('email', identity.email))
+        .withIndex('email', (q: any) => q.eq('email', identity.email))
         .first()
     },
 
@@ -465,7 +465,7 @@ class MockQueryFunctions {
 
       const user = await this.ctx.db
         .query('users')
-        .withIndex('by_email', (q: any) => q.eq('email', identity.email))
+        .withIndex('email', (q: any) => q.eq('email', identity.email))
         .first()
       if (!user) {
         throw new Error('User not found')
@@ -495,7 +495,7 @@ class MockQueryFunctions {
 
       const user = await this.ctx.db
         .query('users')
-        .withIndex('by_email', (q: any) => q.eq('email', identity.email))
+        .withIndex('email', (q: any) => q.eq('email', identity.email))
         .first()
       if (!user || prompt.user_id !== user._id) {
         throw new Error('Unauthorized: Access denied')
@@ -515,7 +515,7 @@ class MockQueryFunctions {
 
       const user = await this.ctx.db
         .query('users')
-        .withIndex('by_email', (q: any) => q.eq('email', identity.email))
+        .withIndex('email', (q: any) => q.eq('email', identity.email))
         .first()
       if (!user) {
         throw new Error('User not found')
@@ -589,7 +589,7 @@ describe('Query Function Properties', () => {
 
             // Should query users table by email
             expect(content).toMatch(/query\(["']users["']\)/)
-            expect(content).toMatch(/withIndex\(["']by_email["']/)
+            expect(content).toMatch(/withIndex\(["']email["']/)
           }
         }),
         {

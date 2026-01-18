@@ -1,48 +1,48 @@
 /**
  * User Query Functions
- * 
+ *
  * Provides read-only access to user data with authentication checks.
  */
 
-import { query } from "../_generated/server";
-import { v } from "convex/values";
+import { query } from '../_generated/server'
+import { v } from 'convex/values'
 
 /**
  * Get the current authenticated user
  */
 export const current = query({
   args: {},
-  handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
+  handler: async ctx => {
+    const identity = await ctx.auth.getUserIdentity()
     if (!identity) {
-      return null;
+      return null
     }
-    
+
     const user = await ctx.db
-      .query("users")
-      .withIndex("by_email", (q) => q.eq("email", identity.email!))
-      .first();
-    
-    return user;
+      .query('users')
+      .withIndex('email', q => q.eq('email', identity.email!))
+      .first()
+
+    return user
   },
-});
+})
 
 /**
  * Get a specific user by ID (for project members, etc.)
  */
 export const get = query({
-  args: { id: v.id("users") },
+  args: { id: v.id('users') },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
+    const identity = await ctx.auth.getUserIdentity()
     if (!identity) {
-      throw new Error("Unauthorized: Authentication required");
+      throw new Error('Unauthorized: Authentication required')
     }
-    
-    const user = await ctx.db.get(args.id);
+
+    const user = await ctx.db.get(args.id)
     if (!user) {
-      throw new Error("User not found");
+      throw new Error('User not found')
     }
-    
+
     // Return limited user info (no sensitive data)
     return {
       _id: user._id,
@@ -50,9 +50,9 @@ export const get = query({
       name: user.name,
       avatar_url: user.avatar_url,
       created_at: user.created_at,
-    };
+    }
   },
-});
+})
 
 /**
  * Search users by email (for invitations)
@@ -60,26 +60,26 @@ export const get = query({
 export const searchByEmail = query({
   args: { email: v.string() },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
+    const identity = await ctx.auth.getUserIdentity()
     if (!identity) {
-      throw new Error("Unauthorized: Authentication required");
+      throw new Error('Unauthorized: Authentication required')
     }
-    
+
     const user = await ctx.db
-      .query("users")
-      .withIndex("by_email", (q) => q.eq("email", args.email))
-      .first();
-    
+      .query('users')
+      .withIndex('email', q => q.eq('email', args.email))
+      .first()
+
     if (!user) {
-      return null;
+      return null
     }
-    
+
     // Return limited user info
     return {
       _id: user._id,
       email: user.email,
       name: user.name,
       avatar_url: user.avatar_url,
-    };
+    }
   },
-});
+})

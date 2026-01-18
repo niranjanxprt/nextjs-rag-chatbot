@@ -1,29 +1,32 @@
 /**
  * Resend Magic Link Authentication Provider
- * 
+ *
  * Implements passwordless authentication via email magic links using Resend.
  * Users receive a link that automatically signs them in when clicked.
  */
 
-import { Email } from "@convex-dev/auth/providers/Email";
-import { Resend as ResendAPI } from "resend";
+import { Email } from '@convex-dev/auth/providers/Email'
+import { Resend as ResendAPI } from 'resend'
 
 export const ResendMagicLink = Email({
-  id: "resend-magic-link",
+  id: 'resend-magic-link',
   apiKey: process.env.AUTH_RESEND_KEY,
   maxAge: 60 * 15, // 15 minutes expiration
-  
+
   async sendVerificationRequest({ identifier: email, url, provider }) {
     if (!provider.apiKey) {
-      throw new Error("AUTH_RESEND_KEY environment variable is not set");
+      throw new Error('AUTH_RESEND_KEY environment variable is not set')
     }
 
-    const resend = new ResendAPI(provider.apiKey);
-    
+    const resend = new ResendAPI(provider.apiKey)
+
+    // Add email as a query parameter to the URL for verification
+    const urlWithEmail = `${url}&email=${encodeURIComponent(email)}`
+
     const { error } = await resend.emails.send({
-      from: "RAG Chatbot <onboarding@resend.dev>", // TODO: Update with your domain
+      from: 'RAG Chatbot <onboarding@resend.dev>',
       to: [email],
-      subject: "Sign in to RAG Chatbot",
+      subject: 'Sign in to RAG Chatbot',
       html: `
         <!DOCTYPE html>
         <html>
@@ -43,7 +46,7 @@ export const ResendMagicLink = Email({
               </p>
               
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${url}" 
+                <a href="${urlWithEmail}" 
                    style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
                           color: white; 
                           padding: 14px 32px; 
@@ -69,7 +72,7 @@ export const ResendMagicLink = Email({
               
               <p style="font-size: 12px; color: #9ca3af; text-align: center;">
                 Alternatively, you can copy and paste this link into your browser:<br>
-                <span style="word-break: break-all; color: #667eea;">${url}</span>
+                <span style="word-break: break-all; color: #667eea;">${urlWithEmail}</span>
               </p>
             </div>
             
@@ -79,11 +82,11 @@ export const ResendMagicLink = Email({
           </body>
         </html>
       `,
-    });
+    })
 
     if (error) {
-      console.error("Failed to send magic link email:", error);
-      throw new Error(`Failed to send magic link: ${JSON.stringify(error)}`);
+      console.error('Failed to send magic link email:', error)
+      throw new Error(`Failed to send magic link: ${JSON.stringify(error)}`)
     }
   },
-});
+})

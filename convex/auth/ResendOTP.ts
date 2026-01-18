@@ -1,42 +1,42 @@
 /**
  * Resend OTP Authentication Provider
- * 
+ *
  * Implements passwordless authentication via email OTP (One-Time Password).
  * Users receive a 6-digit code that they enter to sign in.
  */
 
-import { Email } from "@convex-dev/auth/providers/Email";
-import { Resend as ResendAPI } from "resend";
-import { RandomReader, generateRandomString } from "@oslojs/crypto/random";
+import { Email } from '@convex-dev/auth/providers/Email'
+import { Resend as ResendAPI } from 'resend'
+import { RandomReader, generateRandomString } from '@oslojs/crypto/random'
 
 export const ResendOTP = Email({
-  id: "resend-otp",
+  id: 'resend-otp',
   apiKey: process.env.AUTH_RESEND_KEY,
   maxAge: 60 * 15, // 15 minutes expiration
-  
+
   async generateVerificationToken() {
     // Generate a 6-digit numeric code
     const random: RandomReader = {
       read(bytes) {
-        crypto.getRandomValues(bytes);
+        crypto.getRandomValues(bytes)
       },
-    };
-    const alphabet = "0123456789";
-    const length = 6;
-    return generateRandomString(random, alphabet, length);
+    }
+    const alphabet = '0123456789'
+    const length = 6
+    return generateRandomString(random, alphabet, length)
   },
-  
+
   async sendVerificationRequest({ identifier: email, provider, token }) {
     if (!provider.apiKey) {
-      throw new Error("AUTH_RESEND_KEY environment variable is not set");
+      throw new Error('AUTH_RESEND_KEY environment variable is not set')
     }
 
-    const resend = new ResendAPI(provider.apiKey);
-    
+    const resend = new ResendAPI(provider.apiKey)
+
     const { error } = await resend.emails.send({
-      from: "RAG Chatbot <onboarding@resend.dev>", // TODO: Update with your domain
+      from: 'RAG Chatbot <onboarding@resend.dev>',
       to: [email],
-      subject: "Your verification code for RAG Chatbot",
+      subject: 'Your verification code for RAG Chatbot',
       html: `
         <!DOCTYPE html>
         <html>
@@ -95,11 +95,11 @@ export const ResendOTP = Email({
           </body>
         </html>
       `,
-    });
+    })
 
     if (error) {
-      console.error("Failed to send OTP email:", error);
-      throw new Error(`Failed to send OTP: ${JSON.stringify(error)}`);
+      console.error('Failed to send OTP email:', error)
+      throw new Error(`Failed to send OTP: ${JSON.stringify(error)}`)
     }
   },
-});
+})
