@@ -106,12 +106,17 @@ export const promptsApi = {
   async getPrompts(hideSystem: boolean = false): Promise<ApiResponse<SavedPrompt[]>> {
     if (USE_LANGFUSE_DIRECT_FOR_READS) {
       try {
+        console.log('🚀 [PromptsAPI] Starting getPrompts...')
         const prompts = await langfuseApi.listPrompts()
+        console.log(`📊 [PromptsAPI] Received ${prompts.length} prompts from Langfuse`)
+
         // Include all prompts (system prompts are protected but should be visible)
         // System prompts will be marked as non-editable/non-deletable in the UI
         const mappedPrompts = prompts.map(mapPromptToSaved)
+        console.log(`✅ [PromptsAPI] Mapped ${mappedPrompts.length} prompts`)
         return { data: mappedPrompts, success: true }
       } catch (error: any) {
+        console.error('❌ [PromptsAPI] Error fetching prompts:', error)
         return {
           data: [],
           success: false,
