@@ -1,13 +1,13 @@
 /**
  * Langfuse API Client
- * 
+ *
  * Direct integration with Langfuse API for prompt management.
  * Uses Langfuse REST API v2 endpoints.
  * Gets configuration from backend API to use existing Langfuse keys.
  */
 
 // Get Langfuse config from backend API
-let langfuseConfig: { publicKey: string; baseUrl: string; secretKey?: string } | null = null;
+let langfuseConfig: { publicKey: string; baseUrl: string; secretKey?: string } | null = null
 
 /**
  * Get API base URL (matches config.ts logic)
@@ -15,72 +15,90 @@ let langfuseConfig: { publicKey: string; baseUrl: string; secretKey?: string } |
 function getAPIBaseURL(): string {
   // 1. Check for explicit VITE_API_BASE_URL (Vercel production environment variable)
   if (import.meta.env.VITE_API_BASE_URL) {
-    return import.meta.env.VITE_API_BASE_URL;
+    return import.meta.env.VITE_API_BASE_URL
   }
 
   // 2. Check for VITE_API_URL (legacy/fallback)
   if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
+    return import.meta.env.VITE_API_URL
   }
 
   // 3. Production fallback: Railway backend
   if (import.meta.env.PROD) {
-    return "https://rag-chatbot-production-1a36.up.railway.app/api/v1";
+    return 'https://rag-chatbot-production-1a36.up.railway.app/api/v1'
   }
 
   // 4. Development/local fallback
-  return "http://localhost:8000/api/v1";
+  return 'http://localhost:8000/api/v1'
 }
 
 /**
  * Initialize Langfuse configuration from backend
  */
 async function initLangfuseConfig(): Promise<void> {
-  if (langfuseConfig) return;
+  if (langfuseConfig) return
+
+  console.log('🔧 [Langfuse] Initializing config...')
+  console.log('   Environment check:', {
+    hasPublicKey: !!import.meta.env.VITE_LANGFUSE_PUBLIC_KEY,
+    hasSecretKey: !!import.meta.env.VITE_LANGFUSE_SECRET_KEY,
+    hasBaseUrl: !!import.meta.env.VITE_LANGFUSE_BASE_URL,
+  })
 
   try {
-    const apiUrl = getAPIBaseURL();
-    const response = await fetch(`${apiUrl}/prompts/config`);
+    const apiUrl = getAPIBaseURL()
+    console.log(`   Trying to fetch config from: ${apiUrl}/prompts/config`)
+    const response = await fetch(`${apiUrl}/prompts/config`)
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch Langfuse config from ${apiUrl}/prompts/config: ${response.status}`);
+      throw new Error(
+        `Failed to fetch Langfuse config from ${apiUrl}/prompts/config: ${response.status}`
+      )
     }
 
-    const config = await response.json();
+    const config = await response.json()
     langfuseConfig = {
-      publicKey: config.public_key || "",
-      baseUrl: config.base_url || "https://cloud.langfuse.com",
-    };
-    console.log("✅ Langfuse config loaded:", { baseUrl: langfuseConfig.baseUrl, hasPublicKey: !!langfuseConfig.publicKey });
+      publicKey: config.public_key || '',
+      baseUrl: config.base_url || 'https://cloud.langfuse.com',
+    }
+    console.log('✅ Langfuse config loaded from backend:', {
+      baseUrl: langfuseConfig.baseUrl,
+      hasPublicKey: !!langfuseConfig.publicKey,
+    })
   } catch (error) {
-    console.error("Failed to initialize Langfuse config from backend:", error);
+    console.error('⚠️ Failed to initialize Langfuse config from backend:', error)
     // Fallback to environment variables if backend config fails
     langfuseConfig = {
-      publicKey: import.meta.env.VITE_LANGFUSE_PUBLIC_KEY || "",
-      baseUrl: import.meta.env.VITE_LANGFUSE_BASE_URL || "https://cloud.langfuse.com",
-      secretKey: import.meta.env.VITE_LANGFUSE_SECRET_KEY || "",
-    };
-    console.log("⚠️ Using environment variables for Langfuse config:", { baseUrl: langfuseConfig.baseUrl, hasPublicKey: !!langfuseConfig.publicKey });
+      publicKey: import.meta.env.VITE_LANGFUSE_PUBLIC_KEY || '',
+      baseUrl: import.meta.env.VITE_LANGFUSE_BASE_URL || 'https://cloud.langfuse.com',
+      secretKey: import.meta.env.VITE_LANGFUSE_SECRET_KEY || '',
+    }
+    console.log('⚠️ Using environment variables for Langfuse config:', {
+      baseUrl: langfuseConfig.baseUrl,
+      hasPublicKey: !!langfuseConfig.publicKey,
+      hasSecretKey: !!langfuseConfig.secretKey,
+      publicKeyPreview: langfuseConfig.publicKey?.substring(0, 20) + '...',
+    })
   }
 }
 
 // For write operations, we need secret key - proxy through backend
-const USE_BACKEND_PROXY_FOR_WRITES = true;
+const USE_BACKEND_PROXY_FOR_WRITES = true
 
 interface LangfusePromptResponse {
-  name: string;
-  prompt: string;
-  version?: number;
-  config?: Record<string, any>;
-  labels?: string[];
-  tags?: string[];
+  name: string
+  prompt: string
+  version?: number
+  config?: Record<string, any>
+  labels?: string[]
+  tags?: string[]
 }
 
 interface LangfusePromptListResponse {
-  data: LangfusePromptResponse[];
+  data: LangfusePromptResponse[]
   meta?: {
-    total_items?: number;
-  };
+    total_items?: number
+  }
 }
 
 class LangfuseApiError extends Error {
@@ -89,8 +107,8 @@ class LangfuseApiError extends Error {
     public statusCode?: number,
     public response?: any
   ) {
-    super(message);
-    this.name = "LangfuseApiError";
+    super(message)
+    this.name = 'LangfuseApiError'
   }
 }
 
@@ -99,109 +117,127 @@ class LangfuseApiError extends Error {
  * Note: For write operations, we proxy through backend to use secret key securely
  */
 async function getAuthHeaders(): Promise<HeadersInit> {
-  await initLangfuseConfig();
-  
+  await initLangfuseConfig()
+
   if (!langfuseConfig?.publicKey) {
     throw new LangfuseApiError(
-      "Langfuse API keys not configured. Please ensure backend has LANGFUSE_PUBLIC_KEY set."
-    );
+      'Langfuse API keys not configured. Please ensure backend has LANGFUSE_PUBLIC_KEY set.'
+    )
   }
 
   // For read operations, we can use public key only
   // For write operations, we'll proxy through backend
-  const credentials = btoa(`${langfuseConfig.publicKey}:`);
+  const credentials = btoa(`${langfuseConfig.publicKey}:`)
   return {
     Authorization: `Basic ${credentials}`,
-    "Content-Type": "application/json",
-  };
+    'Content-Type': 'application/json',
+  }
 }
 
 /**
  * Fetch wrapper with error handling
  */
-async function langfuseFetch<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
-  await initLangfuseConfig();
-  
+async function langfuseFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  await initLangfuseConfig()
+
   if (!langfuseConfig) {
-    throw new LangfuseApiError("Langfuse configuration not available");
+    throw new LangfuseApiError('Langfuse configuration not available')
   }
-  
-  const url = `${langfuseConfig.baseUrl}/api/public/v2/prompts${endpoint}`;
-  
+
+  const url = `${langfuseConfig.baseUrl}/api/public/v2/prompts${endpoint}`
+
   try {
-    const authHeaders = await getAuthHeaders();
+    const authHeaders = await getAuthHeaders()
     const response = await fetch(url, {
       ...options,
       headers: {
         ...authHeaders,
         ...options.headers,
       },
-    });
+      cache: 'no-store', // Disable caching
+    })
 
     if (!response.ok) {
-      let errorMessage = `HTTP ${response.status}`;
+      let errorMessage = `HTTP ${response.status}`
       try {
-        const errorData = await response.json();
-        errorMessage = errorData.message || errorData.error || errorMessage;
+        const errorData = await response.json()
+        errorMessage = errorData.message || errorData.error || errorMessage
       } catch {
-        errorMessage = await response.text() || errorMessage;
+        errorMessage = (await response.text()) || errorMessage
       }
-      throw new LangfuseApiError(errorMessage, response.status);
+      throw new LangfuseApiError(errorMessage, response.status)
     }
 
     // Handle 204 No Content (for DELETE)
     if (response.status === 204) {
-      return undefined as T;
+      return undefined as T
     }
 
-    return await response.json();
+    return await response.json()
   } catch (error) {
     if (error instanceof LangfuseApiError) {
-      throw error;
+      throw error
     }
     throw new LangfuseApiError(
       `Network error: ${error instanceof Error ? error.message : String(error)}`
-    );
+    )
   }
 }
 
 export const langfuseApi = {
   /**
-   * List all prompts from Langfuse
-   * Note: Langfuse API returns array directly, not wrapped in {data: []}
+   * List all prompts from Langfuse with full content
+   * Note: The list endpoint doesn't return prompt content, so we fetch each prompt individually
    */
   async listPrompts(): Promise<LangfusePromptResponse[]> {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/b4f54ef3-c9a5-4fff-8213-4684772c7157',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'langfuse.ts:listPrompts:entry',message:'langfuseApi.listPrompts called',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
     try {
-      const response = await langfuseFetch<LangfusePromptResponse[] | LangfusePromptListResponse>("");
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b4f54ef3-c9a5-4fff-8213-4684772c7157',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'langfuse.ts:listPrompts:after-fetch',message:'After langfuseFetch',data:{isArray:Array.isArray(response),responseLength:Array.isArray(response)?response.length:(response as LangfusePromptListResponse)?.data?.length||0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
+      console.log('🔍 [Langfuse] Starting listPrompts...')
+
+      // First, get the list of prompt names
+      const response = await langfuseFetch<LangfusePromptResponse[] | LangfusePromptListResponse>(
+        ''
+      )
+      console.log('📋 [Langfuse] List response:', response)
+
       // Handle both array response and wrapped response
-      if (Array.isArray(response)) {
-        return response;
-      }
-      return (response as LangfusePromptListResponse).data || [];
+      const promptList = Array.isArray(response)
+        ? response
+        : (response as LangfusePromptListResponse).data || []
+      console.log(`📊 [Langfuse] Found ${promptList.length} prompts in list`)
+
+      // The list endpoint doesn't return prompt content, so fetch each prompt individually
+      console.log(`📋 Fetching full content for ${promptList.length} prompts...`)
+      const promptsWithContent = await Promise.all(
+        promptList.map(async promptMeta => {
+          try {
+            console.log(`  → Fetching ${promptMeta.name}...`)
+            // Fetch full prompt with content
+            const fullPrompt = await langfuseApi.getPrompt(promptMeta.name, 'production')
+            console.log(`  ✅ ${promptMeta.name} (${fullPrompt.prompt?.length || 0} chars)`)
+            return fullPrompt
+          } catch (error) {
+            console.error(`  ❌ Failed to fetch prompt ${promptMeta.name}:`, error)
+            // Return metadata without content if fetch fails
+            return promptMeta
+          }
+        })
+      )
+
+      console.log(`✅ Fetched ${promptsWithContent.length} prompts with content`)
+      return promptsWithContent
     } catch (error) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b4f54ef3-c9a5-4fff-8213-4684772c7157',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'langfuse.ts:listPrompts:error',message:'Error in listPrompts',data:{errorMessage:error instanceof Error?error.message:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-      // #endregion
+      console.error('❌ [Langfuse] Error in listPrompts:', error)
       // If API returns error, try to parse it
-      throw error;
+      throw error
     }
   },
 
   /**
    * Get a specific prompt by name
    */
-  async getPrompt(name: string, label: string = "production"): Promise<LangfusePromptResponse> {
-    const encodedName = encodeURIComponent(name);
-    return await langfuseFetch<LangfusePromptResponse>(`/${encodedName}?label=${label}`);
+  async getPrompt(name: string, label: string = 'production'): Promise<LangfusePromptResponse> {
+    const encodedName = encodeURIComponent(name)
+    return await langfuseFetch<LangfusePromptResponse>(`/${encodedName}?label=${label}`)
   },
 
   /**
@@ -210,20 +246,20 @@ export const langfuseApi = {
    * For REST API, we use POST to /api/public/v2/prompts/{name}
    */
   async createPrompt(data: {
-    name: string;
-    prompt: string;
-    config?: Record<string, any>;
-    labels?: string[];
+    name: string
+    prompt: string
+    config?: Record<string, any>
+    labels?: string[]
   }): Promise<LangfusePromptResponse> {
-    const encodedName = encodeURIComponent(data.name);
+    const encodedName = encodeURIComponent(data.name)
     return await langfuseFetch<LangfusePromptResponse>(`/${encodedName}`, {
-      method: "POST",
+      method: 'POST',
       body: JSON.stringify({
         prompt: data.prompt,
         config: data.config || {},
-        labels: data.labels || ["production"],
+        labels: data.labels || ['production'],
       }),
-    });
+    })
   },
 
   /**
@@ -232,26 +268,26 @@ export const langfuseApi = {
   async updatePrompt(
     name: string,
     data: {
-      prompt?: string;
-      config?: Record<string, any>;
-      labels?: string[];
+      prompt?: string
+      config?: Record<string, any>
+      labels?: string[]
     }
   ): Promise<LangfusePromptResponse> {
-    const encodedName = encodeURIComponent(name);
+    const encodedName = encodeURIComponent(name)
     return await langfuseFetch<LangfusePromptResponse>(`/${encodedName}`, {
-      method: "PUT",
+      method: 'PUT',
       body: JSON.stringify(data),
-    });
+    })
   },
 
   /**
    * Delete a prompt from Langfuse
    */
   async deletePrompt(name: string): Promise<void> {
-    const encodedName = encodeURIComponent(name);
+    const encodedName = encodeURIComponent(name)
     await langfuseFetch<void>(`/${encodedName}`, {
-      method: "DELETE",
-    });
+      method: 'DELETE',
+    })
   },
 
   /**
@@ -260,18 +296,18 @@ export const langfuseApi = {
   async renderPrompt(
     name: string,
     variables: Record<string, any>,
-    label: string = "production"
+    label: string = 'production'
   ): Promise<string> {
-    const encodedName = encodeURIComponent(name);
+    const encodedName = encodeURIComponent(name)
     const response = await langfuseFetch<{ rendered: string }>(
       `/${encodedName}/render?label=${label}`,
       {
-        method: "POST",
+        method: 'POST',
         body: JSON.stringify({ variables }),
       }
-    );
-    return response.rendered;
+    )
+    return response.rendered
   },
-};
+}
 
-export type { LangfusePromptResponse };
+export type { LangfusePromptResponse }

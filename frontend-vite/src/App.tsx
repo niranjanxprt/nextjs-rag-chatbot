@@ -22,6 +22,7 @@ import KnowledgeBase from './pages/KnowledgeBase'
 import Login from './pages/Login'
 import AuthCallback from './pages/AuthCallback'
 import DebugCallback from './pages/DebugCallback'
+import DebugEnv from './pages/DebugEnv'
 import Onboarding from './pages/Onboarding'
 import NotFound from './pages/NotFound'
 
@@ -60,6 +61,7 @@ const App = () => (
               <Route path="/prompts" element={<PromptsLibrary />} />
               <Route path="/profile" element={<UserProfile />} />
               <Route path="/knowledge-base" element={<KnowledgeBase />} />
+              <Route path="/debug-env" element={<DebugEnv />} />
 
               {/* 404 */}
               <Route path="*" element={<NotFound />} />
