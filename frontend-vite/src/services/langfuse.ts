@@ -211,8 +211,8 @@ export const langfuseApi = {
         promptList.map(async promptMeta => {
           try {
             console.log(`  → Fetching ${promptMeta.name}...`)
-            // Fetch full prompt with content
-            const fullPrompt = await langfuseApi.getPrompt(promptMeta.name, 'production')
+            // Fetch full prompt with content - without label to get latest version
+            const fullPrompt = await langfuseApi.getPrompt(promptMeta.name)
             console.log(`  ✅ ${promptMeta.name} (${fullPrompt.prompt?.length || 0} chars)`)
             return fullPrompt
           } catch (error) {
@@ -235,9 +235,11 @@ export const langfuseApi = {
   /**
    * Get a specific prompt by name
    */
-  async getPrompt(name: string, label: string = 'production'): Promise<LangfusePromptResponse> {
+  async getPrompt(name: string, label?: string): Promise<LangfusePromptResponse> {
     const encodedName = encodeURIComponent(name)
-    return await langfuseFetch<LangfusePromptResponse>(`/${encodedName}?label=${label}`)
+    // If no label specified, get the latest version
+    const queryParam = label ? `?label=${label}` : ''
+    return await langfuseFetch<LangfusePromptResponse>(`/${encodedName}${queryParam}`)
   },
 
   /**
