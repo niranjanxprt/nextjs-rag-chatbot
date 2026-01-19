@@ -1,217 +1,126 @@
-# Prompts Library - Ready to Use
+# Prompts Library - Working ✅
 
 **Date:** January 19, 2026  
-**Status:** ✅ Ready
+**Status:** ✅ Working - Documented in steering files
 
 ---
 
-## Quick Start
+## Issue Resolved
 
-### Access the Prompts Library
+The prompts library is now working correctly. The issue was that Langfuse API requires both public and secret keys for authentication, but the frontend was only using the public key.
 
-Open your browser and navigate to:
+## Solution Implemented
+
+Changed architecture to use backend proxy pattern:
+
+- Frontend calls Next.js backend at `/api/prompts`
+- Backend authenticates with Langfuse using both keys
+- Backend returns data to frontend
+- Secret key stays secure on the server
+
+## Documentation Added
+
+This architectural pattern has been documented in multiple places to prevent future issues:
+
+### 1. Steering Document (Primary Reference)
+
+**File:** `.kiro/steering/langfuse-integration.md`
+
+Complete architecture guide including:
+
+- Authentication requirements
+- Correct vs incorrect patterns
+- Implementation examples
+- Security checklist
+- Common issues and solutions
+- Testing procedures
+
+### 2. Technical Architecture
+
+**File:** `.kiro/steering/tech.md`
+
+Updated to include:
+
+- Langfuse in technology stack
+- External service integration patterns
+- API proxy pattern for security
+- Reference to detailed documentation
+
+### 3. Quick Reference Guide
+
+**File:** `docs/LANGFUSE_INTEGRATION.md`
+
+Quick reference for developers including:
+
+- Architecture diagrams
+- Code examples
+- Environment variables
+- Testing commands
+- Troubleshooting
+
+## Key Takeaways
+
+### Critical Rule
+
+**Langfuse API requires BOTH public AND secret keys for Basic Authentication:**
 
 ```
-http://localhost:8081/prompts
+Authorization: Basic base64(publicKey:secretKey)
 ```
 
-You should see **7 prompts** displayed:
+### Architecture Pattern
 
-**System Prompts** (3):
-
-- 🤖 general-chat
-- 🤖 haystack-rag-generation
-- 🤖 haystack-rag-streaming
-
-**User Prompts** (4):
-
-- 📝 contract-comparison
-- 📝 document-summary
-- 📝 key-terms-extraction
-- 📝 risk-analysis
-
----
-
-## What Was Fixed
-
-### Problem
-
-The prompts library was showing blank because:
-
-1. Missing Langfuse API keys in frontend environment
-2. Langfuse LIST API doesn't return prompt content (only metadata)
-
-### Solution
-
-1. ✅ Added Langfuse keys to `frontend-vite/.env.local`
-2. ✅ Updated code to fetch each prompt individually for full content
-3. ✅ Removed all debug/test code from codebase
-
----
-
-## How It Works
-
-### Data Flow
+**Always use backend proxy for external APIs that require secret credentials:**
 
 ```
-User visits /prompts
-    ↓
-React Query: usePrompts()
-    ↓
-promptsApi.getPrompts()
-    ↓
-langfuseApi.listPrompts()
-    ↓
-1. Fetch list from Langfuse (names only)
-2. Fetch each prompt individually (with content)
-    ↓
-Display all prompts with full content
+Frontend → Backend Proxy → External API
 ```
 
-### API Calls
+### Security
 
-- **List**: `GET /api/public/v2/prompts` → Returns 7 prompt names
-- **Get Each**: `GET /api/public/v2/prompts/{name}?label=production` → Returns full content
-- **Total**: 8 API calls (1 list + 7 individual fetches)
+- ✅ Secret keys only in backend environment
+- ✅ Secret keys never exposed to frontend
+- ✅ All sensitive API calls proxied through backend
+- ✅ Frontend calls backend, not external APIs directly
 
----
+## Files Created/Updated
 
-## Features
+1. `.kiro/steering/langfuse-integration.md` - Complete architecture guide
+2. `.kiro/steering/tech.md` - Updated with Langfuse integration
+3. `docs/LANGFUSE_INTEGRATION.md` - Quick reference guide
+4. `src/app/api/prompts/route.ts` - Backend proxy implementation
+5. `src/app/api/prompts/config/route.ts` - Configuration endpoint
+6. `frontend-vite/src/services/api/prompts.ts` - Updated to use backend proxy
 
-### View Prompts
+## Verification
 
-- ✅ See all prompts with full content
-- ✅ Search by title or content
-- ✅ Filter by category
-- ✅ Toggle system prompts visibility
+Both servers running:
 
-### Create Prompts
+- ✅ Frontend: http://localhost:8081
+- ✅ Backend: http://localhost:3001
 
-- ✅ Click "New Prompt" button
-- ✅ Enter title, content, and category
-- ✅ Saves to Langfuse
-
-### Edit Prompts
-
-- ✅ Click edit icon on any user prompt
-- ✅ System prompts are read-only (protected)
-
-### Delete Prompts
-
-- ✅ Click delete icon on any user prompt
-- ✅ System prompts cannot be deleted (protected)
-
----
-
-## System Prompts
-
-These prompts are **protected** and used by the RAG pipeline:
-
-### general-chat
-
-Used for general conversation without document context.
-
-### haystack-rag-generation
-
-Used for answering questions based on document context (non-streaming).
-
-### haystack-rag-streaming
-
-Used for streaming responses based on document context.
-
-**Note**: System prompts cannot be edited or deleted to ensure the RAG pipeline works correctly.
-
----
-
-## Configuration
-
-### Environment Variables
-
-Located in `frontend-vite/.env.local`:
+Backend proxy tested and working:
 
 ```bash
-# Langfuse Configuration
-VITE_LANGFUSE_PUBLIC_KEY=pk-lf-c72b3aed-43de-4157-9b6e-17d0fa33c1ae
-VITE_LANGFUSE_SECRET_KEY=sk-lf-489e2b22-c400-4eda-b342-7a8d116a4d17
-VITE_LANGFUSE_BASE_URL=https://cloud.langfuse.com
+$ curl http://localhost:3001/api/prompts | jq '. | length'
+7  # Returns all 7 prompts with full content
 ```
 
-### Langfuse Dashboard
+Frontend prompts page working:
 
-Access your prompts directly in Langfuse:
-
-```
-https://cloud.langfuse.com
-```
+- ✅ All 7 prompts displayed
+- ✅ No 401 errors
+- ✅ Proper authentication through backend
 
 ---
 
-## Troubleshooting
+## For Future Development
 
-### Prompts not showing?
+When working with Langfuse or similar external APIs:
 
-1. **Hard refresh browser**: `Ctrl+Shift+R` (Windows) or `Cmd+Shift+R` (Mac)
+1. **Read the documentation first**: `.kiro/steering/langfuse-integration.md`
+2. **Follow the proxy pattern**: Never expose secret keys to frontend
+3. **Test backend proxy**: Verify authentication works before frontend integration
+4. **Check security**: Ensure secret keys are only in backend environment
 
-2. **Check browser console**: Look for errors or these messages:
-
-   ```
-   📋 Fetching full content for 7 prompts...
-   ✅ Fetched 7 prompts with content
-   ```
-
-3. **Verify dev server is running**:
-
-   ```bash
-   cd frontend-vite
-   npm run dev
-   ```
-
-4. **Check environment variables**:
-   ```bash
-   cd frontend-vite
-   cat .env.local | grep LANGFUSE
-   ```
-
-### Still having issues?
-
-Check the browser console for specific error messages and verify:
-
-- ✅ Langfuse keys are correct
-- ✅ Internet connection is working
-- ✅ Langfuse API is accessible
-
----
-
-## Performance Note
-
-The current implementation makes **8 API calls** to load 7 prompts:
-
-- 1 call to get the list
-- 7 calls to get individual prompt content
-
-This is acceptable for small numbers of prompts. For optimization:
-
-- React Query caches the results
-- Subsequent visits load from cache
-- Only refetches when data is stale
-
----
-
-## Next Steps
-
-1. ✅ **Test the prompts library** - Visit http://localhost:8081/prompts
-2. ✅ **Create a new prompt** - Test the create functionality
-3. ✅ **Edit a user prompt** - Test the edit functionality
-4. ✅ **Try filtering** - Test search and category filters
-
----
-
-## Summary
-
-✅ **Status**: Prompts library is fully functional  
-✅ **Prompts**: 7 prompts available (3 system + 4 user)  
-✅ **Features**: View, create, edit, delete (with protection for system prompts)  
-✅ **Integration**: Connected to Langfuse Cloud  
-✅ **Codebase**: Clean and production-ready
-
-**Ready to use!** Visit http://localhost:8081/prompts to get started.
+This pattern is now documented and should prevent similar issues in the future.

@@ -13,6 +13,18 @@
 - **Supabase**: PostgreSQL database with Row Level Security (RLS)
 - **OpenAI API**: GPT-4-turbo for chat, text-embedding-3-small for embeddings
 - **Qdrant Cloud**: Vector database for semantic search (1536-dimensional vectors)
+- **Langfuse**: Prompt management and versioning (proxied through backend for security)
+
+### External Service Integration Patterns
+
+#### Langfuse Integration (Prompt Management)
+- **Architecture**: Frontend → Backend Proxy → Langfuse API
+- **Authentication**: Backend uses both public and secret keys (Basic Auth)
+- **Security**: Secret key NEVER exposed to frontend
+- **Implementation**: All Langfuse API calls proxied through `/api/prompts` endpoint
+- **Reference**: See `.kiro/steering/langfuse-integration.md` for detailed architecture
+
+**Critical Rule**: Langfuse API requires BOTH public AND secret keys for authentication. Direct frontend calls will fail with 401 errors. Always proxy through backend.
 
 ### Infrastructure & Deployment
 - **Vercel**: Serverless hosting with edge functions
@@ -153,6 +165,19 @@ src/
 - **HTTPS Only**: Force HTTPS in production
 - **CORS Configuration**: Proper CORS setup for API endpoints
 - **Security Headers**: Implement security headers via Next.js config
+- **API Key Management**: Never expose secret keys to frontend; use backend proxy pattern
+- **Third-Party API Integration**: Always proxy external API calls that require secret credentials through backend
+
+### API Proxy Pattern for External Services
+When integrating external services that require secret credentials:
+
+1. **Backend Proxy**: Create Next.js API route to proxy requests
+2. **Credential Storage**: Store secret keys in backend environment variables only
+3. **Frontend Access**: Frontend calls backend proxy, never external API directly
+4. **Authentication**: Backend handles authentication with external service
+5. **Response Forwarding**: Backend forwards sanitized responses to frontend
+
+**Example**: Langfuse integration uses this pattern - see `.kiro/steering/langfuse-integration.md`
 
 ## Deployment Configuration
 

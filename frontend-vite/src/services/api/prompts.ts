@@ -3,9 +3,8 @@ import type { SavedPrompt, ApiResponse, CreatePromptRequest, UpdatePromptRequest
 import { langfuseApi, type LangfusePromptResponse } from '../langfuse'
 import { SYSTEM_PROMPTS } from '@/constants/prompts'
 
-// Use Langfuse API directly (Langfuse API v2 requires both public and secret keys)
-// Frontend only has public key, so reads work but writes require backend secret key
-const USE_LANGFUSE_DIRECT_FOR_READS = true // Use Langfuse API directly for reads (public key only)
+// Use backend proxy for ALL Langfuse operations (Langfuse API requires secret key for auth)
+const USE_LANGFUSE_DIRECT_FOR_READS = false // MUST use backend proxy - Langfuse requires secret key
 const USE_BACKEND_FOR_WRITES = true // Use backend proxy for writes (requires secret key)
 
 // Map Langfuse prompt to frontend SavedPrompt format

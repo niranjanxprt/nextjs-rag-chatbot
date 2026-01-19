@@ -28,8 +28,8 @@ function getAPIBaseURL(): string {
     return 'https://rag-chatbot-production-1a36.up.railway.app/api/v1'
   }
 
-  // 4. Development/local fallback
-  return 'http://localhost:8000/api/v1'
+  // 4. Development/local fallback - Next.js backend on port 3001
+  return 'http://localhost:3001/api'
 }
 
 /**
@@ -38,16 +38,11 @@ function getAPIBaseURL(): string {
 async function initLangfuseConfig(): Promise<void> {
   if (langfuseConfig) return
 
-  console.log('🔧 [Langfuse] Initializing config...')
-  console.log('   Environment check:', {
-    hasPublicKey: !!import.meta.env.VITE_LANGFUSE_PUBLIC_KEY,
-    hasSecretKey: !!import.meta.env.VITE_LANGFUSE_SECRET_KEY,
-    hasBaseUrl: !!import.meta.env.VITE_LANGFUSE_BASE_URL,
-  })
+  console.log('🔧 [Langfuse] Initializing config from backend...')
 
   try {
     const apiUrl = getAPIBaseURL()
-    console.log(`   Trying to fetch config from: ${apiUrl}/prompts/config`)
+    console.log(`   Fetching config from: ${apiUrl}/prompts/config`)
     const response = await fetch(`${apiUrl}/prompts/config`)
 
     if (!response.ok) {
@@ -61,23 +56,21 @@ async function initLangfuseConfig(): Promise<void> {
       publicKey: config.public_key || '',
       baseUrl: config.base_url || 'https://cloud.langfuse.com',
     }
-    console.log('✅ Langfuse config loaded from backend:', {
+    console.log('✅ [Langfuse] Config loaded from backend:', {
       baseUrl: langfuseConfig.baseUrl,
       hasPublicKey: !!langfuseConfig.publicKey,
     })
   } catch (error) {
-    console.error('⚠️ Failed to initialize Langfuse config from backend:', error)
+    console.error('⚠️ [Langfuse] Failed to initialize config from backend:', error)
     // Fallback to environment variables if backend config fails
     langfuseConfig = {
       publicKey: import.meta.env.VITE_LANGFUSE_PUBLIC_KEY || '',
       baseUrl: import.meta.env.VITE_LANGFUSE_BASE_URL || 'https://cloud.langfuse.com',
       secretKey: import.meta.env.VITE_LANGFUSE_SECRET_KEY || '',
     }
-    console.log('⚠️ Using environment variables for Langfuse config:', {
+    console.log('⚠️ [Langfuse] Using environment variables as fallback:', {
       baseUrl: langfuseConfig.baseUrl,
       hasPublicKey: !!langfuseConfig.publicKey,
-      hasSecretKey: !!langfuseConfig.secretKey,
-      publicKeyPreview: langfuseConfig.publicKey?.substring(0, 20) + '...',
     })
   }
 }
