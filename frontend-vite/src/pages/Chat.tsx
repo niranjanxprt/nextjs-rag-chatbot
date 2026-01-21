@@ -92,116 +92,43 @@ export default function Chat() {
 
   useEffect(() => {
     fetchProjects()
-    fetchRecentConversations()
+    // Disable fetching recent conversations to avoid 401 errors
+    // fetchRecentConversations()
+    
+    // Set default to General Chat if no project is selected
+    if (!selectedProject) {
+      actions.setSelectedProject(GENERAL_CHAT_ID)
+    }
   }, [])
 
   const fetchRecentConversations = async () => {
-    try {
-      const response = await conversationsApi.listConversations({
-        limit: 10,
-      })
-      console.log('Recent conversations response:', response)
-      if (response.success && response.data && response.data.length > 0) {
-        // Convert to ChatThread format for RecentChatsPreview
-        // Note: list_conversations doesn't include messages, so we'll fetch them when needed
-        const chats: ChatThread[] = await Promise.all(
-          response.data.map(async conv => {
-            // Try to get the last message for the snippet
-            let lastMessageSnippet = ''
-            try {
-              const messagesResponse = await conversationsApi.getMessages(conv.id, 1)
-              if (
-                messagesResponse.success &&
-                messagesResponse.data &&
-                messagesResponse.data.length > 0
-              ) {
-                const lastMsg = messagesResponse.data[messagesResponse.data.length - 1]
-                lastMessageSnippet = lastMsg.content?.substring(0, 50) || ''
-              }
-            } catch (e) {
-              console.debug('Could not fetch last message for conversation', conv.id)
-            }
-
-            // Get title from conversation or use a default
-            let title = conv.title || 'Untitled Chat'
-            if (!title && lastMessageSnippet) {
-              title = lastMessageSnippet
-            }
-
-            return {
-              id: conv.id,
-              title: title,
-              createdAt: conv.created_at,
-              updatedAt: conv.updated_at,
-              lastMessageSnippet: lastMessageSnippet,
-              messages: [], // Will be loaded when conversation is selected
-              projectId: conv.project_id || null,
-            }
-          })
-        )
-        console.log('Converted chats:', chats)
-        setRecentConversations(chats)
-      } else {
-        console.log('No conversations found or empty response')
-        setRecentConversations([])
-      }
-    } catch (error) {
-      console.error('Failed to fetch recent conversations:', error)
-      setRecentConversations([])
-    }
+    // Disabled to avoid 401 authentication errors
+    // Authentication is not yet implemented in the frontend
+    console.log('Recent conversations disabled - authentication required')
+    setRecentConversations([])
   }
 
   const fetchProjects = async () => {
-    try {
-      const response = await projectsApi.getProjects()
-      if (response.success && response.data && response.data.length > 0) {
-        setProjects(response.data)
-        console.log('Projects loaded from API:', response.data.length)
-      } else {
-        // If API returns empty or fails, use mock data
-        console.warn('API returned no projects, using fallback data')
-        const mockProjects: Project[] = [
-          {
-            id: 'proj-1',
-            name: 'Legal Contracts Analysis',
-            description: 'Analyze and extract key terms from vendor contracts and agreements',
-          },
-          {
-            id: 'proj-2',
-            name: 'Q4 Financial Reports',
-            description: 'Review quarterly financial statements and audit reports',
-          },
-          {
-            id: 'proj-3',
-            name: 'HR Policy Documents',
-            description: 'Employee handbook and policy documentation review',
-          },
-        ]
-        setProjects(mockProjects)
-      }
-    } catch (error) {
-      console.error('Failed to fetch projects:', error)
-      // Always use fallback mock data if API fails
-      const mockProjects: Project[] = [
-        {
-          id: 'proj-1',
-          name: 'Legal Contracts Analysis',
-          description: 'Analyze and extract key terms from vendor contracts and agreements',
-        },
-        {
-          id: 'proj-2',
-          name: 'Q4 Financial Reports',
-          description: 'Review quarterly financial statements and audit reports',
-        },
-        {
-          id: 'proj-3',
-          name: 'HR Policy Documents',
-          description: 'Employee handbook and policy documentation review',
-        },
-      ]
-      setProjects(mockProjects)
-      console.log('Using fallback mock projects:', mockProjects.length)
-    }
+    // Use mock data directly to avoid 401 authentication errors
+    console.log('Using mock projects - authentication not yet implemented')
+    const mockProjects: Project[] = [
+      {
+        id: 'proj-1',
+        name: 'Legal Contracts Analysis',
+        description: 'Analyze and extract key terms from vendor contracts and agreements',
+      },
+      {
+        id: 'proj-2',
+        name: 'Q4 Financial Reports',
+        description: 'Review quarterly financial statements and audit reports',
+      },
+      {
+        id: 'proj-3',
+        name: 'HR Policy Documents',
+        description: 'Employee handbook and policy documentation review',
+      },
+    ]
+    setProjects(mockProjects)
   }
 
   const handleSelectProject = (projectId: string) => {

@@ -17,6 +17,7 @@ import Profile from './pages/Profile'
 import UserProfile from './pages/UserProfile'
 import CentralChat from './pages/CentralChat'
 import Chat from './pages/Chat'
+import DebugChat from './pages/DebugChat'
 import RecentChats from './pages/RecentChats'
 import KnowledgeBase from './pages/KnowledgeBase'
 import Login from './pages/Login'
@@ -53,6 +54,7 @@ const App = () => (
 
               {/* Chat routes */}
               <Route path="/chat" element={<Chat />} />
+              <Route path="/debug-chat" element={<DebugChat />} />
               <Route path="/central-chat" element={<CentralChat />} />
               <Route path="/central-chat/:chatId" element={<CentralChat />} />
               <Route path="/chats" element={<RecentChats />} />
