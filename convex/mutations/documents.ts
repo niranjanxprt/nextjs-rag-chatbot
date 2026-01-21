@@ -1,186 +1,156 @@
 /**
- * Document Mutation Functions
- *
- * Provides write operations for documents with authentication and ownership checks.
+ * Document Mutations
+ * 
+ * Convex mutations for document CRUD operations
  */
 
 import { mutation } from '../_generated/server'
 import { v } from 'convex/values'
 
 /**
- * Create a new document
+ * Create a new document record
  */
 export const create = mutation({
   args: {
-    title: v.string(),
-    file_name: v.string(),
-    file_size: v.number(),
-    mime_type: v.string(),
-    storage_id: v.id('_storage'),
+    user_id: v.id('users'),
+    project_id: v.optional(v.id('projects')),
+    name: v.string(),
+    filename: v.string(),
+    size: v.number(),
+    type: v.string(),
+    storage_id: v.optional(v.id('_storage')),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity()
-    if (!identity) {
-      throw new Error('Unauthorized: Authentication required')
-    }
-
-    const user = await ctx.db
-      .query('users')
-      .withIndex('email', q => q.eq('email', identity.email!))
-      .first()
-
-    if (!user) {
-      throw new Error('User not found')
-    }
-
     const now = Date.now()
+    
     const documentId = await ctx.db.insert('documents', {
-      user_id: user._id,
-      title: args.title,
-      filename: args.file_name,
-      file_name: args.file_name,
-      file_size: args.file_size,
-      mime_type: args.mime_type,
+      user_id: args.user_id,
+      project_id: args.project_id,
+      name: args.name,
+      filename: args.filename,
+      file_name: args.filename, // Alias
+      size: args.size,
+      file_size: args.size, // Alias
+      type: args.type,
+      mime_type: args.type, // Alias
       storage_id: args.storage_id,
-      status: 'pending',
-      processing_status: 'pending',
+      upload_date: now,
+      chunk_count: 0,
+      status: 'processing',
       created_at: now,
       updated_at: now,
     })
-
+    
     return documentId
   },
 })
 
 /**
- * Update document status
+ * Update document status and metadata
  */
 export const updateStatus = mutation({
   args: {
     id: v.id('documents'),
+    user_id: v.id('users'),
     status: v.union(
-      v.literal('pending'),
       v.literal('processing'),
-      v.literal('completed'),
-      v.literal('failed')
+      v.literal('ready'),
+      v.literal('error')
     ),
-    error_message: v.optional(v.string()),
     chunk_count: v.optional(v.number()),
+    error_message: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity()
-    if (!identity) {
-      throw new Error('Unauthorized: Authentication required')
-    }
-
     const document = await ctx.db.get(args.id)
+    
     if (!document) {
       throw new Error('Document not found')
     }
-
-    const user = await ctx.db
-      .query('users')
-      .withIndex('email', q => q.eq('email', identity.email!))
-      .first()
-
-    if (!user || document.user_id !== user._id) {
-      throw new Error('Unauthorized: Access denied')
+    
+    // Enforce user ownership
+    if (document.user_id !== args.user_id) {
+      throw new Error('Unauthorized: Document does not belong to user')
     }
-
+    
     await ctx.db.patch(args.id, {
       status: args.status,
+      chunk_count: args.chunk_count ?? document.chunk_count,
       error_message: args.error_message,
-      chunk_count: args.chunk_count,
       updated_at: Date.now(),
     })
+    
+    return args.id
   },
 })
 
 /**
  * Delete a document
+ * Note: Chunks should be deleted separately
  */
 export const remove = mutation({
-  args: { id: v.id('documents') },
+  args: {
+    id: v.id('documents'),
+    user_id: v.id('users'),
+  },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity()
-    if (!identity) {
-      throw new Error('Unauthorized: Authentication required')
-    }
-
     const document = await ctx.db.get(args.id)
+    
     if (!document) {
       throw new Error('Document not found')
     }
-
-    const user = await ctx.db
-      .query('users')
-      .withIndex('email', q => q.eq('email', identity.email!))
-      .first()
-
-    if (!user || document.user_id !== user._id) {
-      throw new Error('Unauthorized: Access denied')
+    
+    // Enforce user ownership
+    if (document.user_id !== args.user_id) {
+      throw new Error('Unauthorized: Document does not belong to user')
     }
-
-    // Delete all chunks associated with the document
-    const chunks = await ctx.db
-      .query('document_chunks')
-      .withIndex('by_document', q => q.eq('document_id', args.id))
-      .collect()
-
-    for (const chunk of chunks) {
-      await ctx.db.delete(chunk._id)
+    
+    // Prevent deletion of documents being processed
+    if (document.status === 'processing') {
+      throw new Error('Cannot delete document while processing')
     }
-
-    // Delete the document
+    
     await ctx.db.delete(args.id)
+    
+    return { success: true }
   },
 })
 
 /**
- * Create document chunks
+ * Update document metadata
  */
-export const createChunk = mutation({
+export const update = mutation({
   args: {
-    document_id: v.id('documents'),
-    content: v.string(),
-    chunk_index: v.number(),
-    embedding: v.array(v.float64()),
-    metadata: v.object({
-      page: v.optional(v.number()),
-      section: v.optional(v.string()),
-    }),
+    id: v.id('documents'),
+    user_id: v.id('users'),
+    name: v.optional(v.string()),
+    project_id: v.optional(v.id('projects')),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity()
-    if (!identity) {
-      throw new Error('Unauthorized: Authentication required')
-    }
-
-    // Verify document ownership
-    const document = await ctx.db.get(args.document_id)
+    const document = await ctx.db.get(args.id)
+    
     if (!document) {
       throw new Error('Document not found')
     }
-
-    const user = await ctx.db
-      .query('users')
-      .withIndex('email', q => q.eq('email', identity.email!))
-      .first()
-
-    if (!user || document.user_id !== user._id) {
-      throw new Error('Unauthorized: Access denied')
+    
+    // Enforce user ownership
+    if (document.user_id !== args.user_id) {
+      throw new Error('Unauthorized: Document does not belong to user')
     }
-
-    const chunkId = await ctx.db.insert('document_chunks', {
-      document_id: args.document_id,
-      content: args.content,
-      chunk_index: args.chunk_index,
-      token_count: Math.ceil(args.content.length / 4), // Rough estimate: 1 token ≈ 4 chars
-      embedding: args.embedding,
-      metadata: args.metadata,
-      created_at: Date.now(),
-    })
-
-    return chunkId
+    
+    const updates: any = {
+      updated_at: Date.now(),
+    }
+    
+    if (args.name !== undefined) {
+      updates.name = args.name
+    }
+    
+    if (args.project_id !== undefined) {
+      updates.project_id = args.project_id
+    }
+    
+    await ctx.db.patch(args.id, updates)
+    
+    return args.id
   },
 })

@@ -122,14 +122,15 @@ export const remove = mutation({
 export const addMessage = mutation({
   args: {
     conversation_id: v.id('conversations'),
-    role: v.union(v.literal('user'), v.literal('assistant')),
+    role: v.union(v.literal('user'), v.literal('assistant'), v.literal('system')),
     content: v.string(),
     sources: v.optional(
       v.array(
         v.object({
-          document_id: v.id('documents'),
-          chunk_index: v.number(),
-          similarity: v.float64(),
+          id: v.string(),
+          document_name: v.string(),
+          snippet: v.string(),
+          score: v.float64(),
         })
       )
     ),
@@ -155,17 +156,19 @@ export const addMessage = mutation({
       throw new Error('Unauthorized: Access denied')
     }
 
+    const now = Date.now()
     const messageId = await ctx.db.insert('messages', {
       conversation_id: args.conversation_id,
       role: args.role,
       content: args.content,
       sources: args.sources,
-      created_at: Date.now(),
+      timestamp: now,
+      created_at: now,
     })
 
     // Update conversation's updated_at timestamp
     await ctx.db.patch(args.conversation_id, {
-      updated_at: Date.now(),
+      updated_at: now,
     })
 
     return messageId

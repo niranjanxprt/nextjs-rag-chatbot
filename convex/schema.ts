@@ -45,37 +45,56 @@ export default defineSchema({
   documents: defineTable({
     user_id: v.id('users'),
     project_id: v.optional(v.id('projects')),
-    title: v.optional(v.string()), // Document title
+    name: v.string(), // Document name
+    title: v.optional(v.string()), // Document title (alias)
     filename: v.string(),
     file_name: v.optional(v.string()), // Alias for filename
-    file_size: v.number(),
-    mime_type: v.string(),
+    size: v.number(), // File size in bytes
+    file_size: v.number(), // Alias for size
+    type: v.string(), // MIME type
+    mime_type: v.string(), // Alias for type
     storage_id: v.optional(v.id('_storage')), // Convex file storage reference
-    processing_status: v.union(
-      v.literal('pending'),
+    upload_date: v.number(), // Unix timestamp
+    chunk_count: v.number(), // Number of chunks created
+    status: v.union(
       v.literal('processing'),
-      v.literal('completed'),
-      v.literal('failed')
+      v.literal('ready'),
+      v.literal('error')
     ),
-    status: v.optional(
+    processing_status: v.optional(
       v.union(
-        // Alias for processing_status
+        // Alias for status
         v.literal('pending'),
         v.literal('processing'),
         v.literal('completed'),
         v.literal('failed')
       )
     ),
-    chunk_count: v.optional(v.number()),
     error_message: v.optional(v.string()),
     created_at: v.number(),
     updated_at: v.number(),
   })
     .index('by_user', ['user_id'])
     .index('by_project', ['project_id'])
-    .index('by_status', ['processing_status'])
+    .index('by_status', ['status'])
     .index('by_user_project', ['user_id', 'project_id']),
 
+  chunks: defineTable({
+    document_id: v.id('documents'),
+    content: v.string(), // Chunk text content
+    position: v.number(), // Chunk position in document (0-indexed)
+    start_char: v.number(), // Start character position in original text
+    end_char: v.number(), // End character position in original text
+    qdrant_id: v.string(), // UUID for Qdrant point
+    user_id: v.id('users'),
+    project_id: v.optional(v.id('projects')),
+    created_at: v.number(),
+  })
+    .index('by_document', ['document_id'])
+    .index('by_user', ['user_id'])
+    .index('by_qdrant_id', ['qdrant_id']),
+
+  // Legacy table for backward compatibility
   document_chunks: defineTable({
     document_id: v.id('documents'),
     chunk_index: v.number(),
@@ -117,15 +136,19 @@ export default defineSchema({
     sources: v.optional(
       v.array(
         v.object({
-          document_id: v.id('documents'),
-          chunk_index: v.number(),
-          similarity: v.float64(),
+          id: v.string(), // chunk_id or document_id
+          document_name: v.string(),
+          snippet: v.string(),
+          score: v.float64(),
         })
       )
     ),
     metadata: v.optional(v.any()), // JSONB equivalent
+    timestamp: v.number(), // Unix timestamp
     created_at: v.number(),
-  }).index('by_conversation', ['conversation_id']),
+  })
+    .index('by_conversation', ['conversation_id'])
+    .index('by_conversation_time', ['conversation_id', 'timestamp']),
 
   // ==========================================================================
   // PROJECTS AND COLLABORATION
